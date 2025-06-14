@@ -1,0 +1,20 @@
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VSCode or JetBrains Rider
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Secrets and config overrides
+appsettings.Development.json
+secrets.json
