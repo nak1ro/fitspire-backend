@@ -9,9 +9,7 @@ public class CyclingWorkoutDetailsConfiguration : IEntityTypeConfiguration<Cycli
     public void Configure(EntityTypeBuilder<CyclingUserWorkoutDetails> builder)
     {
         builder.ToTable("CyclingWorkoutDetails");
-
-        builder.HasKey(c => c.Id);
-
+        
         builder.Property(c => c.DistanceKm);
         builder.Property(c => c.ElevationGain);
         builder.Property(c => c.AvgSpeedKmPerHour);

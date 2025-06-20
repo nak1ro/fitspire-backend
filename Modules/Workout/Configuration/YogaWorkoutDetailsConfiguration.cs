@@ -9,9 +9,7 @@ public class YogaWorkoutDetailsConfiguration : IEntityTypeConfiguration<YogaUser
     public void Configure(EntityTypeBuilder<YogaUserWorkoutDetails> builder)
     {
         builder.ToTable("YogaWorkoutDetails");
-
-        builder.HasKey(y => y.Id);
-
+        
         builder.Property(y => y.Style);
         builder.Property(y => y.Intensity);
         builder.Property(y => y.FocusArea);

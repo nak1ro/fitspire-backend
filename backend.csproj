@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
@@ -15,10 +18,18 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="Resend" Version="0.1.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Modules\Auth\Mappings\" />
+    <Folder Include="Modules\Auth\Model\" />
+    <Folder Include="Modules\Badge\Controllers\" />
+    <Folder Include="Modules\Badge\DTOs\" />
+    <Folder Include="Modules\Badge\Mappings\" />
+    <Folder Include="Modules\Badge\Repositories\" />
+    <Folder Include="Modules\Badge\Services\" />
     <Folder Include="Modules\Badge\Validators\" />
     <Folder Include="Modules\Challenge\Validators\" />
     <Folder Include="Modules\Moderation\Validators\" />

@@ -9,9 +9,7 @@ public class SwimmingWorkoutDetailsConfiguration : IEntityTypeConfiguration<Swim
     public void Configure(EntityTypeBuilder<SwimmingUserWorkoutDetails> builder)
     {
         builder.ToTable("SwimmingWorkoutDetails");
-
-        builder.HasKey(s => s.Id);
-
+        
         builder.Property(s => s.Laps);
         builder.Property(s => s.DistanceMeters);
         builder.Property(s => s.StrokeType);

@@ -10,8 +10,6 @@ public class GymWorkoutDetailsConfiguration : IEntityTypeConfiguration<GymUserWo
     {
         builder.ToTable("GymWorkoutDetails");
         
-        builder.HasKey(g => g.Id);
-
         builder.HasMany(g => g.Exercises)
             .WithOne(e => e.GymUserWorkout)
             .HasForeignKey(e => e.GymWorkoutId)
