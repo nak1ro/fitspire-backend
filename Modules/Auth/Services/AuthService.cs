@@ -24,20 +24,20 @@ public class AuthService : IAuthService
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
     {
-        var user = new AppUser
-        {
-            UserName = dto.UserName,
-            Email = dto.Email,
-            DisplayName = dto.DisplayName
-        };
-
         // Check for existing username/email
         if (await _userManager.FindByNameAsync(dto.UserName) != null)
             throw new InvalidOperationException("Username is already taken.");
 
         if (await _userManager.FindByEmailAsync(dto.Email) != null)
             throw new InvalidOperationException("Email is already taken.");
-
+        
+        var user = new AppUser
+        {
+            UserName = dto.UserName,
+            Email = dto.Email,
+            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.UserName : dto.DisplayName
+        };
+        
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
@@ -61,7 +61,6 @@ public class AuthService : IAuthService
         
         await _emailService.SendMockEmailAsync(user.Email, "Confirm your Fitspire account", emailHtml);
         
-        // Optionally return a flag that says "email confirmation required"
         return new NewUserDto
         {
             Id = user.Id,

@@ -71,11 +71,29 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddControllers();
 
+var corsPolicy = "FrontendPolicy";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: corsPolicy, policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:8081"  
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); 
+    });
+});
+
+
 var app = builder.Build();
 
 app.UseStaticFiles();
 
 app.UseHttpsRedirection();
+app.UseCors(corsPolicy);
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
