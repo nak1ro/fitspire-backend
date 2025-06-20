@@ -1,7 +1,9 @@
 using System.Text;
 using backend.Data;
 using backend.Modules.Auth.Services;
+using backend.Modules.Shared.Service;
 using backend.Modules.User.Domain;
+using backend.Modules.User.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -60,9 +62,12 @@ builder.Services.AddHttpClient();
 builder.Services.Configure<ResendClientOptions>(builder.Configuration.GetSection("Resend"));
 builder.Services.AddScoped<ResendClient>(); // 
 builder.Services.AddScoped<IEmailService, ResendEmailService>();
+builder.Services.AddScoped<IBlobService, BlobService>(); // 
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddEndpointsApiExplorer();
+
 
 builder.Services.AddControllers();
 
@@ -78,9 +83,9 @@ using (var scope = app.Services.CreateScope())
     var serviceProvider = scope.ServiceProvider;
 
     var context = serviceProvider.GetRequiredService<FitspireDbContext>();
-    context.Database.Migrate(); 
+    context.Database.Migrate();
 
-    await RoleSeeder.SeedAsync(serviceProvider); 
+    await RoleSeeder.SeedAsync(serviceProvider);
 }
 
 app.Run();
