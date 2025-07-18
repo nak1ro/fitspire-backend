@@ -7,4 +7,7 @@ public interface IUserService
     Task<UserProfileDto> UpdateProfileAsync(UpdateProfileDto dto);
     Task<UserPreferencesDto> UpdatePreferencesAsync(UpdateUserPreferencesDto dto);
     Task<UserProfileDto> UpdateProfilePictureAsync(IFormFile file);
+    Task<UserProfileDto> GetProfileAsync();
+    Task<UserPreferencesDto> GetPreferencesAsync();
+    Task<UserProfileDto> GetUserByUsernameAsync(string username);
 }

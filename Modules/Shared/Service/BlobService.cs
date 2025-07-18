@@ -9,8 +9,14 @@ public class BlobService : IBlobService
 
     public BlobService(IConfiguration config)
     {
-        var connStr = config["AzureBlob:ConnectionString"];
-        var containerName = config["AzureBlob:ContainerName"];
+        var connStr = config["Azure:BlobConnectionString"];
+        var containerName = config["Azure:ProfilePicsContainer"];
+        
+        if (string.IsNullOrWhiteSpace(connStr))
+            throw new InvalidOperationException("Azure:BlobConnectionString is missing or empty in configuration.");
+        if (string.IsNullOrWhiteSpace(containerName))
+            throw new InvalidOperationException("Azure:ProfilePicsContainer is missing or empty in configuration.");
+        
         _containerClient = new BlobContainerClient(connStr, containerName);
         _containerClient.CreateIfNotExists(PublicAccessType.Blob);
     }

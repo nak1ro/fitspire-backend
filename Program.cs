@@ -4,6 +4,8 @@ using backend.Modules.Auth.Services;
 using backend.Modules.Shared.Service;
 using backend.Modules.User.Domain;
 using backend.Modules.User.Mappings;
+using backend.Modules.User.Repositories;
+using backend.Modules.User.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -62,7 +64,9 @@ builder.Services.AddHttpClient();
 builder.Services.Configure<ResendClientOptions>(builder.Configuration.GetSection("Resend"));
 builder.Services.AddScoped<ResendClient>(); // 
 builder.Services.AddScoped<IEmailService, ResendEmailService>();
-builder.Services.AddScoped<IBlobService, BlobService>(); // 
+builder.Services.AddScoped<IBlobService, BlobService>(); 
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddEndpointsApiExplorer();

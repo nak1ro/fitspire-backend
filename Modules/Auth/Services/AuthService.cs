@@ -30,14 +30,16 @@ public class AuthService : IAuthService
 
         if (await _userManager.FindByEmailAsync(dto.Email) != null)
             throw new InvalidOperationException("Email is already taken.");
-        
+
         var user = new AppUser
         {
             UserName = dto.UserName,
             Email = dto.Email,
-            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.UserName : dto.DisplayName
+            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.UserName : dto.DisplayName,
+            // Mark as confirmed by default
+            EmailConfirmed = true
         };
-        
+
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
@@ -48,29 +50,19 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "User");
 
-        // Generate email confirmation token
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var confirmationLink =
-            $"https://your-frontend-app/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+        // NOTE: We intentionally skip generating/sending any confirmation email.
+        // If you want to keep a mock log, you could call:
+        // await _emailService.SendMockEmailAsync(user.Email, "Confirm your Fitspire account", "Email auto-confirmed in dev.");
 
-        var emailHtml = $@"
-                <p>Hello {user.DisplayName},</p>
-                <p>Thanks for registering! Please confirm your email by clicking the link below:</p>
-                <a href=""{confirmationLink}"">Confirm Email</a>
-            ";
-        
-        await _emailService.SendMockEmailAsync(user.Email, "Confirm your Fitspire account", emailHtml);
-        
         return new NewUserDto
         {
             Id = user.Id,
             UserName = user.UserName,
             Email = user.Email,
             CreatedAt = user.CreatedAt,
-            Token = null // don't return a token before confirmation
+            Token = null // keeping current contract: no auto login on register
         };
     }
-
 
     public async Task<NewUserDto> LoginAsync(LoginDto dto)
     {
@@ -80,7 +72,7 @@ public class AuthService : IAuthService
         if (user == null)
             throw new UnauthorizedAccessException("Invalid username or email");
 
-        // Require email confirmation
+        // Email is now confirmed by default for new users, but keep the check for older accounts.
         if (!user.EmailConfirmed)
             throw new UnauthorizedAccessException("Email not confirmed.");
 
@@ -100,10 +92,14 @@ public class AuthService : IAuthService
 
     public async Task<bool> ConfirmEmailAsync(Guid userId, string token)
     {
+        // Since we auto-confirm, just succeed if the user exists.
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
             throw new UnauthorizedAccessException("Invalid username or email");
 
+        if (user.EmailConfirmed) return true;
+
+        // For legacy users, you may still support token-based confirm:
         var result = await _userManager.ConfirmEmailAsync(user, token);
         return result.Succeeded;
     }
@@ -126,7 +122,7 @@ public class AuthService : IAuthService
             {
                 UserName = payload.Email,
                 Email = payload.Email,
-                EmailConfirmed = true, // Google verified
+                EmailConfirmed = true, // Google verified (and we also default-confirm)
             };
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)

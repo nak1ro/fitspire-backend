@@ -18,3 +18,8 @@ obj/
 # Secrets and config overrides
 appsettings.Development.json
 secrets.json
+
+# Azurite local emulator state
+__azurite_db_*__.json
+__azurite_db_*__.json
+__azurite_db_*

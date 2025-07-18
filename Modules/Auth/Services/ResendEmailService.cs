@@ -23,7 +23,8 @@ public class ResendEmailService : IEmailService
             HtmlBody = htmlContent
         };
 
-        await _client.EmailSendAsync(message);
+        // await _client.EmailSendAsync(message);
+        await Task.CompletedTask;
     }
 
     public Task SendMockEmailAsync(string to, string subject, string htmlContent)
