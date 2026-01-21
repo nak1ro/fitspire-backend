@@ -1,69 +1,17 @@
-using System.Text;
 using backend.Data;
-using backend.Modules.Auth.Services;
-using backend.Modules.Shared.Service;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using backend.Modules.Auth;
+using backend.Modules.Shared;
 using backend.Modules.User.Domain;
 using backend.Modules.User.Mappings;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<FitspireDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
-    {
-        options.Password.RequireDigit = true;
-        options.Password.RequiredLength = 6;
-    })
-    .AddEntityFrameworkStores<FitspireDbContext>()
-    .AddDefaultTokenProviders()
-    .AddRoles<IdentityRole<Guid>>();
-
-var jwtSection = builder.Configuration.GetSection("JWT");
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
-
-            ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
-
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["SigningKey"])),
-
-            ValidateLifetime = true
-        };
-    });
-
-builder.Services.AddAuthentication()
-    .AddGoogle(options =>
-    {
-        options.ClientId = "<your-google-client-id>";
-        options.ClientSecret = "<your-google-client-secret>";
-    });
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IEmailService, ResendEmailService>();
-builder.Services.AddHttpClient();
-builder.Services.Configure<ResendClientOptions>(builder.Configuration.GetSection("Resend"));
-builder.Services.AddScoped<ResendClient>(); // 
-builder.Services.AddScoped<IEmailService, ResendEmailService>();
-builder.Services.AddScoped<IBlobService, BlobService>(); // 
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// Modules
+builder.Services.AddDataModule(builder.Configuration);
+builder.Services.AddAuthModule(builder.Configuration);
+builder.Services.AddSharedModule(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddEndpointsApiExplorer();
