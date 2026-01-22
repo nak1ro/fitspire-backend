@@ -63,3 +63,34 @@ public record GymExerciseResponse(
     double Weight,
     int OrderIndex
 );
+
+public record CreateRunningWorkoutRequest(
+    Guid UserId,
+    DateTime Date,
+    double DistanceKm,
+    double? DurationMinutes,
+    double? ElevationGainMeters,
+    int? StepCount,
+    int? CaloriesBurned,
+    string? MapData,
+    string? Notes,
+    bool IsPrivate
+);
+
+public record RunningWorkoutResponse(
+    Guid Id,
+    Guid UserId,
+    string WorkoutType,
+    DateTime Date,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate,
+    string Status,
+    DateTime? CompletedAt,
+    double DistanceKm,
+    double? ElevationGainMeters,
+    int? StepCount,
+    string? MapData,
+    DateTime CreatedAt
+);

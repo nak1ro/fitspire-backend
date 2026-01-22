@@ -1,6 +1,6 @@
 using backend.Modules.User.Domain;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Entities;
 
 public class PersonalRecordHistory
 {

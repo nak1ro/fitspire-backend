@@ -1,4 +1,4 @@
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Enums;
 
 public enum WorkoutStatus
 {

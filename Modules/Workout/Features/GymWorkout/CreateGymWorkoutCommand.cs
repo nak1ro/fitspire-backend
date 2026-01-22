@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace backend.Modules.Workout.Commands;
+namespace backend.Modules.Workout.Features.GymWorkout;
 
 public record CreateGymWorkoutCommand(
     Guid UserId,

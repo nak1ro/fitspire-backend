@@ -1,4 +1,4 @@
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

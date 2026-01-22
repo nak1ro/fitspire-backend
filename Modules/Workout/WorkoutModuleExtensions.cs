@@ -1,3 +1,6 @@
+using backend.Modules.Shared;
+using backend.Modules.Workout.Infrastructure;
+
 namespace backend.Modules.Workout;
 
 public static class WorkoutModuleExtensions

@@ -1,8 +1,9 @@
 using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
-namespace backend.Modules.Workout.Commands;
+namespace backend.Modules.Workout.Features.Common;
 
 public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bool>
 {

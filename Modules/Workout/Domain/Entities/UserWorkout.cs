@@ -1,8 +1,9 @@
 using backend.Modules.Shared.Domain;
 using backend.Modules.User.Domain;
 using backend.Modules.Workout.Domain.Events;
+using backend.Modules.Workout.Domain.Enums;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Entities;
 
 public abstract class UserWorkout : AggregateRoot<Guid>
 {
@@ -14,6 +15,9 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public bool IsPrivate { get; private set; }
     public WorkoutStatus Status { get; private set; }
     public DateTime? CompletedAt { get; private set; }
+    
+    // Common stats
+    public int? CaloriesBurned { get; private set; }
     
     // Routine support
     public bool IsRoutine { get; private set; }
@@ -54,6 +58,15 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public void UpdateNotes(string? notes)
     {
         Notes = notes;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetCalories(int? calories)
+    {
+        if (calories.HasValue && calories.Value < 0)
+            throw new DomainException("Calories cannot be negative.");
+            
+        CaloriesBurned = calories;
         UpdatedAt = DateTime.UtcNow;
     }
 

@@ -1,6 +1,8 @@
 using backend.Modules.Workout.Domain;
 
-namespace backend.Modules.Workout;
+using backend.Modules.Workout.Domain.Entities;
+
+namespace backend.Modules.Workout.Infrastructure;
 
 public interface IWorkoutRepository
 {

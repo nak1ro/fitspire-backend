@@ -1,6 +1,6 @@
 using backend.Modules.Shared.Domain;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.ValueObjects;
 
 /// <summary>
 /// Value object representing weight in Kilograms.

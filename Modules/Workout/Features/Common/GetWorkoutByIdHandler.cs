@@ -1,7 +1,11 @@
 using backend.Modules.Workout.Domain;
 using MediatR;
 
-namespace backend.Modules.Workout.Queries;
+using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Infrastructure;
+using MediatR;
+
+namespace backend.Modules.Workout.Features.Common;
 
 public class GetWorkoutByIdHandler : IRequestHandler<GetWorkoutByIdQuery, UserWorkout?>
 {

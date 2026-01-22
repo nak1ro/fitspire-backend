@@ -2,7 +2,7 @@ using backend.Modules.Shared.Domain;
 using backend.Modules.User.Domain;
 using backend.Modules.Workout.Domain.Events;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Entities;
 
 public class PersonalRecord : AggregateRoot<Guid>
 {

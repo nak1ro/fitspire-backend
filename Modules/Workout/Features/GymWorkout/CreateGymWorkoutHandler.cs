@@ -1,8 +1,9 @@
 using backend.Modules.Shared;
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
-namespace backend.Modules.Workout.Commands;
+namespace backend.Modules.Workout.Features.GymWorkout;
 
 public class CreateGymWorkoutHandler : IRequestHandler<CreateGymWorkoutCommand, Guid>
 {

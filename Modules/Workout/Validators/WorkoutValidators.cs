@@ -57,3 +57,33 @@ public class CompleteWorkoutValidator : AbstractValidator<CompleteWorkoutRequest
             .WithMessage("Duration must be positive.");
     }
 }
+
+public class CreateRunningWorkoutValidator : AbstractValidator<CreateRunningWorkoutRequest>
+{
+    public CreateRunningWorkoutValidator()
+    {
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Date).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
+        
+        RuleFor(x => x.DistanceKm)
+            .GreaterThan(0)
+            .WithMessage("Distance must be greater than 0.");
+            
+        RuleFor(x => x.DurationMinutes)
+            .GreaterThan(0)
+            .When(x => x.DurationMinutes.HasValue)
+            .WithMessage("Duration must be positive.");
+            
+        RuleFor(x => x.ElevationGainMeters)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.ElevationGainMeters.HasValue);
+            
+        RuleFor(x => x.StepCount)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.StepCount.HasValue);
+            
+        RuleFor(x => x.CaloriesBurned)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.CaloriesBurned.HasValue);
+    }
+}

@@ -8,7 +8,7 @@ using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Social.Domain;
 using backend.Modules.User.Domain;
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +59,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
 
     public DbSet<UserWorkout> UserWorkouts { get; set; }
     public DbSet<GymWorkoutExercise> GymWorkoutExercises { get; set; }
+    public DbSet<RunningUserWorkoutDetails> RunningUserWorkouts { get; set; }
     public DbSet<Exercise> Exercises { get; set; }
     public DbSet<ExerciseCategory> ExerciseCategories { get; set; }
     public DbSet<PersonalRecord> PersonalRecords { get; set; }

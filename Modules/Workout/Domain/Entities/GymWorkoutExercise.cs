@@ -1,6 +1,6 @@
 using backend.Modules.Shared.Domain;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Entities;
 
 public class GymWorkoutExercise : Entity<Guid>
 {

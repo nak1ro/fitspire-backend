@@ -1,7 +1,8 @@
 using AutoMapper;
-using backend.Modules.Workout.Commands;
+using backend.Modules.Workout.Features.Common;
+using backend.Modules.Workout.Features.GymWorkout;
+using backend.Modules.Workout.Features.RunningWorkout;
 using backend.Modules.Workout.DTOs;
-using backend.Modules.Workout.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,29 @@ public class WorkoutController : ControllerBase
 
         var workoutId = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetWorkoutById), new { id = workoutId }, workoutId);
+    }
+
+    [HttpPost("running")]
+    public async Task<ActionResult<RunningWorkoutResponse>> CreateRunningWorkout([FromBody] CreateRunningWorkoutRequest request)
+    {
+        var command = new CreateRunningWorkoutCommand(
+            request.UserId,
+            request.Date,
+            request.DistanceKm,
+            request.DurationMinutes,
+            request.ElevationGainMeters,
+            request.StepCount,
+            request.CaloriesBurned,
+            request.MapData,
+            request.Notes,
+            request.IsPrivate
+        );
+        
+        var workoutId = await _mediator.Send(command);
+        
+        // We get the workout back to return the full response
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        return Ok(_mapper.Map<RunningWorkoutResponse>(workout));
     }
 
     [HttpGet("{id:guid}")]

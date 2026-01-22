@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
 
 namespace backend.Modules.Workout.Configuration;
 

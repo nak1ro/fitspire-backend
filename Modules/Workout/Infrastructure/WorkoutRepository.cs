@@ -1,8 +1,9 @@
 using backend.Data;
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Modules.Workout;
+namespace backend.Modules.Workout.Infrastructure;
 
 public class WorkoutRepository : IWorkoutRepository
 {

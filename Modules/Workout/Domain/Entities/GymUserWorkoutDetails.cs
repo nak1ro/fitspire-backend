@@ -1,6 +1,7 @@
 using backend.Modules.Shared.Domain;
+using backend.Modules.Workout.Domain.Enums;
 
-namespace backend.Modules.Workout.Domain;
+namespace backend.Modules.Workout.Domain.Entities;
 
 public class GymUserWorkoutDetails : UserWorkout
 {

@@ -8,7 +8,7 @@ using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Social.Domain;
-using backend.Modules.Workout.Domain;
+using backend.Modules.Workout.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
 namespace backend.Modules.User.Domain;
