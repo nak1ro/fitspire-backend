@@ -5,8 +5,8 @@ namespace backend.Modules.Workout.Domain.Entities;
 
 public class GymUserWorkoutDetails : UserWorkout
 {
-    public string? SplitType { get; private set; }
-    public string? IntensityLevel { get; private set; }
+    public WorkoutSplit? SplitType { get; private set; }
+    public WorkoutIntensity? IntensityLevel { get; private set; }
 
     private readonly List<GymWorkoutExercise> _exercises = new();
     public IReadOnlyCollection<GymWorkoutExercise> Exercises => _exercises.AsReadOnly();
@@ -14,19 +14,19 @@ public class GymUserWorkoutDetails : UserWorkout
     // EF Core constructor
     private GymUserWorkoutDetails() { }
 
-    public GymUserWorkoutDetails(Guid id, Guid userId, DateTime date, string? splitType = null)
+    public GymUserWorkoutDetails(Guid id, Guid userId, DateTime date, WorkoutSplit? splitType = null)
         : base(id, userId, "gym", date)
     {
         SplitType = splitType;
     }
 
-    public void SetSplitType(string? splitType)
+    public void SetSplitType(WorkoutSplit? splitType)
     {
         SplitType = splitType;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SetIntensity(string? level)
+    public void SetIntensity(WorkoutIntensity? level)
     {
         IntensityLevel = level;
         UpdatedAt = DateTime.UtcNow;

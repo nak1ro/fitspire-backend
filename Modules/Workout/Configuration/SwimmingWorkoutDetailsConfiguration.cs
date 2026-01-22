@@ -15,6 +15,7 @@ public class SwimmingUserWorkoutDetailsConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.DistanceMeters);
 
         builder.Property(x => x.StrokeType)
-            .HasMaxLength(100);
+            .HasMaxLength(100)
+            .HasConversion<string>();
     }
 }

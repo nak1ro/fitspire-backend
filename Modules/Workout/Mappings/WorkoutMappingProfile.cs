@@ -8,37 +8,37 @@ public class WorkoutMappingProfile : Profile
 {
     public WorkoutMappingProfile()
     {
-        // UserWorkout -> WorkoutResponse
-        CreateMap<UserWorkout, WorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
-
-        // GymUserWorkoutDetails -> GymWorkoutResponse
+        // Gym
         CreateMap<GymUserWorkoutDetails, GymWorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-            .ForMember(dest => dest.Exercises, opt => opt.MapFrom(src => src.Exercises));
+            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.SplitType, opt => opt.MapFrom(s => s.SplitType.HasValue ? s.SplitType.ToString() : null))
+            .ForMember(d => d.IntensityLevel, opt => opt.MapFrom(s => s.IntensityLevel.HasValue ? s.IntensityLevel.ToString() : null));
 
-        // GymWorkoutExercise -> GymExerciseResponse
         CreateMap<GymWorkoutExercise, GymExerciseResponse>()
-            .ForMember(dest => dest.ExerciseName, opt => opt.MapFrom(src => 
-                src.Exercise != null ? src.Exercise.Name : "Unknown"));
-
-        // RunningUserWorkoutDetails -> RunningWorkoutResponse
+            .ForMember(d => d.ExerciseName, opt => opt.MapFrom(s => s.Exercise.Name));
+            
+        // Running
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            .IncludeBase<UserWorkout, WorkoutResponse>();
 
-        // CyclingUserWorkoutDetails -> CyclingWorkoutResponse
+        // Cycling
         CreateMap<CyclingUserWorkoutDetails, CyclingWorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            .IncludeBase<UserWorkout, WorkoutResponse>();
 
-        // SwimmingUserWorkoutDetails -> SwimmingWorkoutResponse
+        // Swimming
         CreateMap<SwimmingUserWorkoutDetails, SwimmingWorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.StrokeType, opt => opt.MapFrom(s => s.StrokeType.HasValue ? s.StrokeType.ToString() : null));
 
-        // YogaUserWorkoutDetails -> YogaWorkoutResponse
+         // Yoga
         CreateMap<YogaUserWorkoutDetails, YogaWorkoutResponse>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-            .ForMember(dest => dest.Style, opt => opt.MapFrom(src => src.Style.HasValue ? src.Style.Value.ToString() : null))
-            .ForMember(dest => dest.Intensity, opt => opt.MapFrom(src => src.Intensity.HasValue ? src.Intensity.Value.ToString() : null))
-            .ForMember(dest => dest.FocusArea, opt => opt.MapFrom(src => src.FocusArea.HasValue ? src.FocusArea.Value.ToString() : null));
+            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.Style, opt => opt.MapFrom(s => s.Style.HasValue ? s.Style.ToString() : null))
+            .ForMember(d => d.Intensity, opt => opt.MapFrom(s => s.Intensity.HasValue ? s.Intensity.ToString() : null))
+            .ForMember(d => d.FocusArea, opt => opt.MapFrom(s => s.FocusArea.HasValue ? s.FocusArea.ToString() : null));
+
+        // Base
+        CreateMap<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
     }
 }

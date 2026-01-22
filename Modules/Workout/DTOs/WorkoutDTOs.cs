@@ -4,8 +4,8 @@ namespace backend.Modules.Workout.DTOs;
 public record CreateGymWorkoutRequest(
     Guid UserId,
     DateTime Date,
-    string? SplitType,
-    string? IntensityLevel,
+    string? SplitType, // Mapped to WorkoutSplit enum
+    string? IntensityLevel, // Mapped to WorkoutIntensity enum
     List<ExerciseInputRequest> Exercises
 );
 
@@ -132,7 +132,7 @@ public record CreateSwimmingWorkoutRequest(
     int? Laps,
     double? PoolLengthMeters,
     double? DistanceMeters,
-    string? StrokeType,
+    string? StrokeType, // Mapped to SwimmingStroke enum
     double? DurationMinutes,
     int? CaloriesBurned,
     string? Notes,

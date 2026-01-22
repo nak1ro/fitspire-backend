@@ -1,4 +1,6 @@
 using backend.Modules.Workout.DTOs;
+using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
 using FluentValidation;
 
 namespace backend.Modules.Workout.Validators;
@@ -22,6 +24,16 @@ public class CreateGymWorkoutValidator : AbstractValidator<CreateGymWorkoutReque
 
         RuleForEach(x => x.Exercises)
             .SetValidator(new ExerciseInputValidator());
+
+        RuleFor(x => x.SplitType)
+            .IsEnumName(typeof(WorkoutSplit), caseSensitive: false)
+            .When(x => !string.IsNullOrEmpty(x.SplitType))
+            .WithMessage("Invalid split type.");
+
+        RuleFor(x => x.IntensityLevel)
+            .IsEnumName(typeof(WorkoutIntensity), caseSensitive: false)
+            .When(x => !string.IsNullOrEmpty(x.IntensityLevel))
+            .WithMessage("Invalid intensity level.");
     }
 }
 

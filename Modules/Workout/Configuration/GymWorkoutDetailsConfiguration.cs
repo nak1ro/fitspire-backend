@@ -9,6 +9,12 @@ public class GymWorkoutDetailsConfiguration : IEntityTypeConfiguration<GymUserWo
     public void Configure(EntityTypeBuilder<GymUserWorkoutDetails> builder)
     {
         builder.ToTable("GymWorkoutDetails");
+
+        builder.Property(x => x.SplitType)
+            .HasConversion<string>();
+
+        builder.Property(x => x.IntensityLevel)
+            .HasConversion<string>();
         
         builder.HasMany(g => g.Exercises)
             .WithOne(e => e.GymUserWorkout)

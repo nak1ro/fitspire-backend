@@ -1,5 +1,6 @@
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
@@ -31,7 +32,8 @@ public class CreateSwimmingWorkoutHandler : IRequestHandler<CreateSwimmingWorkou
         if (request.DistanceMeters.HasValue)
             workout.SetDistance(request.DistanceMeters);
             
-        workout.SetStrokeType(request.StrokeType);
+        if (Enum.TryParse<SwimmingStroke>(request.StrokeType, true, out var stroke))
+            workout.SetStrokeType(stroke);
         workout.SetCalories(request.CaloriesBurned);
         
         if (!string.IsNullOrEmpty(request.Notes))

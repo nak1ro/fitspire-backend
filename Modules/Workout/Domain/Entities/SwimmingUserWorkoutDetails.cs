@@ -8,7 +8,7 @@ public class SwimmingUserWorkoutDetails : UserWorkout
     public int? Laps { get; private set; }
     public double? PoolLengthMeters { get; private set; }
     public double? DistanceMeters { get; private set; }
-    public string? StrokeType { get; private set; }
+    public SwimmingStroke? StrokeType { get; private set; }
 
     // EF Core constructor
     private SwimmingUserWorkoutDetails() { }
@@ -53,7 +53,7 @@ public class SwimmingUserWorkoutDetails : UserWorkout
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SetStrokeType(string? strokeType)
+    public void SetStrokeType(SwimmingStroke? strokeType)
     {
         StrokeType = strokeType;
         UpdatedAt = DateTime.UtcNow;

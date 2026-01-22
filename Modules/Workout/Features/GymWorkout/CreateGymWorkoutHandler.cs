@@ -1,5 +1,6 @@
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
@@ -22,11 +23,11 @@ public class CreateGymWorkoutHandler : IRequestHandler<CreateGymWorkoutCommand, 
             Guid.NewGuid(),
             request.UserId,
             request.Date,
-            request.SplitType
+            Enum.TryParse<WorkoutSplit>(request.SplitType, true, out var split) ? split : null
         );
 
-        if (!string.IsNullOrEmpty(request.IntensityLevel))
-            workout.SetIntensity(request.IntensityLevel);
+        if (Enum.TryParse<WorkoutIntensity>(request.IntensityLevel, true, out var intensity))
+            workout.SetIntensity(intensity);
 
         foreach (var exercise in request.Exercises)
         {
