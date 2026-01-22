@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using backend.Modules.Badge.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Friendship.Domain;
-using backend.Modules.Goal.Domain;
+using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
@@ -49,7 +49,6 @@ public class AppUser : IdentityUser<Guid>
 
     // Goals and Progress
     public ICollection<UserGoal> Goals { get; set; } = new List<UserGoal>();
-    public ICollection<ProgressEntry> ProgressEntries { get; set; } = new List<ProgressEntry>();
 
     // Badges and Records
     public ICollection<UserBadge> Badges { get; set; } = new List<UserBadge>();

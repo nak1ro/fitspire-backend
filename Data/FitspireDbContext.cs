@@ -1,7 +1,7 @@
 using backend.Modules.Badge.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Friendship.Domain;
-using backend.Modules.Goal.Domain;
+using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
@@ -52,7 +52,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
 
     public DbSet<UserGoal> Goals { get; set; }
     public DbSet<GoalType> GoalTypes { get; set; }
-    public DbSet<ProgressEntry> ProgressEntries { get; set; }
+    public DbSet<GoalProgressEntry> GoalProgressEntries { get; set; }
 
     public DbSet<AchievementBadge> Badges { get; set; }
     public DbSet<UserBadge> UserBadges { get; set; }

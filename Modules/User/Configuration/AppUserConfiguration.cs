@@ -88,12 +88,6 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasForeignKey(cp => cp.UserId)
             .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
 
-        // 📈 ProgressEntries
-        builder.HasMany(u => u.ProgressEntries)
-            .WithOne(pe => pe.User)
-            .HasForeignKey(pe => pe.UserId)
-            .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
-
         // 🚫 Bans
         builder.HasMany(u => u.Bans)
             .WithOne(b => b.User)
