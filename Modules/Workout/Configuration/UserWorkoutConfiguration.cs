@@ -15,7 +15,7 @@ public class UserWorkoutConfiguration : IEntityTypeConfiguration<UserWorkout>
         builder.Property(w => w.WorkoutType).IsRequired();
         builder.Property(w => w.Date).IsRequired();
         builder.Property(w => w.IsPrivate).HasDefaultValue(false);
-        builder.Property(w => w.IsRoutine).HasDefaultValue(false);
+        builder.Property(w => w.CreatedFromRoutineId);
         builder.Property(w => w.CreatedAt).HasDefaultValueSql("NOW()");
 
         builder.HasOne(w => w.User)

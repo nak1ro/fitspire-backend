@@ -20,8 +20,6 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public int? CaloriesBurned { get; private set; }
     
     // Routine support
-    public bool IsRoutine { get; private set; }
-    public string? RoutineName { get; private set; }
     public Guid? CreatedFromRoutineId { get; private set; }
 
     // Navigation
@@ -76,15 +74,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SaveAsRoutine(string routineName)
-    {
-        if (string.IsNullOrWhiteSpace(routineName))
-            throw new DomainException("Routine name cannot be empty.");
 
-        IsRoutine = true;
-        RoutineName = routineName;
-        UpdatedAt = DateTime.UtcNow;
-    }
 
     public void SetCreatedFromRoutine(Guid routineId)
     {

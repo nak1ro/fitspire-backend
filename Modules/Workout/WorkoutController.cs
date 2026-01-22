@@ -167,6 +167,25 @@ public class WorkoutController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("{id:guid}/save-as-routine")]
+    public async Task<ActionResult<Guid>> SaveAsRoutine(Guid id, [FromBody] SaveRoutineRequest request)
+    {
+        var userId = GetUserId();
+        var routineId = await _mediator.Send(new SaveWorkoutAsRoutineCommand(userId, id, request.Name, request.Description));
+        return Ok(routineId);
+    }
+
+    [HttpPost("from-routine/{routineId:guid}")]
+    public async Task<ActionResult<Guid>> CreateFromRoutine(Guid routineId, [FromBody] CreateFromRoutineRequest request)
+    {
+        var userId = GetUserId();
+        var workoutId = await _mediator.Send(new CreateWorkoutFromRoutineCommand(userId, routineId, request.Date));
+        return CreatedAtAction(nameof(GetWorkoutById), new { id = workoutId }, workoutId);
+    }
+    
     // Helper until Auth module is fully integrated
     private Guid GetUserId() => Guid.Parse("11111111-1111-1111-1111-111111111111");
 }
+
+public record SaveRoutineRequest(string Name, string? Description);
+public record CreateFromRoutineRequest(DateTime Date);

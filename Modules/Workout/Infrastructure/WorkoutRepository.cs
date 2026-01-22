@@ -73,4 +73,22 @@ public class WorkoutRepository : IWorkoutRepository
             .OrderByDescending(w => w.Date)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task AddRoutineAsync(WorkoutRoutine routine, CancellationToken cancellationToken = default)
+    {
+        await _context.WorkoutRoutines.AddAsync(routine, cancellationToken);
+    }
+
+    public async Task<WorkoutRoutine?> GetRoutineByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorkoutRoutines.FindAsync(new object[] { id }, cancellationToken);
+    }
+
+    public async Task<List<WorkoutRoutine>> GetRoutinesByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorkoutRoutines
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }
