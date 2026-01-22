@@ -1,18 +1,29 @@
+using backend.Modules.Shared.Domain;
 using backend.Modules.User.Domain;
 
 namespace backend.Modules.Social.Domain;
 
-public class Comment
+/// <summary>
+/// Represents a comment on a post.
+/// </summary>
+public class Comment : Entity<Guid>
 {
-    public Guid Id { get; set; }
-
-    public Guid PostId { get; set; }
-    public Guid UserId { get; set; }
-
-    public string Content { get; set; } = null!;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Guid PostId { get; private set; }
+    public Guid UserId { get; private set; }
+    public string Content { get; private set; } = null!;
 
     // Navigation
-    public Post Post { get; set; } = null!;
-    public AppUser User { get; set; } = null!;
+    public Post Post { get; private set; } = null!;
+    public AppUser User { get; private set; } = null!;
+
+    private Comment() { }
+
+    public Comment(Guid postId, Guid userId, string content)
+    {
+        Id = Guid.NewGuid();
+        PostId = postId;
+        UserId = userId;
+        Content = content;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

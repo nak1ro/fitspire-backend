@@ -13,6 +13,7 @@ public class LikeConfiguration : IEntityTypeConfiguration<Like>
         builder.HasKey(l => l.Id);
 
         builder.Property(l => l.TargetType)
+            .HasConversion<string>()
             .IsRequired();
 
         builder.Property(l => l.CreatedAt)

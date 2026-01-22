@@ -1,16 +1,26 @@
+using backend.Modules.Shared.Domain;
 using backend.Modules.User.Domain;
 
 namespace backend.Modules.Social.Domain;
 
-public class Follower
+/// <summary>
+/// Represents a follow relationship between two users.
+/// </summary>
+public class Follower : Entity<Guid>
 {
-    public Guid Id { get; set; }
+    public Guid FollowerId { get; private set; }
+    public AppUser FollowerUser { get; private set; } = null!;
 
-    public Guid FollowerId { get; set; }
-    public AppUser FollowerUser { get; set; } = null!;
+    public Guid FollowedId { get; private set; }
+    public AppUser FollowedUser { get; private set; } = null!;
 
-    public Guid FollowedId { get; set; }
-    public AppUser FollowedUser { get; set; } = null!;
+    private Follower() { }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Follower(Guid followerId, Guid followedId)
+    {
+        Id = Guid.NewGuid();
+        FollowerId = followerId;
+        FollowedId = followedId;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

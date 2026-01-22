@@ -12,6 +12,15 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.HasKey(p => p.Id);
 
+        builder.Property(p => p.Type)
+            .HasConversion<string>()
+            .IsRequired();
+
+        builder.Property(p => p.Content)
+            .HasMaxLength(2000);
+        
+        builder.Property(p => p.ReferenceEntityId);
+
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("NOW()");
 

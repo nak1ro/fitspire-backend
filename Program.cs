@@ -7,6 +7,7 @@ using backend.Modules.User.Domain;
 using backend.Modules.User.Mappings;
 using backend.Modules.Workout;
 using backend.Modules.Goal;
+using backend.Modules.Social;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddSharedModule(builder.Configuration);
 builder.Services.AddWorkoutModule();
 builder.Services.AddGoalModule();
+builder.Services.AddSocialModule();
 
 // MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
