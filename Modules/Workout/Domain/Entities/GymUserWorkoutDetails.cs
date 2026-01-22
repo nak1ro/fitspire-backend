@@ -106,4 +106,5 @@ public class GymUserWorkoutDetails : UserWorkout
     public double CalculateTotalVolume() => _exercises.Sum(e => e.CalculateVolume());
 
     public double? GetMaxWeight() => _exercises.Any() ? _exercises.Max(e => e.Weight) : null;
+    public override double? GetTotalVolume() => CalculateTotalVolume();
 }

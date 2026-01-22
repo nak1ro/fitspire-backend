@@ -50,8 +50,20 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         DurationMinutes = durationMinutes;
         UpdatedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new WorkoutCompletedEvent(Id, UserId, WorkoutType, DurationMinutes));
+        AddDomainEvent(new WorkoutCompletedEvent(
+            Id, 
+            UserId, 
+            WorkoutType, 
+            DurationMinutes,
+            GetTotalDistance(),
+            CaloriesBurned,
+            GetTotalVolume()
+        ));
     }
+
+    // Virtual metric getters for subclasses to override
+    public virtual double? GetTotalDistance() => null;
+    public virtual double? GetTotalVolume() => null;
 
     public void UpdateNotes(string? notes)
     {
@@ -99,5 +111,14 @@ public abstract class UserWorkout : AggregateRoot<Guid>
             IsPrivate = isPrivate.Value;
 
         UpdatedAt = DateTime.UtcNow;
+        if (isPrivate.HasValue)
+            IsPrivate = isPrivate.Value;
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Delete()
+    {
+        AddDomainEvent(new WorkoutDeletedEvent(Id, UserId, WorkoutType));
     }
 }

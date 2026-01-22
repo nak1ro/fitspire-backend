@@ -36,4 +36,5 @@ public class CyclingUserWorkoutDetails : UserWorkout
         ElevationGainMeters = elevationGainMeters;
         MapData = mapData;
     }
+    public override double? GetTotalDistance() => DistanceKm;
 }

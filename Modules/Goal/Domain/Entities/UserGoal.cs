@@ -62,7 +62,7 @@ public class UserGoal : AggregateRoot<Guid>
     /// <summary>
     /// Updates progress based on the goal's measurement type.
     /// </summary>
-    public void UpdateProgress(double delta, GoalMeasurementType measurementType, DateTime eventDateUtc)
+    public void UpdateProgress(double delta, GoalMeasurementType measurementType, DateTime eventDateUtc, TimeZoneInfo? timeZone = null)
     {
         if (Status != GoalStatus.Active) return;
 
@@ -93,7 +93,7 @@ public class UserGoal : AggregateRoot<Guid>
                 break;
 
             case GoalMeasurementType.Streak:
-                UpdateStreak(eventDateUtc);
+                UpdateStreak(eventDateUtc, timeZone ?? PolishTimeZone);
                 break;
         }
 
@@ -110,11 +110,11 @@ public class UserGoal : AggregateRoot<Guid>
     }
 
     /// <summary>
-    /// Updates streak based on Polish midnight timezone.
+    /// Updates streak based on provided timezone.
     /// </summary>
-    private void UpdateStreak(DateTime eventDateUtc)
+    private void UpdateStreak(DateTime eventDateUtc, TimeZoneInfo localTimeZone)
     {
-        var polishDate = TimeZoneInfo.ConvertTimeFromUtc(eventDateUtc, PolishTimeZone).Date;
+        var polishDate = TimeZoneInfo.ConvertTimeFromUtc(eventDateUtc, localTimeZone).Date;
 
         if (LastStreakDate == null)
         {
@@ -179,6 +179,11 @@ public class UserGoal : AggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new GoalCompletedEvent(Id, UserId, GoalTypeId, TargetValue, CurrentValue));
+
+        if (IsRecurring && !string.IsNullOrEmpty(RecurrencePattern) && Deadline.HasValue)
+        {
+            AddDomainEvent(new GoalRecurringEvent(Id, UserId, GoalTypeId, TargetValue, Unit, Deadline.Value, RecurrencePattern));
+        }
     }
 
     public void MarkFailed()

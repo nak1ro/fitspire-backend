@@ -2,14 +2,10 @@ using backend.Modules.Shared.Domain;
 
 namespace backend.Modules.Workout.Domain.Events;
 
-public record WorkoutCompletedEvent(
+public record WorkoutDeletedEvent(
     Guid WorkoutId, 
     Guid UserId, 
-    string WorkoutType, 
-    double? DurationMinutes,
-    double? DistanceKm,
-    int? CaloriesBurned,
-    double? TotalVolumeKg
+    string WorkoutType
 ) : IDomainEvent
 {
     public DateTime OccurredAt { get; } = DateTime.UtcNow;

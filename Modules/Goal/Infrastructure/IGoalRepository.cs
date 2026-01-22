@@ -1,4 +1,5 @@
 using backend.Modules.Goal.Domain.Entities;
+using backend.Modules.Workout.Domain.Entities;
 
 namespace backend.Modules.Goal.Infrastructure;
 
@@ -17,8 +18,16 @@ public interface IGoalRepository
     
     // Progress
     Task AddProgressEntryAsync(GoalProgressEntry entry, CancellationToken cancellationToken = default);
-    Task<List<GoalProgressEntry>> GetProgressHistoryAsync(Guid goalId, CancellationToken cancellationToken = default);
-    
     // Cross-module queries
     Task<List<UserGoal>> GetActiveGoalsByWorkoutTypeAsync(Guid userId, string workoutType, CancellationToken cancellationToken = default);
+    Task<List<GoalProgressEntry>> GetProgressBySourceIdAsync(Guid sourceId, CancellationToken cancellationToken = default);
+    Task RemoveProgressEntryAsync(GoalProgressEntry entry, CancellationToken cancellationToken = default);
+
+    // Exercise-level queries
+    Task<List<UserGoal>> GetActiveGoalsByExerciseIdAsync(Guid userId, Guid exerciseId, CancellationToken cancellationToken = default);
+    Task<GymUserWorkoutDetails?> GetGymWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default);
+    Task<RunningUserWorkoutDetails?> GetRunningWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default);
+    Task<CyclingUserWorkoutDetails?> GetCyclingWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default);
+    Task<SwimmingUserWorkoutDetails?> GetSwimmingWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default);
+    Task<YogaUserWorkoutDetails?> GetYogaWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default);
 }

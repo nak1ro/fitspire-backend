@@ -58,4 +58,5 @@ public class SwimmingUserWorkoutDetails : UserWorkout
         StrokeType = strokeType;
         UpdatedAt = DateTime.UtcNow;
     }
+    public override double? GetTotalDistance() => DistanceMeters.HasValue ? DistanceMeters.Value / 1000.0 : null;
 }

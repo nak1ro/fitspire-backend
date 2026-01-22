@@ -13,6 +13,7 @@ public class GoalType : Entity<Guid>
     public string? IconUrl { get; private set; }
     public string? RelatedWorkoutType { get; private set; } // "gym", "running", null
     public string? RelatedMetric { get; private set; } // "distance", "weight", "count"
+    public Guid? RelatedExerciseId { get; private set; } // New: specific exercise link
 
     // Navigation
     public ICollection<UserGoal> Goals { get; private set; } = new List<UserGoal>();
@@ -28,7 +29,8 @@ public class GoalType : Entity<Guid>
         string? description = null,
         string? iconUrl = null,
         string? relatedWorkoutType = null,
-        string? relatedMetric = null)
+        string? relatedMetric = null,
+        Guid? relatedExerciseId = null)
     {
         Id = id;
         Name = name;
@@ -39,6 +41,7 @@ public class GoalType : Entity<Guid>
         IconUrl = iconUrl;
         RelatedWorkoutType = relatedWorkoutType;
         RelatedMetric = relatedMetric;
+        RelatedExerciseId = relatedExerciseId;
         CreatedAt = DateTime.UtcNow;
     }
 }

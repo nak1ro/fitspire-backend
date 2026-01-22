@@ -28,6 +28,8 @@ public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
         if (workout.UserId != request.UserId)
             throw new UnauthorizedAccessException("Cannot delete another user's workout.");
 
+        workout.Delete(); // Emits WorkoutDeletedEvent
+
         await _repository.DeleteAsync(workout, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }

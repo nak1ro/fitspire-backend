@@ -43,4 +43,5 @@ public class RunningUserWorkoutDetails : UserWorkout
         MapData = mapData;
         UpdatedAt = DateTime.UtcNow;
     }
+    public override double? GetTotalDistance() => DistanceKm;
 }
