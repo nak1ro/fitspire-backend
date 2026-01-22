@@ -1,9 +1,22 @@
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.YogaWorkout;
+
+public record CreateYogaWorkoutCommand(
+    Guid UserId,
+    DateTime Date,
+    YogaStyle? Style,
+    YogaIntensity? Intensity,
+    YogaFocusArea? FocusArea,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate
+) : IRequest<Guid>;
 
 public class CreateYogaWorkoutHandler : IRequestHandler<CreateYogaWorkoutCommand, Guid>
 {

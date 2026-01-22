@@ -5,6 +5,8 @@ using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
 
+public record GetWorkoutsQuery(Guid UserId, WorkoutFilterRequest Filter) : IRequest<List<WorkoutResponse>>;
+
 public class GetWorkoutsHandler : IRequestHandler<GetWorkoutsQuery, List<WorkoutResponse>>
 {
     private readonly IWorkoutRepository _repository;
