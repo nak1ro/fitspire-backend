@@ -20,6 +20,19 @@ public record CompleteWorkoutRequest(
     double? DurationMinutes
 );
 
+public record WorkoutFilterRequest(
+    DateTime? From,
+    DateTime? To,
+    List<string>? Types
+);
+
+public record UpdateWorkoutRequest(
+    DateTime? Date,
+    double? DurationMinutes,
+    string? Notes,
+    bool? IsPrivate
+);
+
 // Response DTOs
 public record WorkoutResponse(
     Guid Id,

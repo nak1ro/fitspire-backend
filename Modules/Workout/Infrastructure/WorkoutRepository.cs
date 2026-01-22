@@ -46,10 +46,31 @@ public class WorkoutRepository : IWorkoutRepository
         return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(UserWorkout workout, CancellationToken cancellationToken = default)
     {
-        var workout = await GetByIdAsync(id, cancellationToken);
-        if (workout is not null)
-            _context.UserWorkouts.Remove(workout);
+        _context.Remove(workout);
+        return Task.CompletedTask;
+    }
+
+    public async Task<List<UserWorkout>> SearchAsync(Guid userId, DateTime? from, DateTime? to, List<string>? types, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Set<UserWorkout>()
+            // Optimistically include Gym Exercises if it's a gym workout
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises)
+                .ThenInclude(e => e.Exercise)
+            .Where(w => w.UserId == userId);
+
+        if (from.HasValue)
+            query = query.Where(w => w.Date >= from.Value);
+
+        if (to.HasValue)
+            query = query.Where(w => w.Date <= to.Value);
+
+        if (types != null && types.Any())
+            query = query.Where(w => types.Contains(w.WorkoutType));
+
+        return await query
+            .OrderByDescending(w => w.Date)
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,6 +1,8 @@
 using AutoMapper;
 using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Features.GymWorkout;
+using backend.Modules.Workout.DTOs;
+using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Features.RunningWorkout;
 using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.Features.SwimmingWorkout;
@@ -140,4 +142,31 @@ public class WorkoutController : ControllerBase
         await _mediator.Send(new CompleteWorkoutCommand(id, request.DurationMinutes));
         return Ok(new { success = true });
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateWorkout(Guid id, [FromBody] UpdateWorkoutRequest request)
+    {
+        var userId = GetUserId();
+        await _mediator.Send(new UpdateWorkoutCommand(id, userId, request));
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteWorkout(Guid id)
+    {
+        var userId = GetUserId();
+        await _mediator.Send(new DeleteWorkoutCommand(id, userId));
+        return NoContent();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetWorkouts([FromQuery] WorkoutFilterRequest filter)
+    {
+        var userId = GetUserId();
+        var result = await _mediator.Send(new GetWorkoutsQuery(userId, filter));
+        return Ok(result);
+    }
+
+    // Helper until Auth module is fully integrated
+    private Guid GetUserId() => Guid.Parse("11111111-1111-1111-1111-111111111111");
 }

@@ -90,4 +90,24 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     {
         CreatedFromRoutineId = routineId;
     }
+
+    public void UpdateDetails(DateTime? date, double? duration, string? notes, bool? isPrivate)
+    {
+        if (date.HasValue)
+            Date = date.Value;
+        
+        if (duration.HasValue)
+        {
+            if (duration.Value < 0) throw new DomainException("Duration cannot be negative.");
+            DurationMinutes = duration.Value;
+        }
+
+        if (notes != null)
+            Notes = notes;
+
+        if (isPrivate.HasValue)
+            IsPrivate = isPrivate.Value;
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
