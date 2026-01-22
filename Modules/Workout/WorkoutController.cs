@@ -2,6 +2,7 @@ using AutoMapper;
 using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.Features.RunningWorkout;
+using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -64,6 +65,28 @@ public class WorkoutController : ControllerBase
         // We get the workout back to return the full response
         var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
         return Ok(_mapper.Map<RunningWorkoutResponse>(workout));
+    }
+
+    [HttpPost("cycling")]
+    public async Task<ActionResult<CyclingWorkoutResponse>> CreateCyclingWorkout([FromBody] CreateCyclingWorkoutRequest request)
+    {
+        var command = new CreateCyclingWorkoutCommand(
+            request.UserId,
+            request.Date,
+            request.DistanceKm,
+            request.DurationMinutes,
+            request.ElevationGainMeters,
+            request.CaloriesBurned,
+            request.MapData,
+            request.Notes,
+            request.IsPrivate,
+            request.IsIndoor
+        );
+        
+        var workoutId = await _mediator.Send(command);
+        
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        return Ok(_mapper.Map<CyclingWorkoutResponse>(workout));
     }
 
     [HttpGet("{id:guid}")]

@@ -4,14 +4,19 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace backend.Modules.Workout.Configuration;
 
-public class CyclingWorkoutDetailsConfiguration : IEntityTypeConfiguration<CyclingUserWorkoutDetails>
+public class CyclingUserWorkoutDetailsConfiguration : IEntityTypeConfiguration<CyclingUserWorkoutDetails>
 {
     public void Configure(EntityTypeBuilder<CyclingUserWorkoutDetails> builder)
     {
-        builder.ToTable("CyclingWorkoutDetails");
-        
-        builder.Property(c => c.DistanceKm);
-        builder.Property(c => c.ElevationGain);
-        builder.Property(c => c.AvgSpeedKmPerHour);
+        builder.Property(x => x.DistanceKm)
+            .IsRequired();
+
+        builder.Property(x => x.ElevationGainMeters);
+
+        builder.Property(x => x.MapData)
+            .HasMaxLength(10000); // Allow sufficient space for JSON/polyline data
+            
+        builder.Property(x => x.IsIndoor)
+            .IsRequired();
     }
 }

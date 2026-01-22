@@ -25,5 +25,9 @@ public class WorkoutMappingProfile : Profile
         // RunningUserWorkoutDetails -> RunningWorkoutResponse
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+        // CyclingUserWorkoutDetails -> CyclingWorkoutResponse
+        CreateMap<CyclingUserWorkoutDetails, CyclingWorkoutResponse>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
     }
 }

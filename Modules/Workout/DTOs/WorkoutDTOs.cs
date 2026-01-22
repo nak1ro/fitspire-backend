@@ -94,3 +94,34 @@ public record RunningWorkoutResponse(
     string? MapData,
     DateTime CreatedAt
 );
+
+public record CreateCyclingWorkoutRequest(
+    Guid UserId,
+    DateTime Date,
+    double DistanceKm,
+    double? DurationMinutes,
+    double? ElevationGainMeters,
+    int? CaloriesBurned,
+    string? MapData,
+    string? Notes,
+    bool IsPrivate,
+    bool IsIndoor
+);
+
+public record CyclingWorkoutResponse(
+    Guid Id,
+    Guid UserId,
+    string WorkoutType,
+    DateTime Date,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate,
+    string Status,
+    DateTime? CompletedAt,
+    double DistanceKm,
+    double? ElevationGainMeters,
+    string? MapData,
+    bool IsIndoor,
+    DateTime CreatedAt
+);
