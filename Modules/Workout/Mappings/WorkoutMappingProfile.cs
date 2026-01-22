@@ -33,5 +33,12 @@ public class WorkoutMappingProfile : Profile
         // SwimmingUserWorkoutDetails -> SwimmingWorkoutResponse
         CreateMap<SwimmingUserWorkoutDetails, SwimmingWorkoutResponse>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+        // YogaUserWorkoutDetails -> YogaWorkoutResponse
+        CreateMap<YogaUserWorkoutDetails, YogaWorkoutResponse>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Style, opt => opt.MapFrom(src => src.Style.HasValue ? src.Style.Value.ToString() : null))
+            .ForMember(dest => dest.Intensity, opt => opt.MapFrom(src => src.Intensity.HasValue ? src.Intensity.Value.ToString() : null))
+            .ForMember(dest => dest.FocusArea, opt => opt.MapFrom(src => src.FocusArea.HasValue ? src.FocusArea.Value.ToString() : null));
     }
 }

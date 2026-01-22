@@ -4,6 +4,8 @@ using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.Features.RunningWorkout;
 using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.Features.SwimmingWorkout;
+using backend.Modules.Workout.Features.YogaWorkout;
+using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -88,6 +90,36 @@ public class WorkoutController : ControllerBase
         
         var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
         return Ok(_mapper.Map<CyclingWorkoutResponse>(workout));
+    }
+
+    [HttpPost("yoga")]
+    public async Task<ActionResult<YogaWorkoutResponse>> CreateYogaWorkout([FromBody] CreateYogaWorkoutRequest request)
+    {
+        YogaStyle? style = !string.IsNullOrEmpty(request.Style) 
+            ? Enum.Parse<YogaStyle>(request.Style, true) : null;
+            
+        YogaIntensity? intensity = !string.IsNullOrEmpty(request.Intensity) 
+            ? Enum.Parse<YogaIntensity>(request.Intensity, true) : null;
+            
+        YogaFocusArea? focusArea = !string.IsNullOrEmpty(request.FocusArea) 
+            ? Enum.Parse<YogaFocusArea>(request.FocusArea, true) : null;
+
+        var command = new CreateYogaWorkoutCommand(
+            request.UserId,
+            request.Date,
+            style,
+            intensity,
+            focusArea,
+            request.DurationMinutes,
+            request.CaloriesBurned,
+            request.Notes,
+            request.IsPrivate
+        );
+        
+        var workoutId = await _mediator.Send(command);
+        
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        return Ok(_mapper.Map<YogaWorkoutResponse>(workout));
     }
 
     [HttpGet("{id:guid}")]

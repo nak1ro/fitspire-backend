@@ -156,3 +156,32 @@ public record SwimmingWorkoutResponse(
     string? StrokeType,
     DateTime CreatedAt
 );
+
+public record CreateYogaWorkoutRequest(
+    Guid UserId,
+    DateTime Date,
+    double? DurationMinutes,
+    string? Style, // Mapped to Enum
+    string? Intensity, // Mapped to Enum
+    string? FocusArea, // Mapped to Enum
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate
+);
+
+public record YogaWorkoutResponse(
+    Guid Id,
+    Guid UserId,
+    string WorkoutType,
+    DateTime Date,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate,
+    string Status,
+    DateTime? CompletedAt,
+    string? Style,
+    string? Intensity,
+    string? FocusArea,
+    DateTime CreatedAt
+);
