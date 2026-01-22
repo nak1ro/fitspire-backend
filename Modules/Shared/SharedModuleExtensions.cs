@@ -12,6 +12,9 @@ public static class SharedModuleExtensions
         services.AddScoped<ResendClient>();
         services.AddScoped<IBlobService, BlobService>();
         
+        // UnitOfWork for all modules
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         return services;
