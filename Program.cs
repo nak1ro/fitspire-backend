@@ -56,6 +56,7 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 
     await RoleSeeder.SeedAsync(serviceProvider);
+    await backend.Modules.Workout.Data.Seeding.ExerciseSeeder.SeedAsync(serviceProvider);
 }
 
 app.Run();
