@@ -61,6 +61,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<GymWorkoutExercise> GymWorkoutExercises { get; set; }
     public DbSet<RunningUserWorkoutDetails> RunningUserWorkouts { get; set; }
     public DbSet<CyclingUserWorkoutDetails> CyclingUserWorkouts { get; set; }
+    public DbSet<SwimmingUserWorkoutDetails> SwimmingUserWorkouts { get; set; }
     public DbSet<Exercise> Exercises { get; set; }
     public DbSet<ExerciseCategory> ExerciseCategories { get; set; }
     public DbSet<PersonalRecord> PersonalRecords { get; set; }

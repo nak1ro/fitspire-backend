@@ -125,3 +125,34 @@ public record CyclingWorkoutResponse(
     bool IsIndoor,
     DateTime CreatedAt
 );
+
+public record CreateSwimmingWorkoutRequest(
+    Guid UserId,
+    DateTime Date,
+    int? Laps,
+    double? PoolLengthMeters,
+    double? DistanceMeters,
+    string? StrokeType,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate
+);
+
+public record SwimmingWorkoutResponse(
+    Guid Id,
+    Guid UserId,
+    string WorkoutType,
+    DateTime Date,
+    double? DurationMinutes,
+    int? CaloriesBurned,
+    string? Notes,
+    bool IsPrivate,
+    string Status,
+    DateTime? CompletedAt,
+    int? Laps,
+    double? PoolLengthMeters,
+    double? DistanceMeters,
+    string? StrokeType,
+    DateTime CreatedAt
+);

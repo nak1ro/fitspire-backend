@@ -4,14 +4,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace backend.Modules.Workout.Configuration;
 
-public class SwimmingWorkoutDetailsConfiguration : IEntityTypeConfiguration<SwimmingUserWorkoutDetails>
+public class SwimmingUserWorkoutDetailsConfiguration : IEntityTypeConfiguration<SwimmingUserWorkoutDetails>
 {
     public void Configure(EntityTypeBuilder<SwimmingUserWorkoutDetails> builder)
     {
-        builder.ToTable("SwimmingWorkoutDetails");
+        builder.Property(x => x.Laps);
         
-        builder.Property(s => s.Laps);
-        builder.Property(s => s.DistanceMeters);
-        builder.Property(s => s.StrokeType);
+        builder.Property(x => x.PoolLengthMeters);
+
+        builder.Property(x => x.DistanceMeters);
+
+        builder.Property(x => x.StrokeType)
+            .HasMaxLength(100);
     }
 }

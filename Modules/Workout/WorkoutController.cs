@@ -3,6 +3,7 @@ using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.Features.RunningWorkout;
 using backend.Modules.Workout.Features.CyclingWorkout;
+using backend.Modules.Workout.Features.SwimmingWorkout;
 using backend.Modules.Workout.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
