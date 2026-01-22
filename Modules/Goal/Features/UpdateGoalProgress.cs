@@ -36,7 +36,9 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
             throw new UnauthorizedAccessException("Cannot update another user's goal.");
 
         var previousValue = goal.CurrentValue;
-        goal.UpdateProgress(request.Delta);
+        
+        // Use the rich domain method with measurement type
+        goal.UpdateProgress(request.Delta, goal.GoalType.MeasurementType, DateTime.UtcNow);
 
         // Record history
         var entry = new GoalProgressEntry(
@@ -44,7 +46,7 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
             goal.Id,
             previousValue,
             goal.CurrentValue,
-            request.Source,
+            request.Source ?? "manual",
             request.SourceEntityId
         );
 

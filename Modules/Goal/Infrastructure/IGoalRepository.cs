@@ -18,4 +18,7 @@ public interface IGoalRepository
     // Progress
     Task AddProgressEntryAsync(GoalProgressEntry entry, CancellationToken cancellationToken = default);
     Task<List<GoalProgressEntry>> GetProgressHistoryAsync(Guid goalId, CancellationToken cancellationToken = default);
+    
+    // Cross-module queries
+    Task<List<UserGoal>> GetActiveGoalsByWorkoutTypeAsync(Guid userId, string workoutType, CancellationToken cancellationToken = default);
 }

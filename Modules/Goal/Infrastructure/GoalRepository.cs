@@ -80,4 +80,15 @@ public class GoalRepository : IGoalRepository
             .OrderByDescending(pe => pe.RecordedAt)
             .ToListAsync(cancellationToken);
     }
+
+    // Cross-module queries
+    public async Task<List<UserGoal>> GetActiveGoalsByWorkoutTypeAsync(Guid userId, string workoutType, CancellationToken cancellationToken = default)
+    {
+        return await _context.Goals
+            .Include(g => g.GoalType)
+            .Where(g => g.UserId == userId 
+                        && g.Status == GoalStatus.Active 
+                        && (g.GoalType.RelatedWorkoutType == workoutType || g.GoalType.RelatedWorkoutType == "any" || g.GoalType.RelatedWorkoutType == null))
+            .ToListAsync(cancellationToken);
+    }
 }
