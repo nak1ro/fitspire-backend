@@ -1,6 +1,6 @@
 using backend.Modules.Shared.Domain;
 
-namespace backend.Modules.Workout.Domain.ValueObjects;
+namespace backend.Modules.Workout.Domain;
 
 public sealed class WorkoutType : ValueObject
 {

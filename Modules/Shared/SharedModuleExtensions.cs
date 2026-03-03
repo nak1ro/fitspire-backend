@@ -8,6 +8,7 @@ public static class SharedModuleExtensions
     public static IServiceCollection AddSharedModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpClient();
+        services.AddHttpContextAccessor();
         services.Configure<ResendClientOptions>(configuration.GetSection("Resend"));
         services.AddScoped<ResendClient>();
         services.AddScoped<IBlobService, BlobService>();

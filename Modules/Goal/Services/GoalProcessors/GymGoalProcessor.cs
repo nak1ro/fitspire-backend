@@ -69,12 +69,6 @@ public class GymGoalProcessor : IWorkoutGoalProcessor
         }
         
         goal.UpdateProgress(delta, goal.GoalType.MeasurementType, DateTime.UtcNow, timeZone);
-
-        // Record progress history - requires Repo access to AddProgressEntryAsync?
-        // Ah, here is the issue with Strategy pattern + Repo.
-        // I need to add entries!
-        // But Repository AddProgressEntryAsync is void (Task).
-        // I should inject the GoalRepository to do this.
         
         var entry = new GoalProgressEntry(
             Guid.NewGuid(),
