@@ -1,6 +1,7 @@
 using backend.Modules.Social.Features.Feed;
 using backend.Modules.Social.Features.Follow;
 using backend.Modules.Social.Features.Posts;
+using backend.Modules.Shared.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +26,7 @@ public class SocialController : ControllerBase
     [HttpGet("feed")]
     public async Task<ActionResult<List<FeedItemResponse>>> GetFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var feed = await _mediator.Send(new GetUserFeedQuery(userId, page, pageSize));
         return Ok(feed);
     }
@@ -36,7 +37,7 @@ public class SocialController : ControllerBase
     [HttpPost("posts")]
     public async Task<ActionResult<Guid>> CreatePost([FromBody] CreatePostRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.ImageUrl));
         return CreatedAtAction(nameof(GetFeed), new { id = postId }, postId);
     }
@@ -47,7 +48,7 @@ public class SocialController : ControllerBase
     [HttpPost("posts/{postId:guid}/like")]
     public async Task<ActionResult<LikeResponse>> LikePost(Guid postId)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var isLiked = await _mediator.Send(new LikePostCommand(userId, postId));
         return Ok(new LikeResponse(isLiked));
     }
@@ -58,7 +59,7 @@ public class SocialController : ControllerBase
     [HttpPost("posts/{postId:guid}/comments")]
     public async Task<ActionResult<Guid>> CommentOnPost(Guid postId, [FromBody] CommentRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var commentId = await _mediator.Send(new CommentOnPostCommand(userId, postId, request.Content));
         return Ok(commentId);
     }
@@ -69,13 +70,10 @@ public class SocialController : ControllerBase
     [HttpPost("follow/{targetUserId:guid}")]
     public async Task<ActionResult<FollowResponse>> FollowUser(Guid targetUserId)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var isFollowing = await _mediator.Send(new FollowUserCommand(userId, targetUserId));
         return Ok(new FollowResponse(isFollowing));
     }
-
-    // Helper until Auth module is fully integrated
-    private Guid GetUserId() => Guid.Parse("11111111-1111-1111-1111-111111111111");
 }
 
 // DTOs
