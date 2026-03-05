@@ -1,5 +1,6 @@
 using backend.Modules.Goal.DTOs;
 using backend.Modules.Goal.Features;
+using backend.Modules.Shared.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public class GoalController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Guid>> CreateGoal([FromBody] CreateGoalRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var goalId = await _mediator.Send(new CreateGoalCommand(
             userId,
             request.GoalTypeId,
@@ -38,7 +39,7 @@ public class GoalController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<GoalResponse>>> GetUserGoals()
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var goals = await _mediator.Send(new GetUserGoalsQuery(userId));
         return Ok(goals);
     }
@@ -53,7 +54,7 @@ public class GoalController : ControllerBase
     [HttpPost("{id:guid}/progress")]
     public async Task<IActionResult> UpdateProgress(Guid id, [FromBody] UpdateGoalProgressRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         await _mediator.Send(new UpdateGoalProgressCommand(
             id,
             userId,
@@ -63,7 +64,4 @@ public class GoalController : ControllerBase
         ));
         return NoContent();
     }
-
-    // Helper until Auth module is fully integrated
-    private Guid GetUserId() => Guid.Parse("11111111-1111-1111-1111-111111111111");
 }
