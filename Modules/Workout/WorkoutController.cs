@@ -1,4 +1,5 @@
 using AutoMapper;
+using backend.Modules.Shared.Extensions;
 using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.DTOs;
@@ -32,8 +33,9 @@ public class WorkoutController : ControllerBase
     [HttpPost("gym")]
     public async Task<ActionResult<Guid>> CreateGymWorkout([FromBody] CreateGymWorkoutRequest request)
     {
+        var userId = User.GetRequiredUserId();
         var command = new CreateGymWorkoutCommand(
-            request.UserId,
+            userId,
             request.Date,
             request.SplitType,
             request.IntensityLevel,
@@ -52,8 +54,9 @@ public class WorkoutController : ControllerBase
     [HttpPost("running")]
     public async Task<ActionResult<RunningWorkoutResponse>> CreateRunningWorkout([FromBody] CreateRunningWorkoutRequest request)
     {
+        var userId = User.GetRequiredUserId();
         var command = new CreateRunningWorkoutCommand(
-            request.UserId,
+            userId,
             request.Date,
             request.DistanceKm,
             request.DurationMinutes,
@@ -75,8 +78,9 @@ public class WorkoutController : ControllerBase
     [HttpPost("cycling")]
     public async Task<ActionResult<CyclingWorkoutResponse>> CreateCyclingWorkout([FromBody] CreateCyclingWorkoutRequest request)
     {
+        var userId = User.GetRequiredUserId();
         var command = new CreateCyclingWorkoutCommand(
-            request.UserId,
+            userId,
             request.Date,
             request.DistanceKm,
             request.DurationMinutes,
@@ -97,6 +101,7 @@ public class WorkoutController : ControllerBase
     [HttpPost("yoga")]
     public async Task<ActionResult<YogaWorkoutResponse>> CreateYogaWorkout([FromBody] CreateYogaWorkoutRequest request)
     {
+        var userId = User.GetRequiredUserId();
         YogaStyle? style = !string.IsNullOrEmpty(request.Style) 
             ? Enum.Parse<YogaStyle>(request.Style, true) : null;
             
@@ -107,7 +112,7 @@ public class WorkoutController : ControllerBase
             ? Enum.Parse<YogaFocusArea>(request.FocusArea, true) : null;
 
         var command = new CreateYogaWorkoutCommand(
-            request.UserId,
+            userId,
             request.Date,
             style,
             intensity,
@@ -146,7 +151,7 @@ public class WorkoutController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateWorkout(Guid id, [FromBody] UpdateWorkoutRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         await _mediator.Send(new UpdateWorkoutCommand(id, userId, request));
         return NoContent();
     }
@@ -154,7 +159,7 @@ public class WorkoutController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteWorkout(Guid id)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         await _mediator.Send(new DeleteWorkoutCommand(id, userId));
         return NoContent();
     }
@@ -162,7 +167,7 @@ public class WorkoutController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetWorkouts([FromQuery] WorkoutFilterRequest filter)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var result = await _mediator.Send(new GetWorkoutsQuery(userId, filter));
         return Ok(result);
     }
@@ -170,7 +175,7 @@ public class WorkoutController : ControllerBase
     [HttpPost("{id:guid}/save-as-routine")]
     public async Task<ActionResult<Guid>> SaveAsRoutine(Guid id, [FromBody] SaveRoutineRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var routineId = await _mediator.Send(new SaveWorkoutAsRoutineCommand(userId, id, request.Name, request.Description));
         return Ok(routineId);
     }
@@ -178,13 +183,10 @@ public class WorkoutController : ControllerBase
     [HttpPost("from-routine/{routineId:guid}")]
     public async Task<ActionResult<Guid>> CreateFromRoutine(Guid routineId, [FromBody] CreateFromRoutineRequest request)
     {
-        var userId = GetUserId();
+        var userId = User.GetRequiredUserId();
         var workoutId = await _mediator.Send(new CreateWorkoutFromRoutineCommand(userId, routineId, request.Date));
         return CreatedAtAction(nameof(GetWorkoutById), new { id = workoutId }, workoutId);
     }
-    
-    // Helper until Auth module is fully integrated
-    private Guid GetUserId() => Guid.Parse("11111111-1111-1111-1111-111111111111");
 }
 
 public record SaveRoutineRequest(string Name, string? Description);
