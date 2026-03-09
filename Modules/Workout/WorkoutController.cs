@@ -129,6 +129,29 @@ public class WorkoutController : ControllerBase
         return Ok(_mapper.Map<YogaWorkoutResponse>(workout));
     }
 
+    [HttpPost("swimming")]
+    public async Task<ActionResult<SwimmingWorkoutResponse>> CreateSwimmingWorkout([FromBody] CreateSwimmingWorkoutRequest request)
+    {
+        var userId = User.GetRequiredUserId();
+        var command = new CreateSwimmingWorkoutCommand(
+            userId,
+            request.Date,
+            request.Laps,
+            request.PoolLengthMeters,
+            request.DistanceMeters,
+            request.StrokeType,
+            request.DurationMinutes,
+            request.CaloriesBurned,
+            request.Notes,
+            request.IsPrivate
+        );
+
+        var workoutId = await _mediator.Send(command);
+
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        return Ok(_mapper.Map<SwimmingWorkoutResponse>(workout));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<WorkoutResponse>> GetWorkoutById(Guid id)
     {
