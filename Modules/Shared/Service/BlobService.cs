@@ -9,8 +9,8 @@ public class BlobService : IBlobService
 
     public BlobService(IConfiguration config)
     {
-        var connStr = config["AzureBlob:ConnectionString"];
-        var containerName = config["AzureBlob:ContainerName"];
+        var connStr = config["Azure:BlobConnectionString"];
+        var containerName = config["Azure:ProfilePicsContainer"];
         _containerClient = new BlobContainerClient(connStr, containerName);
         _containerClient.CreateIfNotExists(PublicAccessType.Blob);
     }
