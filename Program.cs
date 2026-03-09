@@ -8,6 +8,7 @@ using backend.Modules.User.Mappings;
 using backend.Modules.Workout;
 using backend.Modules.Goal;
 using backend.Modules.Social;
+using backend.Modules.Goal.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,7 @@ using (var scope = app.Services.CreateScope())
 
     await RoleSeeder.SeedAsync(serviceProvider);
     await backend.Modules.Workout.Data.Seeding.ExerciseSeeder.SeedAsync(serviceProvider);
+    await new GoalTypeSeeder(context).SeedAsync();
 }
 
 app.Run();
