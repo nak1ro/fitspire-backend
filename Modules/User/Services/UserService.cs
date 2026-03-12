@@ -58,6 +58,19 @@ public class UserService : IUserService
             throw new ArgumentException("Unsupported file extension. Only .jpg, .jpeg, .png, .webp are allowed.");
     }
 
+    public async Task<UserProfileDto> GetProfileAsync()
+    {
+        var user = await GetCurrentUserOrThrowAsync();
+        return _mapper.Map<UserProfileDto>(user);
+    }
+
+    public async Task<UserPreferencesDto> GetPreferencesAsync()
+    {
+        var user = await GetCurrentUserOrThrowAsync();
+        var preferences = user.AppUserPreference ?? new AppUserPreference();
+        return _mapper.Map<UserPreferencesDto>(preferences);
+    }
+
     public async Task<UserProfileDto> UpdateProfileAsync(UpdateProfileDto dto)
     {
         var user = await GetCurrentUserOrThrowAsync();

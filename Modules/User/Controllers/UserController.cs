@@ -17,6 +17,14 @@ public class UserController : ControllerBase
     }
 
     [Authorize]
+    [HttpGet("profile")]
+    public async Task<ActionResult<UserProfileDto>> GetProfile()
+    {
+        var profile = await _userService.GetProfileAsync();
+        return Ok(profile);
+    }
+
+    [Authorize]
     [HttpPatch("profile")]
     public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
@@ -30,6 +38,14 @@ public class UserController : ControllerBase
     {
         var updated = await _userService.UpdateProfilePictureAsync(file);
         return Ok(updated);
+    }
+
+    [Authorize]
+    [HttpGet("preferences")]
+    public async Task<ActionResult<UserPreferencesDto>> GetPreferences()
+    {
+        var preferences = await _userService.GetPreferencesAsync();
+        return Ok(preferences);
     }
 
     [Authorize]
