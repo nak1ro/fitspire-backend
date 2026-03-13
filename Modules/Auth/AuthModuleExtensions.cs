@@ -1,5 +1,8 @@
 using System.Text;
 using backend.Modules.Auth.Services;
+using backend.Modules.Auth.DTOs;
+using backend.Modules.Auth.Validators;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -41,6 +44,7 @@ public static class AuthModuleExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, ResendEmailService>();
+        services.AddScoped<IValidator<ForgotPasswordDto>, ForgotPasswordDtoValidator>();
 
         return services;
     }

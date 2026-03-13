@@ -46,4 +46,11 @@ public class AccountController : ControllerBase
         var userDto = await _authService.ExternalLoginAsync(dto);
         return Ok(userDto);
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        await _authService.ForgotPasswordAsync(dto);
+        return NoContent();
+    }
 }

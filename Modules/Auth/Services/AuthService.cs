@@ -1,4 +1,5 @@
 using backend.Modules.Auth.DTOs;
+using FluentValidation;
 using backend.Modules.User.Domain;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
@@ -12,14 +13,16 @@ public class AuthService : IAuthService
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
+    private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
-        ITokenService tokenService, IEmailService emailService)
+        ITokenService tokenService, IEmailService emailService, IValidator<ForgotPasswordDto> forgotPasswordValidator)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _emailService = emailService;
+        _forgotPasswordValidator = forgotPasswordValidator;
     }
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
@@ -143,5 +146,26 @@ public class AuthService : IAuthService
             CreatedAt = user.CreatedAt,
             Token = await _tokenService.CreateToken(user)
         };
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        await _forgotPasswordValidator.ValidateAndThrowAsync(dto);
+
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null || !user.EmailConfirmed)
+            return;
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetLink =
+            $"https://your-frontend-app/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
+
+        var emailHtml = $@"
+                <p>Hello {user.DisplayName},</p>
+                <p>You requested to reset your password. Click the link below to continue:</p>
+                <a href=""{resetLink}"">Reset Password</a>
+            ";
+
+        await _emailService.SendMockEmailAsync(user.Email!, "Reset your Fitspire password", emailHtml);
     }
 }
