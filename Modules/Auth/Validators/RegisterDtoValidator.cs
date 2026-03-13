@@ -3,18 +3,19 @@ using FluentValidation;
 
 namespace backend.Modules.Auth.Validators;
 
-public class ResetPasswordDtoValidator : AbstractValidator<ResetPasswordDto>
+public class RegisterDtoValidator : AbstractValidator<RegisterDto>
 {
-    public ResetPasswordDtoValidator()
+    public RegisterDtoValidator()
     {
         RuleFor(x => x.Email)
             .NotEmpty()
             .EmailAddress();
 
-        RuleFor(x => x.Token)
-            .NotEmpty();
+        RuleFor(x => x.UserName)
+            .NotEmpty()
+            .MinimumLength(3);
 
-        RuleFor(x => x.NewPassword)
+        RuleFor(x => x.Password)
             .ApplyStrongPasswordRules();
     }
 }

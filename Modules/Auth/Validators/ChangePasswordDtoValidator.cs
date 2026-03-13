@@ -11,7 +11,6 @@ public class ChangePasswordDtoValidator : AbstractValidator<ChangePasswordDto>
             .NotEmpty();
 
         RuleFor(x => x.NewPassword)
-            .NotEmpty()
-            .MinimumLength(6);
+            .ApplyStrongPasswordRules();
     }
 }

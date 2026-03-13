@@ -13,12 +13,14 @@ public class AuthService : IAuthService
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
+    private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
-        ITokenService tokenService, IEmailService emailService, IValidator<ChangePasswordDto> changePasswordValidator,
+        ITokenService tokenService, IEmailService emailService, IValidator<RegisterDto> registerValidator,
+        IValidator<ChangePasswordDto> changePasswordValidator,
         IValidator<ForgotPasswordDto> forgotPasswordValidator,
         IValidator<ResetPasswordDto> resetPasswordValidator)
     {
@@ -26,6 +28,7 @@ public class AuthService : IAuthService
         _signInManager = signInManager;
         _tokenService = tokenService;
         _emailService = emailService;
+        _registerValidator = registerValidator;
         _changePasswordValidator = changePasswordValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
@@ -33,6 +36,8 @@ public class AuthService : IAuthService
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
     {
+        await _registerValidator.ValidateAndThrowAsync(dto);
+
         // Check for existing username/email
         if (await _userManager.FindByNameAsync(dto.UserName) != null)
             throw new InvalidOperationException("Username is already taken.");
