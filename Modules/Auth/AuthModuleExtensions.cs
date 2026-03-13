@@ -45,6 +45,7 @@ public static class AuthModuleExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, ResendEmailService>();
         services.AddScoped<IValidator<ForgotPasswordDto>, ForgotPasswordDtoValidator>();
+        services.AddScoped<IValidator<ResetPasswordDto>, ResetPasswordDtoValidator>();
 
         return services;
     }

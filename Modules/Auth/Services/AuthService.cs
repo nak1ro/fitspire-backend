@@ -14,15 +14,18 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
-        ITokenService tokenService, IEmailService emailService, IValidator<ForgotPasswordDto> forgotPasswordValidator)
+        ITokenService tokenService, IEmailService emailService, IValidator<ForgotPasswordDto> forgotPasswordValidator,
+        IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _emailService = emailService;
         _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
     }
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
@@ -167,5 +170,23 @@ public class AuthService : IAuthService
             ";
 
         await _emailService.SendMockEmailAsync(user.Email!, "Reset your Fitspire password", emailHtml);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        await _resetPasswordValidator.ValidateAndThrowAsync(dto);
+
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+            throw new InvalidOperationException("Invalid reset request.");
+
+        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errorMessages = string.Join("; ", result.Errors.Select(e => e.Description));
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(errorMessages)
+                ? "Invalid reset request."
+                : errorMessages);
+        }
     }
 }

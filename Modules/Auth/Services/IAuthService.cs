@@ -10,4 +10,5 @@ public interface IAuthService
     Task<bool> ConfirmEmailAsync(Guid userId, string token);
     Task<NewUserDto> ExternalLoginAsync(ExternalLoginDto dto);
     Task ForgotPasswordAsync(ForgotPasswordDto dto);
+    Task ResetPasswordAsync(ResetPasswordDto dto);
 }
