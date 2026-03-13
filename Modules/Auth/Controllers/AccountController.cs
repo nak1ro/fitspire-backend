@@ -1,5 +1,6 @@
 using backend.Modules.Auth.DTOs;
 using backend.Modules.Auth.Services;
+using backend.Modules.Shared.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,6 +59,14 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
         await _authService.ResetPasswordAsync(dto);
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        await _authService.ChangePasswordAsync(User.GetRequiredUserId(), dto);
         return NoContent();
     }
 }

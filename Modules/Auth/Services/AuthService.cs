@@ -13,17 +13,20 @@ public class AuthService : IAuthService
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
+    private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
-        ITokenService tokenService, IEmailService emailService, IValidator<ForgotPasswordDto> forgotPasswordValidator,
+        ITokenService tokenService, IEmailService emailService, IValidator<ChangePasswordDto> changePasswordValidator,
+        IValidator<ForgotPasswordDto> forgotPasswordValidator,
         IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _emailService = emailService;
+        _changePasswordValidator = changePasswordValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
     }
@@ -170,6 +173,24 @@ public class AuthService : IAuthService
             ";
 
         await _emailService.SendMockEmailAsync(user.Email!, "Reset your Fitspire password", emailHtml);
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
+    {
+        await _changePasswordValidator.ValidateAndThrowAsync(dto);
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            throw new UnauthorizedAccessException("User not found.");
+
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errorMessages = string.Join("; ", result.Errors.Select(e => e.Description));
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(errorMessages)
+                ? "Password change failed."
+                : errorMessages);
+        }
     }
 
     public async Task ResetPasswordAsync(ResetPasswordDto dto)
