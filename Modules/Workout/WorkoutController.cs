@@ -68,8 +68,7 @@ public class WorkoutController : ControllerBase
         
         var workoutId = await _mediator.Send(command);
         
-        // We get the workout back to return the full response
-        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId, userId));
         return Ok(_mapper.Map<RunningWorkoutResponse>(workout));
     }
 
@@ -92,7 +91,7 @@ public class WorkoutController : ControllerBase
         
         var workoutId = await _mediator.Send(command);
         
-        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId, userId));
         return Ok(_mapper.Map<CyclingWorkoutResponse>(workout));
     }
 
@@ -123,7 +122,7 @@ public class WorkoutController : ControllerBase
         
         var workoutId = await _mediator.Send(command);
         
-        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId, userId));
         return Ok(_mapper.Map<YogaWorkoutResponse>(workout));
     }
 
@@ -146,14 +145,15 @@ public class WorkoutController : ControllerBase
 
         var workoutId = await _mediator.Send(command);
 
-        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId));
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(workoutId, userId));
         return Ok(_mapper.Map<SwimmingWorkoutResponse>(workout));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<WorkoutResponse>> GetWorkoutById(Guid id)
     {
-        var workout = await _mediator.Send(new GetWorkoutByIdQuery(id));
+        var userId = User.GetRequiredUserId();
+        var workout = await _mediator.Send(new GetWorkoutByIdQuery(id, userId));
         
         if (workout is null)
             return NotFound();

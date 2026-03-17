@@ -2,7 +2,6 @@ namespace backend.Modules.Workout.DTOs;
 
 // Request DTOs
 public record CreateGymWorkoutRequest(
-    Guid UserId,
     DateTime Date,
     string? SplitType, // Mapped to WorkoutSplit enum
     string? IntensityLevel, // Mapped to WorkoutIntensity enum
@@ -78,7 +77,6 @@ public record GymExerciseResponse(
 );
 
 public record CreateRunningWorkoutRequest(
-    Guid UserId,
     DateTime Date,
     double DistanceKm,
     double? DurationMinutes,
@@ -109,7 +107,6 @@ public record RunningWorkoutResponse(
 );
 
 public record CreateCyclingWorkoutRequest(
-    Guid UserId,
     DateTime Date,
     double DistanceKm,
     double? DurationMinutes,
@@ -140,7 +137,6 @@ public record CyclingWorkoutResponse(
 );
 
 public record CreateSwimmingWorkoutRequest(
-    Guid UserId,
     DateTime Date,
     int? Laps,
     double? PoolLengthMeters,
@@ -171,7 +167,6 @@ public record SwimmingWorkoutResponse(
 );
 
 public record CreateYogaWorkoutRequest(
-    Guid UserId,
     DateTime Date,
     double? DurationMinutes,
     string? Style, // Mapped to Enum

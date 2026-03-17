@@ -1,5 +1,4 @@
 using backend.Modules.Workout.DTOs;
-using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Domain.Enums;
 using FluentValidation;
 
@@ -9,10 +8,6 @@ public class CreateGymWorkoutValidator : AbstractValidator<CreateGymWorkoutReque
 {
     public CreateGymWorkoutValidator()
     {
-        RuleFor(x => x.UserId)
-            .NotEmpty()
-            .WithMessage("UserId is required.");
-
         RuleFor(x => x.Date)
             .NotEmpty()
             .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
@@ -74,7 +69,6 @@ public class CreateRunningWorkoutValidator : AbstractValidator<CreateRunningWork
 {
     public CreateRunningWorkoutValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Date).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
         
         RuleFor(x => x.DistanceKm)
@@ -104,7 +98,6 @@ public class CreateCyclingWorkoutValidator : AbstractValidator<CreateCyclingWork
 {
     public CreateCyclingWorkoutValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Date).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
         
         RuleFor(x => x.DistanceKm)

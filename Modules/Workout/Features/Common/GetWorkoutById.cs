@@ -4,7 +4,7 @@ using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
 
-public record GetWorkoutByIdQuery(Guid WorkoutId) : IRequest<UserWorkout?>;
+public record GetWorkoutByIdQuery(Guid WorkoutId, Guid UserId) : IRequest<UserWorkout?>;
 
 public class GetWorkoutByIdHandler : IRequestHandler<GetWorkoutByIdQuery, UserWorkout?>
 {
@@ -17,6 +17,7 @@ public class GetWorkoutByIdHandler : IRequestHandler<GetWorkoutByIdQuery, UserWo
 
     public async Task<UserWorkout?> Handle(GetWorkoutByIdQuery request, CancellationToken cancellationToken)
     {
-        return await _workoutRepository.GetByIdAsync(request.WorkoutId, cancellationToken);
+        var workout = await _workoutRepository.GetByIdAsync(request.WorkoutId, cancellationToken);
+        return workout?.UserId == request.UserId ? workout : null;
     }
 }
