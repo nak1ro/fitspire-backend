@@ -1,15 +1,13 @@
 using AutoMapper;
 using backend.Modules.Shared.Extensions;
-using backend.Modules.Workout.Features.Common;
-using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.DTOs;
 using backend.Modules.Workout.Features.Common;
+using backend.Modules.Workout.Features.GymWorkout;
 using backend.Modules.Workout.Features.RunningWorkout;
 using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.Features.SwimmingWorkout;
 using backend.Modules.Workout.Features.YogaWorkout;
 using backend.Modules.Workout.Domain.Enums;
-using backend.Modules.Workout.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

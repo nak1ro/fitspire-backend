@@ -28,6 +28,10 @@ public class WorkoutCompletedGoalHandler : INotificationHandler<WorkoutCompleted
 
     public async Task Handle(WorkoutCompletedEvent notification, CancellationToken cancellationToken)
     {
+        var existingEntries = await _goalRepository.GetProgressBySourceIdAsync(notification.WorkoutId, cancellationToken);
+        if (existingEntries.Any())
+            return;
+
         var processor = _processors.FirstOrDefault(p => p.SupportedWorkoutType.Equals(notification.WorkoutType, StringComparison.InvariantCultureIgnoreCase));
         
         if (processor != null)

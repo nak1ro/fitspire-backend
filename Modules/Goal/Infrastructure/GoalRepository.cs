@@ -122,21 +122,6 @@ public class GoalRepository : IGoalRepository
 
     public async Task<GymUserWorkoutDetails?> GetGymWorkoutByIdAsync(Guid workoutId, CancellationToken cancellationToken = default)
     {
-        // This belongs in WorkoutRepository really, but if we need it here we can access it via DbContext
-        // However, Goal module shouldn't directly query Workout tables if we stick to strict modularity.
-        // But since we are in a Monolith with shared DbContext (conceptually), and GoalRepository has access to FitspireDbContext...
-        // Wait, GymUserWorkoutDetails is int Workout Namespace.
-        // Queries should ideally stay in their module.
-        // But for pragmatic reasons in this project, we accessing it here or we rely on the Handler fetching it via IWorkoutRepository.
-        
-        // BETTER DESIGN: The Handler should use IWorkoutRepository to fetch the workout, and IGoalRepository to fetch goals.
-        // So I don't need GetGymWorkoutByIdAsync inside GoalRepository.
-        // I DO need GetActiveGoalsByExerciseIdAsync.
-        
-        // I will implement only GetActiveGoalsByExerciseIdAsync here.
-        // I will revert the Interface change for GetGymWorkoutByIdAsync in the next step or just ignore it if I haven't saved it yet...
-        // Wait, I already sent the interface update in the previous tool call (parallel).
-        // I should implement it or remove it. Implementing it is easier now.
         return await _context.UserWorkouts
             .OfType<GymUserWorkoutDetails>()
             .Include(w => w.Exercises)
