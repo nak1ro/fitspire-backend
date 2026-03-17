@@ -91,7 +91,7 @@ public class GoalRepository : IGoalRepository
                 .ThenInclude(u => u.AppUserPreference)
             .Where(g => g.UserId == userId 
                         && g.Status == GoalStatus.Active 
-                        && (g.GoalType.RelatedWorkoutType == workoutType || g.GoalType.RelatedWorkoutType == "any" || g.GoalType.RelatedWorkoutType == null))
+                        && g.GoalType.RelatedWorkoutType == workoutType)
             .ToListAsync(cancellationToken);
     }
 

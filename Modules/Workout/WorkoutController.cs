@@ -167,7 +167,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("{id:guid}/complete")]
     public async Task<ActionResult> CompleteWorkout(Guid id, [FromBody] CompleteWorkoutRequest request)
     {
-        await _mediator.Send(new CompleteWorkoutCommand(id, request.DurationMinutes));
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes));
         return Ok(new { success = true });
     }
 

@@ -27,6 +27,15 @@ public class GymGoalProcessor : IWorkoutGoalProcessor
         var gymWorkout = await _goalRepository.GetGymWorkoutByIdAsync(workoutEvent.WorkoutId, cancellationToken);
         if (gymWorkout == null) return;
 
+        var workoutGoals = await _goalRepository.GetActiveGoalsByWorkoutTypeAsync(workoutEvent.UserId, "gym", cancellationToken);
+        foreach (var goal in workoutGoals.Where(g => g.GoalType.RelatedExerciseId == null))
+        {
+            var delta = CalculateWorkoutDelta(goal, gymWorkout);
+            if (delta <= 0) continue;
+
+            await UpdateGoalWithDeltaAsync(goal, delta, workoutEvent.WorkoutId);
+        }
+
         foreach (var exercise in gymWorkout.Exercises)
         {
             var exerciseGoals = await _goalRepository.GetActiveGoalsByExerciseIdAsync(workoutEvent.UserId, exercise.ExerciseId, cancellationToken);
@@ -35,6 +44,18 @@ public class GymGoalProcessor : IWorkoutGoalProcessor
                 await UpdateExerciseGoalProgressAsync(goal, exercise, workoutEvent.WorkoutId);
             }
         }
+    }
+
+    private static double CalculateWorkoutDelta(UserGoal goal, GymUserWorkoutDetails workout)
+    {
+        var metric = goal.GoalType.RelatedMetric?.ToLowerInvariant();
+        return metric switch
+        {
+            "count" => 1,
+            "volume" => workout.CalculateTotalVolume(),
+            "weight" => workout.GetMaxWeight() ?? 0,
+            _ => 0
+        };
     }
 
     private async Task UpdateExerciseGoalProgressAsync(UserGoal goal, GymWorkoutExercise exercise, Guid workoutId)

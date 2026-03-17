@@ -1,8 +1,6 @@
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Goal.Infrastructure;
-using backend.Modules.Goal.Services.MetricCalculators;
 using backend.Modules.Shared;
-using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Domain.Events;
 using backend.Modules.Goal.Services.GoalProcessors;
 using MediatR;
@@ -17,23 +15,19 @@ public class WorkoutCompletedGoalHandler : INotificationHandler<WorkoutCompleted
     private readonly IEnumerable<IWorkoutGoalProcessor> _processors;
     private readonly IGoalRepository _goalRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IEnumerable<IMetricCalculator> _metricCalculators;
 
     public WorkoutCompletedGoalHandler(
         IEnumerable<IWorkoutGoalProcessor> processors,
         IGoalRepository goalRepository, 
-        IUnitOfWork unitOfWork,
-        IEnumerable<IMetricCalculator> metricCalculators)
+        IUnitOfWork unitOfWork)
     {
         _processors = processors;
         _goalRepository = goalRepository;
         _unitOfWork = unitOfWork;
-        _metricCalculators = metricCalculators;
     }
 
     public async Task Handle(WorkoutCompletedEvent notification, CancellationToken cancellationToken)
     {
-        // 1. Find Processor for this Workout Type
         var processor = _processors.FirstOrDefault(p => p.SupportedWorkoutType.Equals(notification.WorkoutType, StringComparison.InvariantCultureIgnoreCase));
         
         if (processor != null)
@@ -41,8 +35,6 @@ public class WorkoutCompletedGoalHandler : INotificationHandler<WorkoutCompleted
             await processor.ProcessAsync(notification, cancellationToken);
         }
         
-        // 2. Handle "Generic/Cross-Type" Goals (e.g. "Burn Calories", "Any Workout Count")
-        // These are goals where RelatedWorkoutType is "any" or null
         var genericGoals = await _goalRepository.GetActiveGoalsByWorkoutTypeAsync(
             notification.UserId, 
             "any", 
