@@ -24,6 +24,14 @@ public class SocialRepository : ISocialRepository
             .FirstOrDefaultAsync(p => p.Id == postId, cancellationToken);
     }
 
+    public async Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Posts
+            .FirstOrDefaultAsync(
+                p => p.Type == type && p.ReferenceEntityId == referenceEntityId,
+                cancellationToken);
+    }
+
     public async Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         // Get IDs of users this user follows

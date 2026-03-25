@@ -1,4 +1,5 @@
 using backend.Modules.Social.Domain;
+using backend.Modules.Social.Domain.Enums;
 
 namespace backend.Modules.Social.Infrastructure;
 
@@ -6,6 +7,7 @@ public interface ISocialRepository
 {
     // Posts
     Task<Post?> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default);
+    Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserPostsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task AddPostAsync(Post post, CancellationToken cancellationToken = default);

@@ -6,6 +6,7 @@ public record WorkoutCompletedEvent(
     Guid WorkoutId, 
     Guid UserId, 
     string WorkoutType, 
+    bool IsPrivate,
     double? DurationMinutes,
     double? DistanceKm,
     int? CaloriesBurned,

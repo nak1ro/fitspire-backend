@@ -54,6 +54,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
             Id, 
             UserId, 
             WorkoutType, 
+            IsPrivate,
             DurationMinutes,
             GetTotalDistance(),
             CaloriesBurned,
