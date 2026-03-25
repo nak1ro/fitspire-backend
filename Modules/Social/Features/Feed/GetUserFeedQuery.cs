@@ -20,6 +20,7 @@ public record FeedItemResponse(
     Guid? ReferenceEntityId,
     WorkoutSummaryResponse? WorkoutSummary,
     int LikesCount,
+    bool IsLikedByCurrentUser,
     int CommentsCount,
     DateTime CreatedAt
 );
@@ -61,6 +62,7 @@ public class GetUserFeedHandler : IRequestHandler<GetUserFeedQuery, List<FeedIte
             p.ReferenceEntityId,
             GetWorkoutSummary(p, workoutSummaries),
             p.Likes.Count,
+            IsLikedByCurrentUser(p, request.UserId),
             p.Comments.Count,
             p.CreatedAt
         )).ToList();
@@ -105,5 +107,10 @@ public class GetUserFeedHandler : IRequestHandler<GetUserFeedQuery, List<FeedIte
             workout.GetTotalVolume(),
             workout.CompletedAt
         );
+    }
+
+    private static bool IsLikedByCurrentUser(Post post, Guid userId)
+    {
+        return post.Likes.Any(l => l.UserId == userId && l.TargetType == LikeTargetType.Post);
     }
 }

@@ -73,7 +73,9 @@ public class SocialRepository : ISocialRepository
     public async Task<Like?> GetLikeAsync(Guid userId, Guid targetId, CancellationToken cancellationToken = default)
     {
         return await _context.Likes
-            .FirstOrDefaultAsync(l => l.UserId == userId && l.TargetId == targetId, cancellationToken);
+            .FirstOrDefaultAsync(
+                l => l.UserId == userId && l.TargetId == targetId && l.TargetType == LikeTargetType.Post,
+                cancellationToken);
     }
 
     public async Task AddLikeAsync(Like like, CancellationToken cancellationToken = default)
