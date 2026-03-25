@@ -10,7 +10,7 @@ public class WorkoutMappingProfile : Profile
     {
         // Gym
         CreateMap<GymUserWorkoutDetails, GymWorkoutResponse>()
-            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
             .ForMember(d => d.SplitType, opt => opt.MapFrom(s => s.SplitType.HasValue ? s.SplitType.ToString() : null))
             .ForMember(d => d.IntensityLevel, opt => opt.MapFrom(s => s.IntensityLevel.HasValue ? s.IntensityLevel.ToString() : null));
 
@@ -19,26 +19,28 @@ public class WorkoutMappingProfile : Profile
             
         // Running
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()
-            .IncludeBase<UserWorkout, WorkoutResponse>();
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
 
         // Cycling
         CreateMap<CyclingUserWorkoutDetails, CyclingWorkoutResponse>()
-            .IncludeBase<UserWorkout, WorkoutResponse>();
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
 
         // Swimming
         CreateMap<SwimmingUserWorkoutDetails, SwimmingWorkoutResponse>()
-            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
             .ForMember(d => d.StrokeType, opt => opt.MapFrom(s => s.StrokeType.HasValue ? s.StrokeType.ToString() : null));
 
          // Yoga
         CreateMap<YogaUserWorkoutDetails, YogaWorkoutResponse>()
-            .IncludeBase<UserWorkout, WorkoutResponse>()
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
             .ForMember(d => d.Style, opt => opt.MapFrom(s => s.Style.HasValue ? s.Style.ToString() : null))
             .ForMember(d => d.Intensity, opt => opt.MapFrom(s => s.Intensity.HasValue ? s.Intensity.ToString() : null))
             .ForMember(d => d.FocusArea, opt => opt.MapFrom(s => s.FocusArea.HasValue ? s.FocusArea.ToString() : null));
 
         // Base
         CreateMap<UserWorkout, WorkoutResponse>()
-            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
+            .ForCtorParam(nameof(WorkoutResponse.Status), opt => opt.MapFrom(s => s.Status.ToString()))
+            .ForCtorParam(nameof(WorkoutResponse.IsRoutine), opt => opt.MapFrom(_ => false))
+            .ForCtorParam(nameof(WorkoutResponse.RoutineName), opt => opt.MapFrom(_ => (string?)null));
     }
 }

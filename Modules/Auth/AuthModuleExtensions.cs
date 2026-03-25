@@ -40,6 +40,7 @@ public static class AuthModuleExtensions
                 options.ClientId = "<your-google-client-id>";
                 options.ClientSecret = "<your-google-client-secret>";
             });
+        services.AddAuthorization();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITokenService, TokenService>();

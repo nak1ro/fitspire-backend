@@ -9,8 +9,18 @@ using backend.Modules.Workout;
 using backend.Modules.Goal;
 using backend.Modules.Social;
 using backend.Modules.Goal.Data;
+using backend.Modules.Shared.Middleware;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+var dataProtectionKeysPath = Path.Combine(Path.GetTempPath(), "fitspire-data-protection-keys");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
 // Modules
 builder.Services.AddDataModule(builder.Configuration);
@@ -46,10 +56,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 app.UseCors(corsPolicy);
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
