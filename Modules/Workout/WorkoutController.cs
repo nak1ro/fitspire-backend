@@ -194,6 +194,38 @@ public class WorkoutController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("exercise-categories")]
+    public async Task<ActionResult<List<ExerciseCategoryResponse>>> GetExerciseCategories()
+    {
+        var categories = await _mediator.Send(new GetExerciseCategoriesQuery());
+        return Ok(categories);
+    }
+
+    [HttpGet("exercises")]
+    public async Task<ActionResult<List<ExerciseResponse>>> GetExercises(
+        [FromQuery] Guid? categoryId,
+        [FromQuery] string? search)
+    {
+        var exercises = await _mediator.Send(new GetExercisesQuery(categoryId, search));
+        return Ok(exercises);
+    }
+
+    [HttpGet("routines")]
+    public async Task<ActionResult<List<WorkoutRoutineResponse>>> GetRoutines()
+    {
+        var userId = User.GetRequiredUserId();
+        var routines = await _mediator.Send(new GetWorkoutRoutinesQuery(userId));
+        return Ok(routines);
+    }
+
+    [HttpGet("routines/{routineId:guid}")]
+    public async Task<ActionResult<WorkoutRoutineResponse>> GetRoutine(Guid routineId)
+    {
+        var userId = User.GetRequiredUserId();
+        var routine = await _mediator.Send(new GetWorkoutRoutineByIdQuery(userId, routineId));
+        return Ok(routine);
+    }
+
     [HttpPost("{id:guid}/save-as-routine")]
     public async Task<ActionResult<Guid>> SaveAsRoutine(Guid id, [FromBody] SaveRoutineRequest request)
     {
@@ -208,6 +240,14 @@ public class WorkoutController : ControllerBase
         var userId = User.GetRequiredUserId();
         var workoutId = await _mediator.Send(new CreateWorkoutFromRoutineCommand(userId, routineId, request.Date));
         return CreatedAtAction(nameof(GetWorkoutById), new { id = workoutId }, workoutId);
+    }
+
+    [HttpDelete("routines/{routineId:guid}")]
+    public async Task<IActionResult> DeleteRoutine(Guid routineId)
+    {
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new DeleteWorkoutRoutineCommand(userId, routineId));
+        return NoContent();
     }
 }
 

@@ -16,6 +16,14 @@ public class WorkoutMappingProfile : Profile
 
         CreateMap<GymWorkoutExercise, GymExerciseResponse>()
             .ForMember(d => d.ExerciseName, opt => opt.MapFrom(s => s.Exercise.Name));
+
+        CreateMap<ExerciseCategory, ExerciseCategoryResponse>()
+            .ForCtorParam(nameof(ExerciseCategoryResponse.ExercisesCount), opt => opt.MapFrom(s => s.Exercises.Count));
+
+        CreateMap<Exercise, ExerciseResponse>()
+            .ForCtorParam(nameof(ExerciseResponse.CategoryName), opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : null));
+
+        CreateMap<WorkoutRoutine, WorkoutRoutineResponse>();
             
         // Running
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()

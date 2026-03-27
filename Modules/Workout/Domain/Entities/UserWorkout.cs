@@ -33,7 +33,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         Id = id;
         UserId = userId;
         WorkoutType = workoutType;
-        Date = date;
+        Date = NormalizeDate(date);
         Status = WorkoutStatus.InProgress;
         CreatedAt = DateTime.UtcNow;
         
@@ -97,7 +97,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public void UpdateDetails(DateTime? date, double? duration, string? notes, bool? isPrivate)
     {
         if (date.HasValue)
-            Date = date.Value;
+            Date = NormalizeDate(date.Value);
         
         if (duration.HasValue)
         {
@@ -112,14 +112,20 @@ public abstract class UserWorkout : AggregateRoot<Guid>
             IsPrivate = isPrivate.Value;
 
         UpdatedAt = DateTime.UtcNow;
-        if (isPrivate.HasValue)
-            IsPrivate = isPrivate.Value;
-
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Delete()
     {
         AddDomainEvent(new WorkoutDeletedEvent(Id, UserId, WorkoutType));
+    }
+
+    private static DateTime NormalizeDate(DateTime date)
+    {
+        return date.Kind switch
+        {
+            DateTimeKind.Utc => date,
+            DateTimeKind.Local => date.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
+        };
     }
 }

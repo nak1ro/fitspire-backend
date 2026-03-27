@@ -83,6 +83,35 @@ public class WorkoutRepository : IWorkoutRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<ExerciseCategory>> GetExerciseCategoriesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.ExerciseCategories
+            .Include(c => c.Exercises)
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Exercise>> GetExercisesAsync(Guid? categoryId, string? search, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Exercises
+            .Include(e => e.Category)
+            .AsQueryable();
+
+        if (categoryId.HasValue)
+            query = query.Where(e => e.CategoryId == categoryId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLower();
+            query = query.Where(e => e.Name.ToLower().Contains(normalizedSearch));
+        }
+
+        return await query
+            .OrderBy(e => e.Category != null ? e.Category.Name : string.Empty)
+            .ThenBy(e => e.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddRoutineAsync(WorkoutRoutine routine, CancellationToken cancellationToken = default)
     {
         await _context.WorkoutRoutines.AddAsync(routine, cancellationToken);
@@ -99,5 +128,11 @@ public class WorkoutRepository : IWorkoutRepository
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public Task DeleteRoutineAsync(WorkoutRoutine routine, CancellationToken cancellationToken = default)
+    {
+        _context.WorkoutRoutines.Remove(routine);
+        return Task.CompletedTask;
     }
 }

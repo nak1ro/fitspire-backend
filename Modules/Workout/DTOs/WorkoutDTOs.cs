@@ -76,6 +76,30 @@ public record GymExerciseResponse(
     int OrderIndex
 );
 
+public record ExerciseCategoryResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    int ExercisesCount
+);
+
+public record ExerciseResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    Guid? CategoryId,
+    string? CategoryName
+);
+
+public record WorkoutRoutineResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    string WorkoutType,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
+);
+
 public record CreateRunningWorkoutRequest(
     DateTime Date,
     double DistanceKm,

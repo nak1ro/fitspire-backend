@@ -42,7 +42,7 @@ public class SaveWorkoutAsRoutineHandler : IRequestHandler<SaveWorkoutAsRoutineC
         // In a real app we might map to a cleaner DTO first to avoid circular refs or unnecessary fields,
         // but for now verifying concept with direct serialization (ignoring cycles).
         var jsonOptions = new JsonSerializerOptions { ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles };
-        var jsonData = JsonSerializer.Serialize(workout, jsonOptions);
+        var jsonData = JsonSerializer.Serialize(workout, workout.GetType(), jsonOptions);
 
         // 3. Create Routine
         var routine = new WorkoutRoutine(
