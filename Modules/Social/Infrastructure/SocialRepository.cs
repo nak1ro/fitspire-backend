@@ -58,6 +58,7 @@ public class SocialRepository : ISocialRepository
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
+                .ThenInclude(c => c.User)
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -102,6 +103,13 @@ public class SocialRepository : ISocialRepository
         await _context.Comments.AddAsync(comment, cancellationToken);
     }
 
+    public async Task<Comment?> GetCommentByIdAsync(Guid postId, Guid commentId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Comments
+            .Include(c => c.Post)
+            .FirstOrDefaultAsync(c => c.PostId == postId && c.Id == commentId, cancellationToken);
+    }
+
     public async Task<List<Comment>> GetPostCommentsAsync(Guid postId, CancellationToken cancellationToken = default)
     {
         return await _context.Comments
@@ -109,6 +117,12 @@ public class SocialRepository : ISocialRepository
             .Where(c => c.PostId == postId)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public Task DeleteCommentAsync(Comment comment, CancellationToken cancellationToken = default)
+    {
+        _context.Comments.Remove(comment);
+        return Task.CompletedTask;
     }
 
     // Follow

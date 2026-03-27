@@ -20,7 +20,9 @@ public interface ISocialRepository
     
     // Comments
     Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default);
+    Task<Comment?> GetCommentByIdAsync(Guid postId, Guid commentId, CancellationToken cancellationToken = default);
     Task<List<Comment>> GetPostCommentsAsync(Guid postId, CancellationToken cancellationToken = default);
+    Task DeleteCommentAsync(Comment comment, CancellationToken cancellationToken = default);
     
     // Follow
     Task<Follower?> GetFollowAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default);

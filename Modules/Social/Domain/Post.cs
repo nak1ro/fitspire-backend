@@ -74,4 +74,21 @@ public class Post : Entity<Guid>
             CreatedAt = DateTime.UtcNow
         };
     }
+
+    public void UpdateTextPost(string content, string? imageUrl = null)
+    {
+        if (Type != PostType.Text)
+        {
+            throw new DomainException("Only text posts can be edited.");
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new DomainException("Post content is required.");
+        }
+
+        Content = content.Trim();
+        ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

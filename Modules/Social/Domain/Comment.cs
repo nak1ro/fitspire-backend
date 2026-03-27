@@ -26,4 +26,9 @@ public class Comment : Entity<Guid>
         Content = content;
         CreatedAt = DateTime.UtcNow;
     }
+
+    public bool CanBeDeletedBy(Guid userId)
+    {
+        return UserId == userId || Post.UserId == userId;
+    }
 }

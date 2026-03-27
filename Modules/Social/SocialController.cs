@@ -1,3 +1,4 @@
+using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Features.Feed;
 using backend.Modules.Social.Features.Follow;
 using backend.Modules.Social.Features.Posts;
@@ -32,6 +33,20 @@ public class SocialController : ControllerBase
     }
 
     /// <summary>
+    /// Get posts created by a specific user.
+    /// </summary>
+    [HttpGet("users/{targetUserId:guid}/posts")]
+    public async Task<ActionResult<List<FeedItemResponse>>> GetUserPosts(
+        Guid targetUserId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var viewerUserId = User.GetRequiredUserId();
+        var posts = await _mediator.Send(new GetUserPostsQuery(viewerUserId, targetUserId, page, pageSize));
+        return Ok(posts);
+    }
+
+    /// <summary>
     /// Create a new text post.
     /// </summary>
     [HttpPost("posts")]
@@ -40,6 +55,17 @@ public class SocialController : ControllerBase
         var userId = User.GetRequiredUserId();
         var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.ImageUrl));
         return CreatedAtAction(nameof(GetFeed), new { id = postId }, postId);
+    }
+
+    /// <summary>
+    /// Update one of the current user's text posts.
+    /// </summary>
+    [HttpPatch("posts/{postId:guid}")]
+    public async Task<IActionResult> UpdatePost(Guid postId, [FromBody] UpdatePostRequest request)
+    {
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new UpdatePostCommand(userId, postId, request.Content, request.ImageUrl));
+        return NoContent();
     }
 
     /// <summary>
@@ -76,6 +102,17 @@ public class SocialController : ControllerBase
     }
 
     /// <summary>
+    /// Delete a comment as the comment author or post owner.
+    /// </summary>
+    [HttpDelete("posts/{postId:guid}/comments/{commentId:guid}")]
+    public async Task<IActionResult> DeleteComment(Guid postId, Guid commentId)
+    {
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new DeleteCommentCommand(userId, postId, commentId));
+        return NoContent();
+    }
+
+    /// <summary>
     /// Follow or unfollow a user (toggle).
     /// </summary>
     [HttpPost("follow/{targetUserId:guid}")]
@@ -89,6 +126,7 @@ public class SocialController : ControllerBase
 
 // DTOs
 public record CreatePostRequest(string Content, string? ImageUrl = null);
+public record UpdatePostRequest(string Content, string? ImageUrl = null);
 public record CommentRequest(string Content);
 public record LikeResponse(bool IsLiked);
 public record FollowResponse(bool IsFollowing);
