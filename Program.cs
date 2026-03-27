@@ -5,17 +5,24 @@ using backend.Modules.Auth;
 using backend.Modules.Shared;
 using backend.Modules.User.Domain;
 using backend.Modules.User.Mappings;
+using backend.Modules.User;
 using backend.Modules.Workout;
 using backend.Modules.Goal;
 using backend.Modules.Social;
 using backend.Modules.Goal.Data;
 using backend.Modules.Shared.Middleware;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+
+var webRootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(webRootPath);
+builder.Environment.WebRootPath = webRootPath;
+builder.Environment.WebRootFileProvider = new PhysicalFileProvider(webRootPath);
 
 var dataProtectionKeysPath = Path.Combine(Path.GetTempPath(), "fitspire-data-protection-keys");
 Directory.CreateDirectory(dataProtectionKeysPath);
@@ -26,6 +33,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddDataModule(builder.Configuration);
 builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddSharedModule(builder.Configuration);
+builder.Services.AddUserModule();
 builder.Services.AddWorkoutModule();
 builder.Services.AddGoalModule();
 builder.Services.AddSocialModule();

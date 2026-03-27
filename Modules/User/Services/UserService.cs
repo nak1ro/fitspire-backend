@@ -54,7 +54,7 @@ public class UserService : IUserService
             throw new ArgumentException("Unsupported file type. Only JPEG, PNG, or WebP images are allowed.");
 
         var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!FileUploadConstants.AllowedProfilePictureTypes.Contains(extension))
+        if (!FileUploadConstants.AllowedProfilePictureExtensions.Contains(extension))
             throw new ArgumentException("Unsupported file extension. Only .jpg, .jpeg, .png, .webp are allowed.");
     }
 

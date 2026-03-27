@@ -21,3 +21,6 @@ secrets.json
 
 # Local planning docs
 src/backend/PRD.md
+
+# Local uploaded files
+wwwroot/uploads/
