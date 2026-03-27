@@ -11,6 +11,7 @@ public interface ISocialRepository
     Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserPostsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task AddPostAsync(Post post, CancellationToken cancellationToken = default);
+    Task DeletePostAsync(Post post, CancellationToken cancellationToken = default);
     
     // Likes
     Task<Like?> GetLikeAsync(Guid userId, Guid targetId, CancellationToken cancellationToken = default);

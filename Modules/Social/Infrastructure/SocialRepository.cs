@@ -70,6 +70,12 @@ public class SocialRepository : ISocialRepository
         await _context.Posts.AddAsync(post, cancellationToken);
     }
 
+    public Task DeletePostAsync(Post post, CancellationToken cancellationToken = default)
+    {
+        _context.Posts.Remove(post);
+        return Task.CompletedTask;
+    }
+
     // Likes
     public async Task<Like?> GetLikeAsync(Guid userId, Guid targetId, CancellationToken cancellationToken = default)
     {

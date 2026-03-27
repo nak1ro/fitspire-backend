@@ -43,6 +43,17 @@ public class SocialController : ControllerBase
     }
 
     /// <summary>
+    /// Delete one of the current user's posts.
+    /// </summary>
+    [HttpDelete("posts/{postId:guid}")]
+    public async Task<IActionResult> DeletePost(Guid postId)
+    {
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new DeletePostCommand(userId, postId));
+        return NoContent();
+    }
+
+    /// <summary>
     /// Like or unlike a post (toggle).
     /// </summary>
     [HttpPost("posts/{postId:guid}/like")]
