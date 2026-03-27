@@ -44,6 +44,7 @@ public class SocialRepository : ISocialRepository
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
+                .ThenInclude(c => c.User)
             .Where(p => followedUserIds.Contains(p.UserId))
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)

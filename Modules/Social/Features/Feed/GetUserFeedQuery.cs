@@ -22,6 +22,16 @@ public record FeedItemResponse(
     int LikesCount,
     bool IsLikedByCurrentUser,
     int CommentsCount,
+    IReadOnlyList<CommentPreviewResponse> RecentComments,
+    DateTime CreatedAt
+);
+
+public record CommentPreviewResponse(
+    Guid Id,
+    Guid UserId,
+    string UserName,
+    string? UserAvatarUrl,
+    string Content,
     DateTime CreatedAt
 );
 
@@ -64,6 +74,7 @@ public class GetUserFeedHandler : IRequestHandler<GetUserFeedQuery, List<FeedIte
             p.Likes.Count,
             IsLikedByCurrentUser(p, request.UserId),
             p.Comments.Count,
+            GetRecentComments(p),
             p.CreatedAt
         )).ToList();
     }
@@ -112,5 +123,20 @@ public class GetUserFeedHandler : IRequestHandler<GetUserFeedQuery, List<FeedIte
     private static bool IsLikedByCurrentUser(Post post, Guid userId)
     {
         return post.Likes.Any(l => l.UserId == userId && l.TargetType == LikeTargetType.Post);
+    }
+
+    private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(Post post)
+    {
+        return post.Comments
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(2)
+            .Select(c => new CommentPreviewResponse(
+                c.Id,
+                c.UserId,
+                c.User?.UserName ?? "Unknown",
+                c.User?.ProfilePictureUrl,
+                c.Content,
+                c.CreatedAt))
+            .ToList();
     }
 }
