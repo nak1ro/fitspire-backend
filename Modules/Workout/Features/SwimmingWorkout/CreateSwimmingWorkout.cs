@@ -1,6 +1,7 @@
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Domain.Enums;
+using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
@@ -23,11 +24,13 @@ public class CreateSwimmingWorkoutHandler : IRequestHandler<CreateSwimmingWorkou
 {
     private readonly IWorkoutRepository _workoutRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublisher _publisher;
 
-    public CreateSwimmingWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork)
+    public CreateSwimmingWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork, IPublisher publisher)
     {
         _workoutRepository = workoutRepository;
         _unitOfWork = unitOfWork;
+        _publisher = publisher;
     }
 
     public async Task<Guid> Handle(CreateSwimmingWorkoutCommand request, CancellationToken cancellationToken)
@@ -36,7 +39,7 @@ public class CreateSwimmingWorkoutHandler : IRequestHandler<CreateSwimmingWorkou
             Guid.NewGuid(),
             request.UserId,
             request.Date,
-            request.DurationMinutes
+            null
         );
 
         workout.SetPoolDetails(request.Laps, request.PoolLengthMeters);
@@ -55,8 +58,14 @@ public class CreateSwimmingWorkoutHandler : IRequestHandler<CreateSwimmingWorkou
         if (request.IsPrivate)
             workout.SetPrivacy(true);
 
+        if (request.DurationMinutes.HasValue)
+            workout.Complete(request.DurationMinutes);
+
+        var completionEvents = WorkoutDomainEvents.PullCompletionEvents(workout);
+
         await _workoutRepository.AddAsync(workout, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await WorkoutDomainEvents.PublishAsync(_publisher, completionEvents, cancellationToken);
 
         return workout.Id;
     }
