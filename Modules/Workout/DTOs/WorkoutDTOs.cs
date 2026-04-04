@@ -100,6 +100,15 @@ public record WorkoutRoutineResponse(
     DateTime? UpdatedAt
 );
 
+public record PersonalRecordResponse(
+    Guid Id,
+    string WorkoutType,
+    string Metric,
+    double Value,
+    Guid WorkoutId,
+    DateTime AchievedAt
+);
+
 public record CreateRunningWorkoutRequest(
     DateTime Date,
     double DistanceKm,

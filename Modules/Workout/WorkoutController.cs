@@ -218,6 +218,14 @@ public class WorkoutController : ControllerBase
         return Ok(routines);
     }
 
+    [HttpGet("personal-records")]
+    public async Task<ActionResult<List<PersonalRecordResponse>>> GetPersonalRecords()
+    {
+        var userId = User.GetRequiredUserId();
+        var records = await _mediator.Send(new GetPersonalRecordsQuery(userId));
+        return Ok(records);
+    }
+
     [HttpGet("routines/{routineId:guid}")]
     public async Task<ActionResult<WorkoutRoutineResponse>> GetRoutine(Guid routineId)
     {

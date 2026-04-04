@@ -24,6 +24,9 @@ public class WorkoutMappingProfile : Profile
             .ForCtorParam(nameof(ExerciseResponse.CategoryName), opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : null));
 
         CreateMap<WorkoutRoutine, WorkoutRoutineResponse>();
+
+        CreateMap<PersonalRecord, PersonalRecordResponse>()
+            .ForCtorParam(nameof(PersonalRecordResponse.AchievedAt), opt => opt.MapFrom(s => s.UpdatedAt ?? s.CreatedAt));
             
         // Running
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()

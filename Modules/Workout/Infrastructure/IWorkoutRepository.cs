@@ -24,4 +24,11 @@ public interface IWorkoutRepository
     Task<WorkoutRoutine?> GetRoutineByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<WorkoutRoutine>> GetRoutinesByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task DeleteRoutineAsync(WorkoutRoutine routine, CancellationToken cancellationToken = default);
+
+    // Personal records
+    Task<List<PersonalRecord>> GetPersonalRecordsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<PersonalRecord?> GetPersonalRecordAsync(Guid userId, string workoutType, string metric, CancellationToken cancellationToken = default);
+    Task AddPersonalRecordAsync(PersonalRecord record, CancellationToken cancellationToken = default);
+    Task UpdatePersonalRecordAsync(PersonalRecord record, CancellationToken cancellationToken = default);
+    Task AddPersonalRecordHistoryAsync(PersonalRecordHistory history, CancellationToken cancellationToken = default);
 }

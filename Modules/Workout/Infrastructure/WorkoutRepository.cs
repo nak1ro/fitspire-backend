@@ -135,4 +135,43 @@ public class WorkoutRepository : IWorkoutRepository
         _context.WorkoutRoutines.Remove(routine);
         return Task.CompletedTask;
     }
+
+    public async Task<List<PersonalRecord>> GetPersonalRecordsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.PersonalRecords
+            .Where(record => record.UserId == userId)
+            .OrderBy(record => record.WorkoutType)
+            .ThenBy(record => record.Metric)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PersonalRecord?> GetPersonalRecordAsync(
+        Guid userId,
+        string workoutType,
+        string metric,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.PersonalRecords
+            .FirstOrDefaultAsync(
+                record => record.UserId == userId
+                    && record.WorkoutType == workoutType
+                    && record.Metric == metric,
+                cancellationToken);
+    }
+
+    public async Task AddPersonalRecordAsync(PersonalRecord record, CancellationToken cancellationToken = default)
+    {
+        await _context.PersonalRecords.AddAsync(record, cancellationToken);
+    }
+
+    public Task UpdatePersonalRecordAsync(PersonalRecord record, CancellationToken cancellationToken = default)
+    {
+        _context.PersonalRecords.Update(record);
+        return Task.CompletedTask;
+    }
+
+    public async Task AddPersonalRecordHistoryAsync(PersonalRecordHistory history, CancellationToken cancellationToken = default)
+    {
+        await _context.PersonalRecordHistory.AddAsync(history, cancellationToken);
+    }
 }
