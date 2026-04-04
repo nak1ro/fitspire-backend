@@ -118,3 +118,146 @@ public class CreateCyclingWorkoutValidator : AbstractValidator<CreateCyclingWork
             .When(x => x.CaloriesBurned.HasValue);
     }
 }
+
+public class CreateSwimmingWorkoutValidator : AbstractValidator<CreateSwimmingWorkoutRequest>
+{
+    public CreateSwimmingWorkoutValidator()
+    {
+        RuleFor(x => x.Date).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
+
+        RuleFor(x => x.Laps)
+            .GreaterThan(0)
+            .When(x => x.Laps.HasValue);
+
+        RuleFor(x => x.PoolLengthMeters)
+            .GreaterThan(0)
+            .When(x => x.PoolLengthMeters.HasValue);
+
+        RuleFor(x => x.DistanceMeters)
+            .GreaterThan(0)
+            .When(x => x.DistanceMeters.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => x.DistanceMeters.HasValue || (x.Laps.HasValue && x.PoolLengthMeters.HasValue))
+            .WithMessage("Provide DistanceMeters or both Laps and PoolLengthMeters.");
+
+        RuleFor(x => x.StrokeType)
+            .IsEnumName(typeof(SwimmingStroke), caseSensitive: false)
+            .When(x => !string.IsNullOrWhiteSpace(x.StrokeType))
+            .WithMessage("Invalid stroke type.");
+
+        RuleFor(x => x.DurationMinutes)
+            .GreaterThan(0)
+            .When(x => x.DurationMinutes.HasValue)
+            .WithMessage("Duration must be positive.");
+
+        RuleFor(x => x.CaloriesBurned)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.CaloriesBurned.HasValue);
+    }
+}
+
+public class CreateYogaWorkoutValidator : AbstractValidator<CreateYogaWorkoutRequest>
+{
+    public CreateYogaWorkoutValidator()
+    {
+        RuleFor(x => x.Date).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
+
+        RuleFor(x => x.DurationMinutes)
+            .GreaterThan(0)
+            .When(x => x.DurationMinutes.HasValue)
+            .WithMessage("Duration must be positive.");
+
+        RuleFor(x => x.Style)
+            .IsEnumName(typeof(YogaStyle), caseSensitive: false)
+            .When(x => !string.IsNullOrWhiteSpace(x.Style))
+            .WithMessage("Invalid yoga style.");
+
+        RuleFor(x => x.Intensity)
+            .IsEnumName(typeof(YogaIntensity), caseSensitive: false)
+            .When(x => !string.IsNullOrWhiteSpace(x.Intensity))
+            .WithMessage("Invalid yoga intensity.");
+
+        RuleFor(x => x.FocusArea)
+            .IsEnumName(typeof(YogaFocusArea), caseSensitive: false)
+            .When(x => !string.IsNullOrWhiteSpace(x.FocusArea))
+            .WithMessage("Invalid yoga focus area.");
+
+        RuleFor(x => x.CaloriesBurned)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.CaloriesBurned.HasValue);
+    }
+}
+
+public class UpdateWorkoutValidator : AbstractValidator<UpdateWorkoutRequest>
+{
+    public UpdateWorkoutValidator()
+    {
+        RuleFor(x => x.Date)
+            .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
+            .When(x => x.Date.HasValue)
+            .WithMessage("Date cannot be in the future.");
+
+        RuleFor(x => x.DurationMinutes)
+            .GreaterThan(0)
+            .When(x => x.DurationMinutes.HasValue)
+            .WithMessage("Duration must be positive.");
+
+        RuleFor(x => x.Notes)
+            .MaximumLength(2000)
+            .When(x => x.Notes is not null);
+
+        RuleFor(x => x)
+            .Must(x => x.Date.HasValue || x.DurationMinutes.HasValue || x.Notes is not null || x.IsPrivate.HasValue)
+            .WithMessage("At least one workout field must be provided.");
+    }
+}
+
+public class WorkoutFilterValidator : AbstractValidator<WorkoutFilterRequest>
+{
+    private static readonly HashSet<string> AllowedWorkoutTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "gym",
+        "running",
+        "cycling",
+        "swimming",
+        "yoga"
+    };
+
+    public WorkoutFilterValidator()
+    {
+        RuleFor(x => x)
+            .Must(x => !x.From.HasValue || !x.To.HasValue || x.From.Value <= x.To.Value)
+            .WithMessage("From date must be before or equal to To date.");
+
+        RuleForEach(x => x.Types)
+            .Must(type => !string.IsNullOrWhiteSpace(type) && AllowedWorkoutTypes.Contains(type))
+            .When(x => x.Types is { Count: > 0 })
+            .WithMessage("Invalid workout type.");
+    }
+}
+
+public class SaveRoutineValidator : AbstractValidator<SaveRoutineRequest>
+{
+    public SaveRoutineValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(120);
+
+        RuleFor(x => x.Description)
+            .MaximumLength(500)
+            .When(x => x.Description is not null);
+    }
+}
+
+public class CreateFromRoutineValidator : AbstractValidator<CreateFromRoutineRequest>
+{
+    public CreateFromRoutineValidator()
+    {
+        RuleFor(x => x.Date)
+            .NotEmpty()
+            .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
+            .WithMessage("Date cannot be in the future.");
+    }
+}

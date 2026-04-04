@@ -8,6 +8,7 @@ using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.Features.SwimmingWorkout;
 using backend.Modules.Workout.Features.YogaWorkout;
 using backend.Modules.Workout.Domain.Enums;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,16 +22,50 @@ public class WorkoutController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
+    private readonly IValidator<CreateGymWorkoutRequest> _createGymValidator;
+    private readonly IValidator<CreateRunningWorkoutRequest> _createRunningValidator;
+    private readonly IValidator<CreateCyclingWorkoutRequest> _createCyclingValidator;
+    private readonly IValidator<CreateYogaWorkoutRequest> _createYogaValidator;
+    private readonly IValidator<CreateSwimmingWorkoutRequest> _createSwimmingValidator;
+    private readonly IValidator<CompleteWorkoutRequest> _completeWorkoutValidator;
+    private readonly IValidator<UpdateWorkoutRequest> _updateWorkoutValidator;
+    private readonly IValidator<WorkoutFilterRequest> _workoutFilterValidator;
+    private readonly IValidator<SaveRoutineRequest> _saveRoutineValidator;
+    private readonly IValidator<CreateFromRoutineRequest> _createFromRoutineValidator;
 
-    public WorkoutController(IMediator mediator, IMapper mapper)
+    public WorkoutController(
+        IMediator mediator,
+        IMapper mapper,
+        IValidator<CreateGymWorkoutRequest> createGymValidator,
+        IValidator<CreateRunningWorkoutRequest> createRunningValidator,
+        IValidator<CreateCyclingWorkoutRequest> createCyclingValidator,
+        IValidator<CreateYogaWorkoutRequest> createYogaValidator,
+        IValidator<CreateSwimmingWorkoutRequest> createSwimmingValidator,
+        IValidator<CompleteWorkoutRequest> completeWorkoutValidator,
+        IValidator<UpdateWorkoutRequest> updateWorkoutValidator,
+        IValidator<WorkoutFilterRequest> workoutFilterValidator,
+        IValidator<SaveRoutineRequest> saveRoutineValidator,
+        IValidator<CreateFromRoutineRequest> createFromRoutineValidator)
     {
         _mediator = mediator;
         _mapper = mapper;
+        _createGymValidator = createGymValidator;
+        _createRunningValidator = createRunningValidator;
+        _createCyclingValidator = createCyclingValidator;
+        _createYogaValidator = createYogaValidator;
+        _createSwimmingValidator = createSwimmingValidator;
+        _completeWorkoutValidator = completeWorkoutValidator;
+        _updateWorkoutValidator = updateWorkoutValidator;
+        _workoutFilterValidator = workoutFilterValidator;
+        _saveRoutineValidator = saveRoutineValidator;
+        _createFromRoutineValidator = createFromRoutineValidator;
     }
 
     [HttpPost("gym")]
     public async Task<ActionResult<Guid>> CreateGymWorkout([FromBody] CreateGymWorkoutRequest request)
     {
+        await _createGymValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var command = new CreateGymWorkoutCommand(
             userId,
@@ -52,6 +87,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("running")]
     public async Task<ActionResult<RunningWorkoutResponse>> CreateRunningWorkout([FromBody] CreateRunningWorkoutRequest request)
     {
+        await _createRunningValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var command = new CreateRunningWorkoutCommand(
             userId,
@@ -75,6 +112,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("cycling")]
     public async Task<ActionResult<CyclingWorkoutResponse>> CreateCyclingWorkout([FromBody] CreateCyclingWorkoutRequest request)
     {
+        await _createCyclingValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var command = new CreateCyclingWorkoutCommand(
             userId,
@@ -98,6 +137,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("yoga")]
     public async Task<ActionResult<YogaWorkoutResponse>> CreateYogaWorkout([FromBody] CreateYogaWorkoutRequest request)
     {
+        await _createYogaValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         YogaStyle? style = !string.IsNullOrEmpty(request.Style) 
             ? Enum.Parse<YogaStyle>(request.Style, true) : null;
@@ -129,6 +170,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("swimming")]
     public async Task<ActionResult<SwimmingWorkoutResponse>> CreateSwimmingWorkout([FromBody] CreateSwimmingWorkoutRequest request)
     {
+        await _createSwimmingValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var command = new CreateSwimmingWorkoutCommand(
             userId,
@@ -165,6 +208,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("{id:guid}/complete")]
     public async Task<ActionResult> CompleteWorkout(Guid id, [FromBody] CompleteWorkoutRequest request)
     {
+        await _completeWorkoutValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes));
         return Ok(new { success = true });
@@ -173,6 +218,8 @@ public class WorkoutController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateWorkout(Guid id, [FromBody] UpdateWorkoutRequest request)
     {
+        await _updateWorkoutValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new UpdateWorkoutCommand(id, userId, request));
         return NoContent();
@@ -189,6 +236,8 @@ public class WorkoutController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetWorkouts([FromQuery] WorkoutFilterRequest filter)
     {
+        await _workoutFilterValidator.ValidateAndThrowAsync(filter);
+
         var userId = User.GetRequiredUserId();
         var result = await _mediator.Send(new GetWorkoutsQuery(userId, filter));
         return Ok(result);
@@ -237,6 +286,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("{id:guid}/save-as-routine")]
     public async Task<ActionResult<Guid>> SaveAsRoutine(Guid id, [FromBody] SaveRoutineRequest request)
     {
+        await _saveRoutineValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var routineId = await _mediator.Send(new SaveWorkoutAsRoutineCommand(userId, id, request.Name, request.Description));
         return Ok(routineId);
@@ -245,6 +296,8 @@ public class WorkoutController : ControllerBase
     [HttpPost("from-routine/{routineId:guid}")]
     public async Task<ActionResult<Guid>> CreateFromRoutine(Guid routineId, [FromBody] CreateFromRoutineRequest request)
     {
+        await _createFromRoutineValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var workoutId = await _mediator.Send(new CreateWorkoutFromRoutineCommand(userId, routineId, request.Date));
         return CreatedAtAction(nameof(GetWorkoutById), new { id = workoutId }, workoutId);
@@ -258,6 +311,3 @@ public class WorkoutController : ControllerBase
         return NoContent();
     }
 }
-
-public record SaveRoutineRequest(string Name, string? Description);
-public record CreateFromRoutineRequest(DateTime Date);

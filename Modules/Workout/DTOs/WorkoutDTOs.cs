@@ -32,6 +32,15 @@ public record UpdateWorkoutRequest(
     bool? IsPrivate
 );
 
+public record SaveRoutineRequest(
+    string Name,
+    string? Description
+);
+
+public record CreateFromRoutineRequest(
+    DateTime Date
+);
+
 // Response DTOs
 public record WorkoutResponse(
     Guid Id,
