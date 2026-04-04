@@ -186,6 +186,19 @@ public class UserGoal : AggregateRoot<Guid>
         }
     }
 
+    public void RestoreProgress(double currentValue)
+    {
+        CurrentValue = Math.Max(0, currentValue);
+
+        if (Status == GoalStatus.Completed && CurrentValue < TargetValue)
+            Status = GoalStatus.Active;
+
+        if (Status == GoalStatus.Active && CurrentValue >= TargetValue)
+            Status = GoalStatus.Completed;
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void MarkFailed()
     {
         Status = GoalStatus.Failed;

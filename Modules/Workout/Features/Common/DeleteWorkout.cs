@@ -11,11 +11,13 @@ public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
 {
     private readonly IWorkoutRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublisher _publisher;
 
-    public DeleteWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork)
+    public DeleteWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IPublisher publisher)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _publisher = publisher;
     }
 
     public async Task Handle(DeleteWorkoutCommand request, CancellationToken cancellationToken)
@@ -28,9 +30,17 @@ public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
         if (workout.UserId != request.UserId)
             throw new UnauthorizedAccessException("Cannot delete another user's workout.");
 
-        workout.Delete(); // Emits WorkoutDeletedEvent
+        workout.Delete();
+        var domainEvents = workout.DomainEvents.ToList();
+        workout.ClearDomainEvents();
 
         await _repository.DeleteAsync(workout, cancellationToken);
+
+        foreach (var domainEvent in domainEvents)
+        {
+            await _publisher.Publish(domainEvent, cancellationToken);
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
