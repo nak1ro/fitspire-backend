@@ -17,11 +17,13 @@ public class AuthService : IAuthService
     private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
+    private readonly string _frontendBaseUrl;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
         ITokenService tokenService, IEmailService emailService, IValidator<RegisterDto> registerValidator,
         IValidator<ChangePasswordDto> changePasswordValidator,
         IValidator<ForgotPasswordDto> forgotPasswordValidator,
+        IConfiguration configuration,
         IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _userManager = userManager;
@@ -32,6 +34,7 @@ public class AuthService : IAuthService
         _changePasswordValidator = changePasswordValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
+        _frontendBaseUrl = GetFrontendBaseUrl(configuration);
     }
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
@@ -64,8 +67,10 @@ public class AuthService : IAuthService
 
         // Generate email confirmation token
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var confirmationLink =
-            $"https://your-frontend-app/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+        var confirmationLink = BuildFrontendLink(
+            "confirm-email",
+            ("userId", user.Id.ToString()),
+            ("token", token));
 
         var emailHtml = $@"
                 <p>Hello {user.DisplayName},</p>
@@ -168,8 +173,10 @@ public class AuthService : IAuthService
             return;
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var resetLink =
-            $"https://your-frontend-app/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
+        var resetLink = BuildFrontendLink(
+            "reset-password",
+            ("email", user.Email!),
+            ("token", token));
 
         var emailHtml = $@"
                 <p>Hello {user.DisplayName},</p>
@@ -214,5 +221,25 @@ public class AuthService : IAuthService
                 ? "Invalid reset request."
                 : errorMessages);
         }
+    }
+
+    private string BuildFrontendLink(string path, params (string Key, string Value)[] queryParameters)
+    {
+        var normalizedPath = path.TrimStart('/');
+        var query = string.Join(
+            "&",
+            queryParameters.Select(parameter =>
+                $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
+
+        return $"{_frontendBaseUrl}/{normalizedPath}?{query}";
+    }
+
+    private static string GetFrontendBaseUrl(IConfiguration configuration)
+    {
+        var baseUrl = configuration["Frontend:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("Frontend:BaseUrl configuration is required for account email links.");
+
+        return baseUrl.Trim().TrimEnd('/');
     }
 }
