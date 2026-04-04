@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using AutoMapper;
 using backend.Modules.Shared.Constants;
+using backend.Modules.Shared.Extensions;
 using backend.Modules.Shared.Service;
 using backend.Modules.User.Domain;
 using backend.Modules.User.DTOs;
@@ -25,12 +25,13 @@ public class UserService : IUserService
         _mapper = mapper;
     }
 
-    private string GetCurrentUserIdOrThrow()
+    private Guid GetCurrentUserIdOrThrow()
     {
-        var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var principal = _httpContextAccessor.HttpContext?.User;
+        if (principal is null)
             throw new UnauthorizedAccessException("User not found.");
-        return userId;
+
+        return principal.GetRequiredUserId();
     }
 
     private async Task<AppUser> GetCurrentUserOrThrowAsync()
@@ -38,7 +39,7 @@ public class UserService : IUserService
         var userId = GetCurrentUserIdOrThrow();
         var user = await _userManager.Users
             .Include(u => u.AppUserPreference)
-            .FirstOrDefaultAsync(u => u.Id == Guid.Parse(userId));
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
             throw new UnauthorizedAccessException("User not found.");
         return user;
