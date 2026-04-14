@@ -1,6 +1,7 @@
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Goal.Infrastructure;
 using backend.Modules.Shared;
+using backend.Modules.Shared.Domain;
 using MediatR;
 
 namespace backend.Modules.Goal.Features;
@@ -29,6 +30,10 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
 
     public async Task<Guid> Handle(CreateGoalCommand request, CancellationToken cancellationToken)
     {
+        var goalType = await _repository.GetGoalTypeByIdAsync(request.GoalTypeId, cancellationToken);
+        if (goalType is null)
+            throw new NotFoundException($"Goal type {request.GoalTypeId} not found.");
+
         var goal = new UserGoal(
             Guid.NewGuid(),
             request.UserId,

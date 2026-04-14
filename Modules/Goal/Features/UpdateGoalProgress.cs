@@ -27,6 +27,9 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
 
     public async Task Handle(UpdateGoalProgressCommand request, CancellationToken cancellationToken)
     {
+        if (request.Delta <= 0)
+            throw new DomainException("Progress delta must be greater than zero.");
+
         var goal = await _repository.GetByIdAsync(request.GoalId, cancellationToken);
         
         if (goal == null)
@@ -46,7 +49,7 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
             goal.Id,
             previousValue,
             goal.CurrentValue,
-            request.Source ?? "manual",
+            string.IsNullOrWhiteSpace(request.Source) ? "manual" : request.Source.Trim(),
             request.SourceEntityId
         );
 

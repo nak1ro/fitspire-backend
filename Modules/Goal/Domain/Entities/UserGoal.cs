@@ -43,15 +43,30 @@ public class UserGoal : AggregateRoot<Guid>
         string? recurrencePattern = null,
         bool isPublic = false)
     {
+        if (goalTypeId == Guid.Empty)
+            throw new DomainException("Goal type is required.");
+
+        if (targetValue <= 0)
+            throw new DomainException("Target value must be greater than zero.");
+
+        if (string.IsNullOrWhiteSpace(unit))
+            throw new DomainException("Goal unit is required.");
+
+        if (deadline.HasValue && deadline.Value <= DateTime.UtcNow)
+            throw new DomainException("Goal deadline must be in the future.");
+
+        if (isRecurring && string.IsNullOrWhiteSpace(recurrencePattern))
+            throw new DomainException("Recurrence pattern is required for recurring goals.");
+
         Id = id;
         UserId = userId;
         GoalTypeId = goalTypeId;
         TargetValue = targetValue;
-        Unit = unit;
+        Unit = unit.Trim();
         StartDate = startDate;
         Deadline = deadline;
         IsRecurring = isRecurring;
-        RecurrencePattern = recurrencePattern;
+        RecurrencePattern = string.IsNullOrWhiteSpace(recurrencePattern) ? null : recurrencePattern.Trim().ToLowerInvariant();
         IsPublic = isPublic;
         Status = GoalStatus.Active;
         CurrentValue = 0;
