@@ -18,6 +18,7 @@ public class AuthService : IAuthService
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
     private readonly string _frontendBaseUrl;
+    private readonly bool _useMockEmail;
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
         ITokenService tokenService, IEmailService emailService, IValidator<RegisterDto> registerValidator,
@@ -35,6 +36,7 @@ public class AuthService : IAuthService
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
         _frontendBaseUrl = GetFrontendBaseUrl(configuration);
+        _useMockEmail = configuration.GetValue("Email:UseMockEmail", true);
     }
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
@@ -78,16 +80,9 @@ public class AuthService : IAuthService
                 <a href=""{confirmationLink}"">Confirm Email</a>
             ";
         
-        await _emailService.SendMockEmailAsync(user.Email, "Confirm your Fitspire account", emailHtml);
-        
-        return new NewUserDto
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email,
-            CreatedAt = user.CreatedAt,
-            Token = null // don't return a token before confirmation
-        };
+        await SendAccountEmailAsync(RequireEmail(user), "Confirm your Fitspire account", emailHtml);
+
+        return CreateNewUserDto(user, null);
     }
 
 
@@ -107,14 +102,7 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
             throw new UnauthorizedAccessException("Invalid credentials");
 
-        return new NewUserDto
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email,
-            CreatedAt = user.CreatedAt,
-            Token = await _tokenService.CreateToken(user)
-        };
+        return CreateNewUserDto(user, await _tokenService.CreateToken(user));
     }
 
     public async Task<bool> ConfirmEmailAsync(Guid userId, string token)
@@ -129,7 +117,7 @@ public class AuthService : IAuthService
 
     public async Task<NewUserDto> ExternalLoginAsync(ExternalLoginDto dto)
     {
-        if (dto.Provider != "Google")
+        if (!dto.Provider.Equals("Google", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Unsupported provider.");
 
         // Validate the Google token (using Google API)
@@ -154,14 +142,7 @@ public class AuthService : IAuthService
         }
 
         // Issue JWT
-        return new NewUserDto
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email,
-            CreatedAt = user.CreatedAt,
-            Token = await _tokenService.CreateToken(user)
-        };
+        return CreateNewUserDto(user, await _tokenService.CreateToken(user));
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
@@ -184,7 +165,7 @@ public class AuthService : IAuthService
                 <a href=""{resetLink}"">Reset Password</a>
             ";
 
-        await _emailService.SendMockEmailAsync(user.Email!, "Reset your Fitspire password", emailHtml);
+        await SendAccountEmailAsync(user.Email!, "Reset your Fitspire password", emailHtml);
     }
 
     public async Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
@@ -232,6 +213,35 @@ public class AuthService : IAuthService
                 $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
 
         return $"{_frontendBaseUrl}/{normalizedPath}?{query}";
+    }
+
+    private Task SendAccountEmailAsync(string to, string subject, string htmlContent)
+    {
+        return _useMockEmail
+            ? _emailService.SendMockEmailAsync(to, subject, htmlContent)
+            : _emailService.SendEmailAsync(to, subject, htmlContent);
+    }
+
+    private static NewUserDto CreateNewUserDto(AppUser user, string? token)
+    {
+        return new NewUserDto
+        {
+            Id = user.Id,
+            UserName = RequireUserName(user),
+            Email = RequireEmail(user),
+            CreatedAt = user.CreatedAt,
+            Token = token
+        };
+    }
+
+    private static string RequireUserName(AppUser user)
+    {
+        return user.UserName ?? throw new InvalidOperationException("Username is required for auth responses.");
+    }
+
+    private static string RequireEmail(AppUser user)
+    {
+        return user.Email ?? throw new InvalidOperationException("Email is required for auth responses.");
     }
 
     private static string GetFrontendBaseUrl(IConfiguration configuration)

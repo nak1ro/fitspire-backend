@@ -10,7 +10,7 @@ public class ResendEmailService : IEmailService
     public ResendEmailService(ResendClient client, IConfiguration config)
     {
         _client = client;
-        _senderEmail = config["Resend:SenderEmail"];
+        _senderEmail = GetRequiredSenderEmail(config);
     }
 
     public async Task SendEmailAsync(string to, string subject, string htmlContent)
@@ -33,5 +33,14 @@ public class ResendEmailService : IEmailService
         Console.WriteLine($"Subject: {subject}");
         Console.WriteLine($"Content: {htmlContent}");
         return Task.CompletedTask;
+    }
+
+    private static string GetRequiredSenderEmail(IConfiguration config)
+    {
+        var senderEmail = config["Resend:SenderEmail"];
+        if (string.IsNullOrWhiteSpace(senderEmail))
+            throw new InvalidOperationException("Resend:SenderEmail configuration is required for real email delivery.");
+
+        return senderEmail;
     }
 }

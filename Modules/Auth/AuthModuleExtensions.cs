@@ -3,6 +3,7 @@ using backend.Modules.Auth.Services;
 using backend.Modules.Auth.DTOs;
 using backend.Modules.Auth.Validators;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,8 +13,11 @@ public static class AuthModuleExtensions
 {
     public static IServiceCollection AddAuthModule(this IServiceCollection services, IConfiguration configuration)
     {
-        var jwtSection = configuration.GetSection("JWT");
-        services.AddAuthentication(options =>
+        var issuer = GetRequiredConfig(configuration, "JWT:Issuer");
+        var audience = GetRequiredConfig(configuration, "JWT:Audience");
+        var signingKey = CreateSigningKey(GetRequiredConfig(configuration, "JWT:SigningKey"));
+
+        var authenticationBuilder = services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -23,23 +27,20 @@ public static class AuthModuleExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = jwtSection["Issuer"],
+                    ValidIssuer = issuer,
 
                     ValidateAudience = true,
-                    ValidAudience = jwtSection["Audience"],
+                    ValidAudience = audience,
 
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSection["SigningKey"])),
+                    IssuerSigningKey = signingKey,
 
                     ValidateLifetime = true
                 };
-            })
-            .AddGoogle(options =>
-            {
-                options.ClientId = "<your-google-client-id>";
-                options.ClientSecret = "<your-google-client-secret>";
             });
+
+        AddGoogleIfConfigured(authenticationBuilder, configuration);
+
         services.AddAuthorization();
 
         services.AddScoped<IAuthService, AuthService>();
@@ -51,5 +52,40 @@ public static class AuthModuleExtensions
         services.AddScoped<IValidator<ResetPasswordDto>, ResetPasswordDtoValidator>();
 
         return services;
+    }
+
+    private static void AddGoogleIfConfigured(AuthenticationBuilder authenticationBuilder, IConfiguration configuration)
+    {
+        var clientId = configuration["Authentication:Google:ClientId"];
+        var clientSecret = configuration["Authentication:Google:ClientSecret"];
+
+        if (string.IsNullOrWhiteSpace(clientId) && string.IsNullOrWhiteSpace(clientSecret))
+            return;
+
+        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+            throw new InvalidOperationException("Both Authentication:Google:ClientId and Authentication:Google:ClientSecret must be configured.");
+
+        authenticationBuilder.AddGoogle(options =>
+        {
+            options.ClientId = clientId;
+            options.ClientSecret = clientSecret;
+        });
+    }
+
+    private static string GetRequiredConfig(IConfiguration configuration, string key)
+    {
+        var value = configuration[key];
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException($"{key} configuration is required.");
+
+        return value;
+    }
+
+    private static SymmetricSecurityKey CreateSigningKey(string signingKey)
+    {
+        if (Encoding.UTF8.GetByteCount(signingKey) < 32)
+            throw new InvalidOperationException("JWT:SigningKey must be at least 32 bytes long.");
+
+        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
     }
 }

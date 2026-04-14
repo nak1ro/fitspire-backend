@@ -6,5 +6,5 @@ public class NewUserDto
     public string UserName { get; set; } = null!;
     public string Email { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
-    public string Token { get; set; }
+    public string? Token { get; set; }
 }
