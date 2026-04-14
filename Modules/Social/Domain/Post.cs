@@ -32,13 +32,18 @@ public class Post : Entity<Guid>
     /// </summary>
     public static Post CreateTextPost(Guid userId, string content, string? imageUrl = null)
     {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new DomainException("Post content is required.");
+        }
+
         return new Post
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             Type = PostType.Text,
-            Content = content,
-            ImageUrl = imageUrl,
+            Content = content.Trim(),
+            ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl,
             CreatedAt = DateTime.UtcNow
         };
     }

@@ -1,5 +1,6 @@
 using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Infrastructure;
+using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
 
@@ -20,6 +21,9 @@ public class GetUserPostsHandler : IRequestHandler<GetUserPostsQuery, List<FeedI
 
     public async Task<List<FeedItemResponse>> Handle(GetUserPostsQuery request, CancellationToken cancellationToken)
     {
+        if (!await _socialRepository.UserExistsAsync(request.TargetUserId, cancellationToken))
+            throw new NotFoundException($"User {request.TargetUserId} not found.");
+
         var posts = await _socialRepository.GetUserPostsAsync(
             request.TargetUserId,
             request.Page,

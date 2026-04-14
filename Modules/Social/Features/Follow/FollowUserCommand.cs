@@ -1,6 +1,7 @@
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
+using backend.Modules.Shared.Domain;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Follow;
@@ -20,22 +21,25 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, bool>
 
     public async Task<bool> Handle(FollowUserCommand request, CancellationToken cancellationToken)
     {
-        // Check if already following
+        if (request.FollowerId == request.FollowedId)
+            throw new DomainException("Users cannot follow themselves.");
+
+        if (!await _socialRepository.UserExistsAsync(request.FollowedId, cancellationToken))
+            throw new NotFoundException($"User {request.FollowedId} not found.");
+
         var existingFollow = await _socialRepository.GetFollowAsync(request.FollowerId, request.FollowedId, cancellationToken);
         
         if (existingFollow != null)
         {
-            // Unfollow
             await _socialRepository.RemoveFollowerAsync(existingFollow, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return false; // Unfollowed
+            return false;
         }
 
-        // Follow
         var follower = new Follower(request.FollowerId, request.FollowedId);
         await _socialRepository.AddFollowerAsync(follower, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         
-        return true; // Now following
+        return true;
     }
 }

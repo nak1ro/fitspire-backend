@@ -1,6 +1,7 @@
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
+using backend.Modules.Shared.Domain;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Posts;
@@ -20,22 +21,23 @@ public class LikePostHandler : IRequestHandler<LikePostCommand, bool>
 
     public async Task<bool> Handle(LikePostCommand request, CancellationToken cancellationToken)
     {
-        // Check if already liked
+        var post = await _socialRepository.GetPostByIdAsync(request.PostId, cancellationToken);
+        if (post is null)
+            throw new NotFoundException($"Post {request.PostId} not found.");
+
         var existingLike = await _socialRepository.GetLikeAsync(request.UserId, request.PostId, cancellationToken);
         
         if (existingLike != null)
         {
-            // Unlike
             await _socialRepository.RemoveLikeAsync(existingLike, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return false; // Returned unliked
+            return false;
         }
 
-        // Like
         var like = Like.CreateForPost(request.UserId, request.PostId);
         await _socialRepository.AddLikeAsync(like, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         
-        return true; // Returned liked
+        return true;
     }
 }

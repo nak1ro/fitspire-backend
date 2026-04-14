@@ -1,6 +1,7 @@
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
+using backend.Modules.Shared.Domain;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Posts;
@@ -20,6 +21,10 @@ public class CommentOnPostHandler : IRequestHandler<CommentOnPostCommand, Guid>
 
     public async Task<Guid> Handle(CommentOnPostCommand request, CancellationToken cancellationToken)
     {
+        var post = await _socialRepository.GetPostByIdAsync(request.PostId, cancellationToken);
+        if (post is null)
+            throw new NotFoundException($"Post {request.PostId} not found.");
+
         var comment = new Comment(request.PostId, request.UserId, request.Content);
 
         await _socialRepository.AddCommentAsync(comment, cancellationToken);

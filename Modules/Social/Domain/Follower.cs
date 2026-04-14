@@ -18,6 +18,9 @@ public class Follower : Entity<Guid>
 
     public Follower(Guid followerId, Guid followedId)
     {
+        if (followerId == followedId)
+            throw new DomainException("Users cannot follow themselves.");
+
         Id = Guid.NewGuid();
         FollowerId = followerId;
         FollowedId = followedId;

@@ -20,10 +20,13 @@ public class Comment : Entity<Guid>
 
     public Comment(Guid postId, Guid userId, string content)
     {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new DomainException("Comment content is required.");
+
         Id = Guid.NewGuid();
         PostId = postId;
         UserId = userId;
-        Content = content;
+        Content = content.Trim();
         CreatedAt = DateTime.UtcNow;
     }
 

@@ -5,6 +5,8 @@ namespace backend.Modules.Social.Infrastructure;
 
 public interface ISocialRepository
 {
+    Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken = default);
+
     // Posts
     Task<Post?> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default);
     Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default);

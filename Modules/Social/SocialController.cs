@@ -3,6 +3,8 @@ using backend.Modules.Social.Features.Feed;
 using backend.Modules.Social.Features.Follow;
 using backend.Modules.Social.Features.Posts;
 using backend.Modules.Shared.Extensions;
+using backend.Modules.Shared.Domain;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +17,20 @@ namespace backend.Modules.Social;
 public class SocialController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IValidator<CreatePostRequest> _createPostValidator;
+    private readonly IValidator<UpdatePostRequest> _updatePostValidator;
+    private readonly IValidator<CommentRequest> _commentValidator;
 
-    public SocialController(IMediator mediator)
+    public SocialController(
+        IMediator mediator,
+        IValidator<CreatePostRequest> createPostValidator,
+        IValidator<UpdatePostRequest> updatePostValidator,
+        IValidator<CommentRequest> commentValidator)
     {
         _mediator = mediator;
+        _createPostValidator = createPostValidator;
+        _updatePostValidator = updatePostValidator;
+        _commentValidator = commentValidator;
     }
 
     /// <summary>
@@ -27,6 +39,8 @@ public class SocialController : ControllerBase
     [HttpGet("feed")]
     public async Task<ActionResult<List<FeedItemResponse>>> GetFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
+        ValidatePagination(page, pageSize);
+
         var userId = User.GetRequiredUserId();
         var feed = await _mediator.Send(new GetUserFeedQuery(userId, page, pageSize));
         return Ok(feed);
@@ -41,6 +55,8 @@ public class SocialController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        ValidatePagination(page, pageSize);
+
         var viewerUserId = User.GetRequiredUserId();
         var posts = await _mediator.Send(new GetUserPostsQuery(viewerUserId, targetUserId, page, pageSize));
         return Ok(posts);
@@ -52,6 +68,8 @@ public class SocialController : ControllerBase
     [HttpPost("posts")]
     public async Task<ActionResult<Guid>> CreatePost([FromBody] CreatePostRequest request)
     {
+        await _createPostValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.ImageUrl));
         return CreatedAtAction(nameof(GetFeed), new { id = postId }, postId);
@@ -63,6 +81,8 @@ public class SocialController : ControllerBase
     [HttpPatch("posts/{postId:guid}")]
     public async Task<IActionResult> UpdatePost(Guid postId, [FromBody] UpdatePostRequest request)
     {
+        await _updatePostValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new UpdatePostCommand(userId, postId, request.Content, request.ImageUrl));
         return NoContent();
@@ -96,6 +116,8 @@ public class SocialController : ControllerBase
     [HttpPost("posts/{postId:guid}/comments")]
     public async Task<ActionResult<Guid>> CommentOnPost(Guid postId, [FromBody] CommentRequest request)
     {
+        await _commentValidator.ValidateAndThrowAsync(request);
+
         var userId = User.GetRequiredUserId();
         var commentId = await _mediator.Send(new CommentOnPostCommand(userId, postId, request.Content));
         return Ok(commentId);
@@ -121,6 +143,15 @@ public class SocialController : ControllerBase
         var userId = User.GetRequiredUserId();
         var isFollowing = await _mediator.Send(new FollowUserCommand(userId, targetUserId));
         return Ok(new FollowResponse(isFollowing));
+    }
+
+    private static void ValidatePagination(int page, int pageSize)
+    {
+        if (page < 1)
+            throw new DomainException("Page must be greater than zero.");
+
+        if (pageSize is < 1 or > 100)
+            throw new DomainException("Page size must be between 1 and 100.");
     }
 }
 

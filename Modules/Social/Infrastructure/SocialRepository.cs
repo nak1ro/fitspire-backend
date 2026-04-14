@@ -14,6 +14,11 @@ public class SocialRepository : ISocialRepository
         _context = context;
     }
 
+    public async Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users.AnyAsync(user => user.Id == userId, cancellationToken);
+    }
+
     // Posts
     public async Task<Post?> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default)
     {
