@@ -8,7 +8,10 @@ public class FriendshipRequestConfiguration : IEntityTypeConfiguration<Friendshi
 {
     public void Configure(EntityTypeBuilder<FriendshipRequest> builder)
     {
-        builder.ToTable("FriendshipRequest");
+        builder.ToTable("FriendshipRequest", table =>
+            table.HasCheckConstraint(
+                "CK_FriendshipRequest_Status",
+                "\"Status\" IN ('pending', 'accepted', 'rejected')"));
 
         builder.HasKey(r => r.Id);
 
@@ -28,8 +31,6 @@ public class FriendshipRequestConfiguration : IEntityTypeConfiguration<Friendshi
 
         builder.Property(r => r.RequestedAt)
             .HasDefaultValueSql("NOW()");
-
-        builder.HasCheckConstraint("CK_FriendshipRequest_Status", "\"Status\" IN ('pending', 'accepted', 'rejected')");
 
         builder.HasIndex(r => new { r.RequesterId, r.AddresseeId })
             .IsUnique();

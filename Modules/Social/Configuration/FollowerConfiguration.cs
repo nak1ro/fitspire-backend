@@ -8,7 +8,8 @@ public class FollowerConfiguration : IEntityTypeConfiguration<Follower>
 {
     public void Configure(EntityTypeBuilder<Follower> builder)
     {
-        builder.ToTable("Follower");
+        builder.ToTable("Follower", table =>
+            table.HasCheckConstraint("CK_Follower_NotSelfFollow", "\"FollowerId\" <> \"FollowedId\""));
 
         builder.HasKey(f => f.Id);
 
@@ -26,7 +27,5 @@ public class FollowerConfiguration : IEntityTypeConfiguration<Follower>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(f => new { f.FollowerId, f.FollowedId }).IsUnique();
-
-        builder.HasCheckConstraint("CK_Follower_NotSelfFollow", "\"FollowerId\" <> \"FollowedId\"");
     }
 }

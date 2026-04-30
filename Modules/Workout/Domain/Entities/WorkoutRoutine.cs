@@ -13,9 +13,6 @@ public class WorkoutRoutine : AggregateRoot<Guid>
     // Stores the JSON representation of the workout creation command or data
     public string RoutineDataJson { get; private set; } = null!; 
     
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
-
     // Navigation
     public AppUser User { get; private set; } = null!;
 

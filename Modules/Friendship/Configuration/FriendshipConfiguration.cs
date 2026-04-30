@@ -8,7 +8,8 @@ public class FriendshipConfiguration : IEntityTypeConfiguration<FriendshipConnec
 {
     public void Configure(EntityTypeBuilder<FriendshipConnection> builder)
     {
-        builder.ToTable("Friendship");
+        builder.ToTable("Friendship", table =>
+            table.HasCheckConstraint("CK_Friendship_NoSelf", "\"User1Id\" <> \"User2Id\""));
 
         builder.HasKey(f => f.Id);
 
@@ -24,8 +25,6 @@ public class FriendshipConfiguration : IEntityTypeConfiguration<FriendshipConnec
 
         builder.Property(f => f.BecameFriendsAt)
             .HasDefaultValueSql("NOW()");
-
-        builder.HasCheckConstraint("CK_Friendship_NoSelf", "\"User1Id\" <> \"User2Id\"");
 
         builder.HasIndex(f => new { f.User1Id, f.User2Id })
             .IsUnique();

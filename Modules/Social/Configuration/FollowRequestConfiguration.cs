@@ -8,7 +8,13 @@ public class FollowRequestConfiguration : IEntityTypeConfiguration<FollowRequest
 {
     public void Configure(EntityTypeBuilder<FollowRequest> builder)
     {
-        builder.ToTable("FollowRequest");
+        builder.ToTable("FollowRequest", table =>
+        {
+            table.HasCheckConstraint(
+                "CK_FollowRequest_Status",
+                "\"Status\" IN ('pending', 'accepted', 'rejected')");
+            table.HasCheckConstraint("CK_FollowRequest_NoSelf", "\"RequesterId\" <> \"AddresseeId\"");
+        });
 
         builder.HasKey(fr => fr.Id);
 
@@ -29,10 +35,6 @@ public class FollowRequestConfiguration : IEntityTypeConfiguration<FollowRequest
         builder.Property(fr => fr.RequestedAt)
             .HasDefaultValueSql("NOW()");
 
-        builder.HasCheckConstraint("CK_FollowRequest_Status", "\"Status\" IN ('pending', 'accepted', 'rejected')");
-
         builder.HasIndex(fr => new { fr.RequesterId, fr.AddresseeId }).IsUnique();
-
-        builder.HasCheckConstraint("CK_FollowRequest_NoSelf", "\"RequesterId\" <> \"AddresseeId\"");
     }
 }

@@ -22,7 +22,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     {
     }
 
-    public DbSet<AppUser> Users { get; set; }
+    public new DbSet<AppUser> Users { get; set; }
     public DbSet<AppUserPreference> UserPreferences { get; set; }
 
     public DbSet<Post> Posts { get; set; }
