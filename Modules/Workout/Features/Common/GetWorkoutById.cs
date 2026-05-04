@@ -17,7 +17,7 @@ public class GetWorkoutByIdHandler : IRequestHandler<GetWorkoutByIdQuery, UserWo
 
     public async Task<UserWorkout?> Handle(GetWorkoutByIdQuery request, CancellationToken cancellationToken)
     {
-        var workout = await _workoutRepository.GetByIdAsync(request.WorkoutId, cancellationToken);
+        var workout = await _workoutRepository.GetDetailsByIdAsync(request.WorkoutId, cancellationToken);
         return workout?.UserId == request.UserId ? workout : null;
     }
 }

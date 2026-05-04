@@ -8,6 +8,7 @@ using backend.Modules.Workout.Features.CyclingWorkout;
 using backend.Modules.Workout.Features.SwimmingWorkout;
 using backend.Modules.Workout.Features.YogaWorkout;
 using backend.Modules.Workout.Domain.Enums;
+using backend.Modules.Workout.Domain.Entities;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -193,7 +194,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<WorkoutResponse>> GetWorkoutById(Guid id)
+    public async Task<ActionResult<object>> GetWorkoutById(Guid id)
     {
         var userId = User.GetRequiredUserId();
         var workout = await _mediator.Send(new GetWorkoutByIdQuery(id, userId));
@@ -201,8 +202,20 @@ public class WorkoutController : ControllerBase
         if (workout is null)
             return NotFound();
 
-        var response = _mapper.Map<WorkoutResponse>(workout);
-        return Ok(response);
+        return Ok(MapWorkoutDetails(workout));
+    }
+
+    private object MapWorkoutDetails(UserWorkout workout)
+    {
+        return workout switch
+        {
+            GymUserWorkoutDetails gymWorkout => _mapper.Map<GymWorkoutResponse>(gymWorkout),
+            RunningUserWorkoutDetails runningWorkout => _mapper.Map<RunningWorkoutResponse>(runningWorkout),
+            CyclingUserWorkoutDetails cyclingWorkout => _mapper.Map<CyclingWorkoutResponse>(cyclingWorkout),
+            SwimmingUserWorkoutDetails swimmingWorkout => _mapper.Map<SwimmingWorkoutResponse>(swimmingWorkout),
+            YogaUserWorkoutDetails yogaWorkout => _mapper.Map<YogaWorkoutResponse>(yogaWorkout),
+            _ => _mapper.Map<WorkoutResponse>(workout)
+        };
     }
 
     [HttpPost("{id:guid}/complete")]

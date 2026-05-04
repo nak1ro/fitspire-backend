@@ -19,6 +19,14 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.UserWorkouts.FindAsync(new object[] { id }, cancellationToken);
     }
 
+    public async Task<UserWorkout?> GetDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<UserWorkout>()
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises)
+                .ThenInclude(e => e.Exercise)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+    }
+
     public async Task<List<UserWorkout>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         var workoutIds = ids.Distinct().ToList();
