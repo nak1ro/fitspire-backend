@@ -7,7 +7,7 @@ public interface IAuthService
 {
     public Task<NewUserDto> RegisterAsync(RegisterDto dto);
     public Task<NewUserDto> LoginAsync(LoginDto dto);
-    Task<bool> ConfirmEmailAsync(Guid userId, string token);
+    Task<bool> ConfirmEmailAsync(ConfirmEmailDto dto);
     Task<NewUserDto> ExternalLoginAsync(ExternalLoginDto dto);
     Task ForgotPasswordAsync(ForgotPasswordDto dto);
     Task ResetPasswordAsync(ResetPasswordDto dto);

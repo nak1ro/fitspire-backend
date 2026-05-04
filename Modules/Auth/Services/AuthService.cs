@@ -14,6 +14,9 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
     private readonly IValidator<RegisterDto> _registerValidator;
+    private readonly IValidator<LoginDto> _loginValidator;
+    private readonly IValidator<ConfirmEmailDto> _confirmEmailValidator;
+    private readonly IValidator<ExternalLoginDto> _externalLoginValidator;
     private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
@@ -22,6 +25,9 @@ public class AuthService : IAuthService
 
     public AuthService(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
         ITokenService tokenService, IEmailService emailService, IValidator<RegisterDto> registerValidator,
+        IValidator<LoginDto> loginValidator,
+        IValidator<ConfirmEmailDto> confirmEmailValidator,
+        IValidator<ExternalLoginDto> externalLoginValidator,
         IValidator<ChangePasswordDto> changePasswordValidator,
         IValidator<ForgotPasswordDto> forgotPasswordValidator,
         IConfiguration configuration,
@@ -32,6 +38,9 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _emailService = emailService;
         _registerValidator = registerValidator;
+        _loginValidator = loginValidator;
+        _confirmEmailValidator = confirmEmailValidator;
+        _externalLoginValidator = externalLoginValidator;
         _changePasswordValidator = changePasswordValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
@@ -88,6 +97,8 @@ public class AuthService : IAuthService
 
     public async Task<NewUserDto> LoginAsync(LoginDto dto)
     {
+        await _loginValidator.ValidateAndThrowAsync(dto);
+
         var user = await _userManager.Users
             .FirstOrDefaultAsync(u => u.UserName == dto.Login || u.Email == dto.Login);
 
@@ -105,18 +116,22 @@ public class AuthService : IAuthService
         return CreateNewUserDto(user, await _tokenService.CreateToken(user));
     }
 
-    public async Task<bool> ConfirmEmailAsync(Guid userId, string token)
+    public async Task<bool> ConfirmEmailAsync(ConfirmEmailDto dto)
     {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
+        await _confirmEmailValidator.ValidateAndThrowAsync(dto);
+
+        var user = await _userManager.FindByIdAsync(dto.UserId.ToString());
         if (user == null)
             throw new UnauthorizedAccessException("Invalid username or email");
 
-        var result = await _userManager.ConfirmEmailAsync(user, token);
+        var result = await _userManager.ConfirmEmailAsync(user, dto.Token);
         return result.Succeeded;
     }
 
     public async Task<NewUserDto> ExternalLoginAsync(ExternalLoginDto dto)
     {
+        await _externalLoginValidator.ValidateAndThrowAsync(dto);
+
         if (!dto.Provider.Equals("Google", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Unsupported provider.");
 

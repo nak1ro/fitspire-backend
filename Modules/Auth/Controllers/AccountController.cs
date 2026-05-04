@@ -34,7 +34,7 @@ public class AccountController : ControllerBase
     [HttpPost("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
     {
-        var success = await _authService.ConfirmEmailAsync(dto.UserId, dto.Token);
+        var success = await _authService.ConfirmEmailAsync(dto);
         if (success)
             return Ok("Email confirmed.");
         else
