@@ -47,7 +47,8 @@ public abstract class UserWorkout : AggregateRoot<Guid>
 
         Status = WorkoutStatus.Completed;
         CompletedAt = DateTime.UtcNow;
-        DurationMinutes = durationMinutes;
+        if (durationMinutes.HasValue)
+            DurationMinutes = durationMinutes.Value;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new WorkoutCompletedEvent(
