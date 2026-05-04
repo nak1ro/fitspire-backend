@@ -1,5 +1,6 @@
 using backend.Modules.User.DTOs;
 using backend.Modules.User.Services;
+using backend.Modules.Shared.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +21,7 @@ public class UserController : ControllerBase
     [HttpGet("profile")]
     public async Task<ActionResult<UserProfileDto>> GetProfile()
     {
-        var profile = await _userService.GetProfileAsync();
+        var profile = await _userService.GetProfileAsync(User.GetRequiredUserId());
         return Ok(profile);
     }
 
@@ -28,7 +29,7 @@ public class UserController : ControllerBase
     [HttpPatch("profile")]
     public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
-        var updated = await _userService.UpdateProfileAsync(dto);
+        var updated = await _userService.UpdateProfileAsync(User.GetRequiredUserId(), dto);
         return Ok(updated);
     }
     
@@ -36,7 +37,7 @@ public class UserController : ControllerBase
     [HttpPatch("profile/photo")]
     public async Task<ActionResult<UserProfileDto>> UpdateProfilePicture([FromForm] IFormFile file)
     {
-        var updated = await _userService.UpdateProfilePictureAsync(file);
+        var updated = await _userService.UpdateProfilePictureAsync(User.GetRequiredUserId(), file);
         return Ok(updated);
     }
 
@@ -44,7 +45,7 @@ public class UserController : ControllerBase
     [HttpGet("preferences")]
     public async Task<ActionResult<UserPreferencesDto>> GetPreferences()
     {
-        var preferences = await _userService.GetPreferencesAsync();
+        var preferences = await _userService.GetPreferencesAsync(User.GetRequiredUserId());
         return Ok(preferences);
     }
 
@@ -52,7 +53,7 @@ public class UserController : ControllerBase
     [HttpPatch("preferences")]
     public async Task<ActionResult<UserPreferencesDto>> UpdatePreferences([FromBody] UpdateUserPreferencesDto dto)
     {
-        var updatedPrefs = await _userService.UpdatePreferencesAsync(dto);
+        var updatedPrefs = await _userService.UpdatePreferencesAsync(User.GetRequiredUserId(), dto);
         return Ok(updatedPrefs);
     }
 }

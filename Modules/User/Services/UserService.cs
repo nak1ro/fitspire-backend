@@ -1,6 +1,5 @@
 using AutoMapper;
 using backend.Modules.Shared.Constants;
-using backend.Modules.Shared.Extensions;
 using backend.Modules.Shared.Service;
 using backend.Modules.User.Domain;
 using backend.Modules.User.DTOs;
@@ -12,31 +11,18 @@ namespace backend.Modules.User.Services;
 public class UserService : IUserService
 {
     private readonly UserManager<AppUser> _userManager;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlobService _blobService;
     private readonly IMapper _mapper;
 
-    public UserService(UserManager<AppUser> userManager, IHttpContextAccessor httpContextAccessor,
-        IBlobService blobService, IMapper mapper)
+    public UserService(UserManager<AppUser> userManager, IBlobService blobService, IMapper mapper)
     {
         _userManager = userManager;
-        _httpContextAccessor = httpContextAccessor;
         _blobService = blobService;
         _mapper = mapper;
     }
 
-    private Guid GetCurrentUserIdOrThrow()
+    private async Task<AppUser> GetUserOrThrowAsync(Guid userId)
     {
-        var principal = _httpContextAccessor.HttpContext?.User;
-        if (principal is null)
-            throw new UnauthorizedAccessException("User not found.");
-
-        return principal.GetRequiredUserId();
-    }
-
-    private async Task<AppUser> GetCurrentUserOrThrowAsync()
-    {
-        var userId = GetCurrentUserIdOrThrow();
         var user = await _userManager.Users
             .Include(u => u.AppUserPreference)
             .FirstOrDefaultAsync(u => u.Id == userId);
@@ -59,22 +45,22 @@ public class UserService : IUserService
             throw new ArgumentException("Unsupported file extension. Only .jpg, .jpeg, .png, .webp are allowed.");
     }
 
-    public async Task<UserProfileDto> GetProfileAsync()
+    public async Task<UserProfileDto> GetProfileAsync(Guid userId)
     {
-        var user = await GetCurrentUserOrThrowAsync();
+        var user = await GetUserOrThrowAsync(userId);
         return _mapper.Map<UserProfileDto>(user);
     }
 
-    public async Task<UserPreferencesDto> GetPreferencesAsync()
+    public async Task<UserPreferencesDto> GetPreferencesAsync(Guid userId)
     {
-        var user = await GetCurrentUserOrThrowAsync();
+        var user = await GetUserOrThrowAsync(userId);
         var preferences = user.AppUserPreference ?? new AppUserPreference();
         return _mapper.Map<UserPreferencesDto>(preferences);
     }
 
-    public async Task<UserProfileDto> UpdateProfileAsync(UpdateProfileDto dto)
+    public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
     {
-        var user = await GetCurrentUserOrThrowAsync();
+        var user = await GetUserOrThrowAsync(userId);
 
         if (dto.DisplayName != null)
             user.DisplayName = dto.DisplayName;
@@ -89,9 +75,9 @@ public class UserService : IUserService
         return _mapper.Map<UserProfileDto>(user);
     }
 
-    public async Task<UserProfileDto> UpdateProfilePictureAsync(IFormFile file)
+    public async Task<UserProfileDto> UpdateProfilePictureAsync(Guid userId, IFormFile file)
     {
-        var user = await GetCurrentUserOrThrowAsync();
+        var user = await GetUserOrThrowAsync(userId);
         ValidateProfilePicture(file);
 
         var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
@@ -114,9 +100,9 @@ public class UserService : IUserService
         return _mapper.Map<UserProfileDto>(user);
     }
 
-    public async Task<UserPreferencesDto> UpdatePreferencesAsync(UpdateUserPreferencesDto dto)
+    public async Task<UserPreferencesDto> UpdatePreferencesAsync(Guid userId, UpdateUserPreferencesDto dto)
     {
-        var user = await GetCurrentUserOrThrowAsync();
+        var user = await GetUserOrThrowAsync(userId);
 
         var prefs = user.AppUserPreference ?? new AppUserPreference
         {
