@@ -105,10 +105,6 @@ public class AuthService : IAuthService
         if (user == null)
             throw new UnauthorizedAccessException("Invalid username or email");
 
-        // Require email confirmation
-        if (!user.EmailConfirmed)
-            throw new UnauthorizedAccessException("Email not confirmed.");
-
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
         if (!result.Succeeded)
             throw new UnauthorizedAccessException("Invalid credentials");
