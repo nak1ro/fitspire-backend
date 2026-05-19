@@ -11,3 +11,7 @@ public record NotificationResponse(
     DateTime? ReadAt,
     DateTime CreatedAt
 );
+
+public record UnreadNotificationCountResponse(int Count);
+
+public record MarkAllNotificationsReadResponse(int Count);
