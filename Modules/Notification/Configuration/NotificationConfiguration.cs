@@ -12,8 +12,17 @@ public class NotificationConfiguration : IEntityTypeConfiguration<AppNotificatio
 
         builder.HasKey(n => n.Id);
 
-        builder.Property(n => n.Message)
+        builder.Property(n => n.Type)
+            .HasConversion<string>()
+            .HasMaxLength(64)
             .IsRequired();
+
+        builder.Property(n => n.Message)
+            .HasMaxLength(500)
+            .IsRequired();
+
+        builder.Property(n => n.ReferenceEntityType)
+            .HasMaxLength(64);
 
         builder.Property(n => n.IsRead)
             .HasDefaultValue(false);
@@ -25,5 +34,8 @@ public class NotificationConfiguration : IEntityTypeConfiguration<AppNotificatio
             .WithMany(u => u.Notifications)
             .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(n => new { n.UserId, n.CreatedAt });
+        builder.HasIndex(n => new { n.UserId, n.IsRead });
     }
 }

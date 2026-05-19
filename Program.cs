@@ -11,6 +11,7 @@ using backend.Modules.Goal;
 using backend.Modules.Social;
 using backend.Modules.Goal.Data;
 using backend.Modules.Shared.Middleware;
+using backend.Modules.Notification;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 
@@ -37,6 +38,7 @@ builder.Services.AddUserModule();
 builder.Services.AddWorkoutModule();
 builder.Services.AddGoalModule();
 builder.Services.AddSocialModule();
+builder.Services.AddNotificationModule();
 
 // MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
