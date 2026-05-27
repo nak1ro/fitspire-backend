@@ -1,3 +1,6 @@
+using backend.Modules.Notification.Domain.Constants;
+using backend.Modules.Notification.Domain.Enums;
+using backend.Modules.Notification.Services;
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
@@ -11,11 +14,16 @@ public record FollowUserCommand(Guid FollowerId, Guid FollowedId) : IRequest<boo
 public class FollowUserHandler : IRequestHandler<FollowUserCommand, bool>
 {
     private readonly ISocialRepository _socialRepository;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
-    public FollowUserHandler(ISocialRepository socialRepository, IUnitOfWork unitOfWork)
+    public FollowUserHandler(
+        ISocialRepository socialRepository,
+        INotificationService notificationService,
+        IUnitOfWork unitOfWork)
     {
         _socialRepository = socialRepository;
+        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -38,8 +46,24 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, bool>
 
         var follower = new Follower(request.FollowerId, request.FollowedId);
         await _socialRepository.AddFollowerAsync(follower, cancellationToken);
+        await CreateFollowNotificationAsync(request, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         
         return true;
+    }
+
+    private async Task CreateFollowNotificationAsync(
+        FollowUserCommand request,
+        CancellationToken cancellationToken)
+    {
+        var followerName = await _socialRepository.GetUserDisplayNameAsync(request.FollowerId, cancellationToken);
+        await _notificationService.CreateAsync(
+            request.FollowedId,
+            NotificationType.Follow,
+            $"{followerName} started following you.",
+            request.FollowerId,
+            request.FollowerId,
+            NotificationReferenceTypes.User,
+            cancellationToken);
     }
 }

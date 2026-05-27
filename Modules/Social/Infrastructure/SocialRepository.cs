@@ -19,6 +19,16 @@ public class SocialRepository : ISocialRepository
         return await _context.Users.AnyAsync(user => user.Id == userId, cancellationToken);
     }
 
+    public async Task<string> GetUserDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.DisplayName, u.UserName })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return user?.DisplayName ?? user?.UserName ?? "Someone";
+    }
+
     // Posts
     public async Task<Post?> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default)
     {

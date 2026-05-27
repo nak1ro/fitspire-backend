@@ -1,3 +1,6 @@
+using backend.Modules.Notification.Domain.Constants;
+using backend.Modules.Notification.Domain.Enums;
+using backend.Modules.Notification.Services;
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
@@ -11,11 +14,16 @@ public record LikePostCommand(Guid UserId, Guid PostId) : IRequest<bool>;
 public class LikePostHandler : IRequestHandler<LikePostCommand, bool>
 {
     private readonly ISocialRepository _socialRepository;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
-    public LikePostHandler(ISocialRepository socialRepository, IUnitOfWork unitOfWork)
+    public LikePostHandler(
+        ISocialRepository socialRepository,
+        INotificationService notificationService,
+        IUnitOfWork unitOfWork)
     {
         _socialRepository = socialRepository;
+        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -36,8 +44,28 @@ public class LikePostHandler : IRequestHandler<LikePostCommand, bool>
 
         var like = Like.CreateForPost(request.UserId, request.PostId);
         await _socialRepository.AddLikeAsync(like, cancellationToken);
+        await CreatePostLikeNotificationAsync(post.UserId, request, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         
         return true;
+    }
+
+    private async Task CreatePostLikeNotificationAsync(
+        Guid postOwnerId,
+        LikePostCommand request,
+        CancellationToken cancellationToken)
+    {
+        if (postOwnerId == request.UserId)
+            return;
+
+        var actorName = await _socialRepository.GetUserDisplayNameAsync(request.UserId, cancellationToken);
+        await _notificationService.CreateAsync(
+            postOwnerId,
+            NotificationType.PostLike,
+            $"{actorName} liked your post.",
+            request.UserId,
+            request.PostId,
+            NotificationReferenceTypes.Post,
+            cancellationToken);
     }
 }
