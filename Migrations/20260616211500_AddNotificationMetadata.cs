@@ -11,6 +11,10 @@ namespace backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "IX_Notification_UserId",
+                table: "Notification");
+
             migrationBuilder.AlterColumn<string>(
                 name: "Message",
                 table: "Notification",
@@ -103,6 +107,11 @@ namespace backend.Migrations
                 oldClrType: typeof(string),
                 oldType: "character varying(500)",
                 oldMaxLength: 500);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_UserId",
+                table: "Notification",
+                column: "UserId");
         }
     }
 }
