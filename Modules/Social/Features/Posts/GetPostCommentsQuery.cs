@@ -28,9 +28,15 @@ public class GetPostCommentsHandler : IRequestHandler<GetPostCommentsQuery, List
 
         ValidatePagination(request.Page, request.PageSize);
         var comments = await _repository.GetTopLevelCommentsAsync(request.PostId, request.Page, request.PageSize, cancellationToken);
+        var replyCounts = await _repository.GetReplyCountsAsync(
+            request.PostId,
+            comments.Select(comment => comment.Id),
+            cancellationToken);
         return comments.Select(comment => new CommentResponse(
             comment.Id, comment.UserId, comment.User.UserName ?? "Unknown", comment.User.ProfilePictureUrl,
             comment.Content, comment.RootCommentId, comment.ReplyToCommentId, comment.Likes.Count,
+            comment.Likes.Any(like => like.UserId == request.ViewerUserId),
+            replyCounts.GetValueOrDefault(comment.Id),
             comment.CreatedAt, comment.UpdatedAt)).ToList();
     }
 

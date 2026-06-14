@@ -32,7 +32,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasOne(c => c.ReplyToComment)
             .WithMany(c => c.Replies)
             .HasForeignKey(c => c.ReplyToCommentId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(c => new { c.PostId, c.RootCommentId, c.CreatedAt });
     }

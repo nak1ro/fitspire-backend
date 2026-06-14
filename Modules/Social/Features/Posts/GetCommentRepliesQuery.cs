@@ -31,12 +31,13 @@ public class GetCommentRepliesHandler : IRequestHandler<GetCommentRepliesQuery, 
 
         var rootCommentId = comment.RootCommentId ?? comment.Id;
         var replies = await _repository.GetCommentRepliesAsync(request.PostId, rootCommentId, request.Page, request.PageSize, cancellationToken);
-        return replies.Select(MapResponse).ToList();
+        return replies.Select(reply => MapResponse(reply, request.ViewerUserId)).ToList();
     }
 
-    private static CommentResponse MapResponse(Domain.Comment comment) => new(
+    private static CommentResponse MapResponse(Domain.Comment comment, Guid viewerUserId) => new(
         comment.Id, comment.UserId, comment.User.UserName ?? "Unknown", comment.User.ProfilePictureUrl,
         comment.Content, comment.RootCommentId, comment.ReplyToCommentId, comment.Likes.Count,
+        comment.Likes.Any(like => like.UserId == viewerUserId), 0,
         comment.CreatedAt, comment.UpdatedAt);
 
     private static void ValidatePagination(int page, int pageSize)

@@ -9,6 +9,8 @@ public record CommentResponse(
     Guid? RootCommentId,
     Guid? ReplyToCommentId,
     int LikesCount,
+    bool IsLikedByCurrentUser,
+    int RepliesCount,
     DateTime CreatedAt,
     DateTime? UpdatedAt);
 

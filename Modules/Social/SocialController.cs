@@ -122,11 +122,11 @@ public class SocialController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("posts/workouts/{workoutId:guid}/share")]
-    public async Task<ActionResult<Guid>> ShareWorkout(Guid workoutId, [FromBody] ShareWorkoutRequest request)
+    [HttpPost("workout-shares")]
+    public async Task<ActionResult<Guid>> ShareWorkout([FromBody] ShareWorkoutRequest request)
     {
         await _shareWorkoutValidator.ValidateAndThrowAsync(request);
-        var postId = await _mediator.Send(new ShareWorkoutCommand(User.GetRequiredUserId(), workoutId, request.Caption));
+        var postId = await _mediator.Send(new ShareWorkoutCommand(User.GetRequiredUserId(), request.WorkoutId, request.Caption));
         return CreatedAtAction(nameof(GetPost), new { postId }, postId);
     }
 

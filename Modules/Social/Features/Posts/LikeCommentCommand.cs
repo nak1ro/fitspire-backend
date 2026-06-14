@@ -8,6 +8,8 @@ using backend.Modules.Social.Services;
 using backend.Modules.Social.Contracts.Posts;
 using backend.Modules.Notification.Domain.Constants;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Social.Features.Posts;
 
@@ -49,13 +51,27 @@ public class LikeCommentHandler : IRequestHandler<LikeCommentCommand, LikeRespon
         if (request.IsLiked == false)
             return new LikeResponse(false);
 
-        await _repository.AddCommentLikeAsync(new CommentLike(request.UserId, request.CommentId), cancellationToken);
+        var like = new CommentLike(request.UserId, request.CommentId);
+        await _repository.AddCommentLikeAsync(like, cancellationToken);
         if (comment.UserId != request.UserId)
         {
             var actor = await _repository.GetUserDisplayNameAsync(request.UserId, cancellationToken);
             await _notifications.CreateAsync(comment.UserId, NotificationType.CommentLike, $"{actor} liked your comment.", request.UserId, request.CommentId, NotificationReferenceTypes.Comment, cancellationToken);
         }
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            return new LikeResponse(true);
+        }
+
         return new LikeResponse(true);
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException exception)
+    {
+        return exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
     }
 }

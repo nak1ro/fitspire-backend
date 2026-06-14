@@ -146,6 +146,9 @@ public class SocialRepository : ISocialRepository
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
+                .ThenInclude(comment => comment.User)
+            .Include(p => p.Comments)
+                .ThenInclude(comment => comment.Likes)
             .FirstOrDefaultAsync(p => p.Id == postId, cancellationToken);
     }
 
@@ -293,6 +296,21 @@ public class SocialRepository : ISocialRepository
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Dictionary<Guid, int>> GetReplyCountsAsync(
+        Guid postId,
+        IEnumerable<Guid> rootCommentIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = rootCommentIds.Distinct().ToList();
+        return await _context.Comments.AsNoTracking()
+            .Where(comment => comment.PostId == postId
+                              && comment.RootCommentId.HasValue
+                              && ids.Contains(comment.RootCommentId.Value))
+            .GroupBy(comment => comment.RootCommentId!.Value)
+            .Select(group => new { RootId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.RootId, item => item.Count, cancellationToken);
     }
 
     private IQueryable<Comment> CommentDetailsQuery(Guid postId)

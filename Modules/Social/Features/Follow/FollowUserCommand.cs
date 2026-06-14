@@ -1,6 +1,7 @@
 using backend.Modules.Notification.Domain.Constants;
 using backend.Modules.Notification.Domain.Enums;
 using backend.Modules.Notification.Services;
+using backend.Data;
 using backend.Modules.Social.Contracts.Posts;
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Infrastructure;
@@ -17,15 +18,18 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, FollowRespon
     private readonly ISocialRepository _socialRepository;
     private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly FitspireDbContext _context;
 
     public FollowUserHandler(
         ISocialRepository socialRepository,
         INotificationService notificationService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        FitspireDbContext context)
     {
         _socialRepository = socialRepository;
         _notificationService = notificationService;
         _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task<FollowResponse> Handle(FollowUserCommand request, CancellationToken cancellationToken)
@@ -40,15 +44,38 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, FollowRespon
         if (existingFollow is not null)
             return new FollowResponse(true);
 
-        if (await _socialRepository.IsUserPrivateAsync(request.FollowedId, cancellationToken))
-            return await RequestPrivateFollowAsync(request, cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            FollowResponse response;
+            if (await _socialRepository.IsUserPrivateAsync(request.FollowedId, cancellationToken))
+            {
+                response = await RequestPrivateFollowAsync(request, cancellationToken);
+            }
+            else
+            {
+                var pendingRequest = await _socialRepository.GetPendingFollowRequestAsync(
+                    request.FollowerId,
+                    request.FollowedId,
+                    cancellationToken);
+                pendingRequest?.Cancel();
 
-        var follower = new Follower(request.FollowerId, request.FollowedId);
-        await _socialRepository.AddFollowerAsync(follower, cancellationToken);
-        await CreateFollowNotificationAsync(request, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        
-        return new FollowResponse(true);
+                await _socialRepository.AddFollowerAsync(
+                    new Follower(request.FollowerId, request.FollowedId),
+                    cancellationToken);
+                await CreateFollowNotificationAsync(request, cancellationToken);
+                response = new FollowResponse(true);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return response;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     private async Task<FollowResponse> RequestPrivateFollowAsync(FollowUserCommand request, CancellationToken cancellationToken)
@@ -68,7 +95,6 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, FollowRespon
             request.FollowerId,
             NotificationReferenceTypes.User,
             cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new FollowResponse(false, true);
     }
 

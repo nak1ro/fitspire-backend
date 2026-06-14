@@ -36,6 +36,9 @@ public class ShareWorkoutRequestValidator : AbstractValidator<ShareWorkoutReques
 {
     public ShareWorkoutRequestValidator()
     {
+        RuleFor(x => x.WorkoutId)
+            .NotEmpty();
+
         RuleFor(x => x.Caption)
             .MaximumLength(2000)
             .When(x => x.Caption is not null);

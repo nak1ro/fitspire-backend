@@ -8,6 +8,8 @@ using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Services;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Social.Features.Posts;
 
@@ -62,9 +64,21 @@ public class LikePostHandler : IRequestHandler<LikePostCommand, LikeResponse>
         var like = new PostLike(request.UserId, request.PostId);
         await _socialRepository.AddPostLikeAsync(like, cancellationToken);
         await CreatePostLikeNotificationAsync(post.UserId, request, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            return new LikeResponse(true);
+        }
         
         return new LikeResponse(true);
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException exception)
+    {
+        return exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
     }
 
     private async Task CreatePostLikeNotificationAsync(

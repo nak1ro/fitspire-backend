@@ -6,6 +6,8 @@ using backend.Modules.Social.Infrastructure;
 using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Social.Features.Posts;
 
@@ -36,6 +38,9 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
         if (workout.Status != WorkoutStatus.Completed)
             throw new DomainException("Only completed workouts can be shared.");
 
+        if (workout.IsPrivate)
+            throw new DomainException("Private workouts cannot be shared.");
+
         var existingPost = await _socialRepository.GetPostByReferenceAsync(
             PostType.WorkoutShare,
             request.WorkoutId,
@@ -56,7 +61,27 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
         var post = Post.CreateWorkoutSharePost(request.UserId, snapshot, request.Caption);
 
         await _socialRepository.AddPostAsync(post, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            var concurrentPost = await _socialRepository.GetPostByReferenceAsync(
+                PostType.WorkoutShare,
+                request.WorkoutId,
+                cancellationToken);
+            if (concurrentPost is not null)
+                return concurrentPost.Id;
+
+            throw;
+        }
+
         return post.Id;
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException exception)
+    {
+        return exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
     }
 }

@@ -75,7 +75,9 @@ public static class PostResponseMapper
         CancellationToken cancellationToken)
     {
         var workoutIds = posts
-            .Where(p => p.Type == PostType.WorkoutShare && p.ReferenceEntityId.HasValue)
+            .Where(p => p.Type == PostType.WorkoutShare
+                        && p.WorkoutShareSnapshot is null
+                        && p.ReferenceEntityId.HasValue)
             .Select(p => p.ReferenceEntityId!.Value)
             .ToList();
 

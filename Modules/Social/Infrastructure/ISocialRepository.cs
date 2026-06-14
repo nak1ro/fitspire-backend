@@ -47,6 +47,7 @@ public interface ISocialRepository
     Task<Comment?> GetCommentByIdAsync(Guid postId, Guid commentId, CancellationToken cancellationToken = default);
     Task<List<Comment>> GetTopLevelCommentsAsync(Guid postId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Comment>> GetCommentRepliesAsync(Guid postId, Guid rootCommentId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<Dictionary<Guid, int>> GetReplyCountsAsync(Guid postId, IEnumerable<Guid> rootCommentIds, CancellationToken cancellationToken = default);
     Task DeleteCommentAsync(Comment comment, CancellationToken cancellationToken = default);
     
     // Follow
