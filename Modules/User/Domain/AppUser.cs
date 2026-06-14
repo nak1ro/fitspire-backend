@@ -35,7 +35,8 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<SavedPost> SavedPosts { get; set; } = new List<SavedPost>();
-    public ICollection<Like> Likes { get; set; } = new List<Like>();
+    public ICollection<PostLike> PostLikes { get; set; } = new List<PostLike>();
+    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
     public ICollection<Follower> Followers { get; set; } = new List<Follower>(); // Who follows me
     public ICollection<Follower> Following { get; set; } = new List<Follower>(); // Who I follow
     public ICollection<FriendshipConnection> Friends { get; set; } = new List<FriendshipConnection>();

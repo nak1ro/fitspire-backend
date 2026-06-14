@@ -34,11 +34,32 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasForeignKey(c => c.PostId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(p => p.Likes)
-            .WithOne()
-            .HasForeignKey(l => l.TargetId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .IsRequired(false); // Because Like is polymorphic
+        builder.OwnsOne(p => p.WorkoutShareSnapshot, snapshot =>
+        {
+            snapshot.Property(value => value.SourceWorkoutId)
+                .HasColumnName("SourceWorkoutId");
+            snapshot.Property(value => value.WorkoutType)
+                .HasColumnName("SharedWorkoutType")
+                .HasMaxLength(64);
+            snapshot.Property(value => value.WorkoutDate)
+                .HasColumnName("SharedWorkoutDate");
+            snapshot.Property(value => value.DurationMinutes)
+                .HasColumnName("SharedDurationMinutes");
+            snapshot.Property(value => value.DistanceKm)
+                .HasColumnName("SharedDistanceKm");
+            snapshot.Property(value => value.CaloriesBurned)
+                .HasColumnName("SharedCaloriesBurned");
+            snapshot.Property(value => value.TotalVolumeKg)
+                .HasColumnName("SharedTotalVolumeKg");
+            snapshot.Property(value => value.ExerciseCount)
+                .HasColumnName("SharedExerciseCount");
+            snapshot.Property(value => value.CompletedAt)
+                .HasColumnName("SharedCompletedAt");
+
+            snapshot.HasIndex(value => value.SourceWorkoutId)
+                .IsUnique()
+                .HasFilter("\"SourceWorkoutId\" IS NOT NULL");
+        });
 
         builder.HasMany(p => p.SavedByUsers)
             .WithOne(sp => sp.Post)

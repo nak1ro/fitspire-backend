@@ -4,4 +4,5 @@ public static class NotificationReferenceTypes
 {
     public const string User = "user";
     public const string Post = "post";
+    public const string Comment = "comment";
 }

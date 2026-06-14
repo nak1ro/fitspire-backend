@@ -23,5 +23,17 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasOne(c => c.User)
             .WithMany(u => u.Comments)
             .HasForeignKey(c => c.UserId);
+
+        builder.HasOne(c => c.RootComment)
+            .WithMany()
+            .HasForeignKey(c => c.RootCommentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(c => c.ReplyToComment)
+            .WithMany(c => c.Replies)
+            .HasForeignKey(c => c.ReplyToCommentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(c => new { c.PostId, c.RootCommentId, c.CreatedAt });
     }
 }

@@ -108,11 +108,17 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 
         // ------------- NO CASCADE (Leave as orphaned) -------------
 
-        // ❤️ Likes
-        builder.HasMany(u => u.Likes)
+        // ❤️ Post likes
+        builder.HasMany(u => u.PostLikes)
             .WithOne(l => l.User)
             .HasForeignKey(l => l.UserId)
-            .OnDelete(DeleteBehavior.NoAction); // ❌ NO CASCADE (orphan, handled in app)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ❤️ Comment likes
+        builder.HasMany(u => u.CommentLikes)
+            .WithOne(l => l.User)
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // 💬 Comments
         builder.HasMany(u => u.Comments)

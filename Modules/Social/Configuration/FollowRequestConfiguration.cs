@@ -12,7 +12,7 @@ public class FollowRequestConfiguration : IEntityTypeConfiguration<FollowRequest
         {
             table.HasCheckConstraint(
                 "CK_FollowRequest_Status",
-                "\"Status\" IN ('pending', 'accepted', 'rejected')");
+                "\"Status\" IN ('Pending', 'Accepted', 'Rejected', 'Cancelled')");
             table.HasCheckConstraint("CK_FollowRequest_NoSelf", "\"RequesterId\" <> \"AddresseeId\"");
         });
 
@@ -29,12 +29,15 @@ public class FollowRequestConfiguration : IEntityTypeConfiguration<FollowRequest
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Property(fr => fr.Status)
-            .IsRequired()
-            .HasMaxLength(10);
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .IsRequired();
 
         builder.Property(fr => fr.RequestedAt)
             .HasDefaultValueSql("NOW()");
 
-        builder.HasIndex(fr => new { fr.RequesterId, fr.AddresseeId }).IsUnique();
+        builder.HasIndex(fr => new { fr.RequesterId, fr.AddresseeId })
+            .IsUnique()
+            .HasFilter("\"Status\" = 'Pending'");
     }
 }

@@ -17,7 +17,7 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateProfileDto>
             .When(x => x.Bio is not null);
 
         RuleFor(x => x)
-            .Must(x => x.DisplayName is not null || x.Bio is not null)
+            .Must(x => x.DisplayName is not null || x.Bio is not null || x.IsPrivate.HasValue)
             .WithMessage("At least one profile field must be provided.");
     }
 }

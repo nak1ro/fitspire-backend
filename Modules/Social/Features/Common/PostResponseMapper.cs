@@ -91,7 +91,25 @@ public static class PostResponseMapper
         Post post,
         Dictionary<Guid, WorkoutSummaryResponse> summaries)
     {
-        if (post.Type != PostType.WorkoutShare || !post.ReferenceEntityId.HasValue)
+        if (post.Type != PostType.WorkoutShare)
+            return null;
+
+        if (post.WorkoutShareSnapshot is not null)
+        {
+            var snapshot = post.WorkoutShareSnapshot;
+            return new WorkoutSummaryResponse(
+                snapshot.SourceWorkoutId,
+                snapshot.WorkoutType,
+                snapshot.WorkoutDate,
+                snapshot.DurationMinutes,
+                snapshot.DistanceKm,
+                snapshot.CaloriesBurned,
+                snapshot.TotalVolumeKg,
+                snapshot.ExerciseCount,
+                snapshot.CompletedAt);
+        }
+
+        if (!post.ReferenceEntityId.HasValue)
             return null;
 
         return summaries.GetValueOrDefault(post.ReferenceEntityId.Value);
@@ -114,7 +132,7 @@ public static class PostResponseMapper
 
     private static bool IsLikedByCurrentUser(Post post, Guid userId)
     {
-        return post.Likes.Any(l => l.UserId == userId && l.TargetType == LikeTargetType.Post);
+        return post.Likes.Any(l => l.UserId == userId);
     }
 
     private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(Post post)

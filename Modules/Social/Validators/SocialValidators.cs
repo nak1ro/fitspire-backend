@@ -1,4 +1,6 @@
 using FluentValidation;
+using backend.Modules.Social.Contracts.Comments;
+using backend.Modules.Social.Contracts.Posts;
 
 namespace backend.Modules.Social.Validators;
 
@@ -30,9 +32,29 @@ public class UpdatePostRequestValidator : AbstractValidator<UpdatePostRequest>
     }
 }
 
+public class ShareWorkoutRequestValidator : AbstractValidator<ShareWorkoutRequest>
+{
+    public ShareWorkoutRequestValidator()
+    {
+        RuleFor(x => x.Caption)
+            .MaximumLength(2000)
+            .When(x => x.Caption is not null);
+    }
+}
+
 public class CommentRequestValidator : AbstractValidator<CommentRequest>
 {
     public CommentRequestValidator()
+    {
+        RuleFor(x => x.Content)
+            .NotEmpty()
+            .MaximumLength(1000);
+    }
+}
+
+public class UpdateCommentRequestValidator : AbstractValidator<UpdateCommentRequest>
+{
+    public UpdateCommentRequestValidator()
     {
         RuleFor(x => x.Content)
             .NotEmpty()

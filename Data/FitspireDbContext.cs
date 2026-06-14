@@ -27,7 +27,8 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
 
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }
-    public DbSet<Like> Likes { get; set; }
+    public DbSet<PostLike> PostLikes { get; set; }
+    public DbSet<CommentLike> CommentLikes { get; set; }
     public DbSet<Follower> Followers { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<SavedPost> SavedPosts { get; set; }

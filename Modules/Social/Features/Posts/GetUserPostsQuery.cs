@@ -2,6 +2,7 @@ using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Social.Services;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Posts;
@@ -12,16 +13,27 @@ public class GetUserPostsHandler : IRequestHandler<GetUserPostsQuery, List<FeedI
 {
     private readonly ISocialRepository _socialRepository;
     private readonly IWorkoutRepository _workoutRepository;
+    private readonly ISocialAccessService _socialAccessService;
 
-    public GetUserPostsHandler(ISocialRepository socialRepository, IWorkoutRepository workoutRepository)
+    public GetUserPostsHandler(
+        ISocialRepository socialRepository,
+        IWorkoutRepository workoutRepository,
+        ISocialAccessService socialAccessService)
     {
         _socialRepository = socialRepository;
         _workoutRepository = workoutRepository;
+        _socialAccessService = socialAccessService;
     }
 
     public async Task<List<FeedItemResponse>> Handle(GetUserPostsQuery request, CancellationToken cancellationToken)
     {
         if (!await _socialRepository.UserExistsAsync(request.TargetUserId, cancellationToken))
+            throw new NotFoundException($"User {request.TargetUserId} not found.");
+
+        if (!await _socialAccessService.CanViewProtectedContentAsync(
+                request.ViewerUserId,
+                request.TargetUserId,
+                cancellationToken))
             throw new NotFoundException($"User {request.TargetUserId} not found.");
 
         var posts = await _socialRepository.GetUserPostsAsync(

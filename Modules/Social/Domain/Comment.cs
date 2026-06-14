@@ -11,10 +11,16 @@ public class Comment : Entity<Guid>
     public Guid PostId { get; private set; }
     public Guid UserId { get; private set; }
     public string Content { get; private set; } = null!;
+    public Guid? RootCommentId { get; private set; }
+    public Guid? ReplyToCommentId { get; private set; }
 
     // Navigation
     public Post Post { get; private set; } = null!;
     public AppUser User { get; private set; } = null!;
+    public Comment? RootComment { get; private set; }
+    public Comment? ReplyToComment { get; private set; }
+    public ICollection<Comment> Replies { get; private set; } = new List<Comment>();
+    public ICollection<CommentLike> Likes { get; private set; } = new List<CommentLike>();
 
     private Comment() { }
 
@@ -30,8 +36,28 @@ public class Comment : Entity<Guid>
         CreatedAt = DateTime.UtcNow;
     }
 
+    public static Comment CreateReply(Comment targetComment, Guid userId, string content)
+    {
+        var reply = new Comment(targetComment.PostId, userId, content)
+        {
+            RootCommentId = targetComment.RootCommentId ?? targetComment.Id,
+            ReplyToCommentId = targetComment.Id
+        };
+
+        return reply;
+    }
+
     public bool CanBeDeletedBy(Guid userId)
     {
         return UserId == userId || Post.UserId == userId;
+    }
+
+    public void UpdateContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new DomainException("Comment content is required.");
+
+        Content = content.Trim();
+        UpdatedAt = DateTime.UtcNow;
     }
 }

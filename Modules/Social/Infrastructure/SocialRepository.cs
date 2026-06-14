@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Domain.Enums;
+using backend.Modules.User.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Modules.Social.Infrastructure;
@@ -27,6 +28,115 @@ public class SocialRepository : ISocialRepository
             .FirstOrDefaultAsync(cancellationToken);
 
         return user?.DisplayName ?? user?.UserName ?? "Someone";
+    }
+
+    public Task<AppUser?> GetSocialUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return _context.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
+    }
+
+    public Task<List<AppUser>> SearchSocialUsersAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.Users.AsNoTracking()
+            .Where(user => user.UserName!.Contains(query) || user.DisplayName.Contains(query))
+            .OrderBy(user => user.UserName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> GetFollowersCountAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return _context.Followers.CountAsync(follow => follow.FollowedId == userId, cancellationToken);
+    }
+
+    public Task<int> GetFollowingCountAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return _context.Followers.CountAsync(follow => follow.FollowerId == userId, cancellationToken);
+    }
+
+    public Task<bool> IsFollowingAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default)
+    {
+        return _context.Followers.AnyAsync(
+            follow => follow.FollowerId == followerId && follow.FollowedId == followedId,
+            cancellationToken);
+    }
+
+    public Task<bool> HasPendingFollowRequestAsync(Guid requesterId, Guid addresseeId, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.AnyAsync(
+            request => request.RequesterId == requesterId &&
+                       request.AddresseeId == addresseeId &&
+                       request.Status == FollowRequestStatus.Pending,
+            cancellationToken);
+    }
+
+    public async Task<bool> IsUserPrivateAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users.Where(user => user.Id == userId)
+            .Select(user => user.IsPrivate)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<FollowRequest?> GetFollowRequestAsync(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.FirstOrDefaultAsync(request => request.Id == requestId, cancellationToken);
+    }
+
+    public Task<FollowRequest?> GetPendingFollowRequestAsync(Guid requesterId, Guid addresseeId, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.FirstOrDefaultAsync(
+            request => request.RequesterId == requesterId && request.AddresseeId == addresseeId && request.Status == FollowRequestStatus.Pending,
+            cancellationToken);
+    }
+
+    public Task AddFollowRequestAsync(FollowRequest request, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.AddAsync(request, cancellationToken).AsTask();
+    }
+
+    public Task<List<FollowRequest>> GetIncomingFollowRequestsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.AsNoTracking()
+            .Include(request => request.Requester)
+            .Where(request => request.AddresseeId == userId && request.Status == FollowRequestStatus.Pending)
+            .OrderByDescending(request => request.RequestedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<List<FollowRequest>> GetOutgoingFollowRequestsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.FollowRequests.AsNoTracking()
+            .Include(request => request.Addressee)
+            .Where(request => request.RequesterId == userId && request.Status == FollowRequestStatus.Pending)
+            .OrderByDescending(request => request.RequestedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<List<Follower>> GetFollowersAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.Followers.AsNoTracking()
+            .Include(follow => follow.FollowerUser)
+            .Where(follow => follow.FollowedId == userId)
+            .OrderByDescending(follow => follow.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<List<Follower>> GetFollowingAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.Followers.AsNoTracking()
+            .Include(follow => follow.FollowedUser)
+            .Where(follow => follow.FollowerId == userId)
+            .OrderByDescending(follow => follow.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
     }
 
     // Posts
@@ -93,23 +203,63 @@ public class SocialRepository : ISocialRepository
     }
 
     // Likes
-    public async Task<Like?> GetLikeAsync(Guid userId, Guid targetId, CancellationToken cancellationToken = default)
+    public async Task<PostLike?> GetPostLikeAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
     {
-        return await _context.Likes
+        return await _context.PostLikes
             .FirstOrDefaultAsync(
-                l => l.UserId == userId && l.TargetId == targetId && l.TargetType == LikeTargetType.Post,
+                l => l.UserId == userId && l.PostId == postId,
                 cancellationToken);
     }
 
-    public async Task AddLikeAsync(Like like, CancellationToken cancellationToken = default)
+    public async Task AddPostLikeAsync(PostLike like, CancellationToken cancellationToken = default)
     {
-        await _context.Likes.AddAsync(like, cancellationToken);
+        await _context.PostLikes.AddAsync(like, cancellationToken);
     }
 
-    public Task RemoveLikeAsync(Like like, CancellationToken cancellationToken = default)
+    public Task RemovePostLikeAsync(PostLike like, CancellationToken cancellationToken = default)
     {
-        _context.Likes.Remove(like);
+        _context.PostLikes.Remove(like);
         return Task.CompletedTask;
+    }
+
+    public Task<List<AppUser>> GetPostLikersAsync(Guid postId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.PostLikes.AsNoTracking()
+            .Include(like => like.User)
+            .Where(like => like.PostId == postId)
+            .OrderByDescending(like => like.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(like => like.User)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<CommentLike?> GetCommentLikeAsync(Guid userId, Guid commentId, CancellationToken cancellationToken = default)
+    {
+        return _context.CommentLikes.FirstOrDefaultAsync(like => like.UserId == userId && like.CommentId == commentId, cancellationToken);
+    }
+
+    public Task AddCommentLikeAsync(CommentLike like, CancellationToken cancellationToken = default)
+    {
+        return _context.CommentLikes.AddAsync(like, cancellationToken).AsTask();
+    }
+
+    public Task RemoveCommentLikeAsync(CommentLike like, CancellationToken cancellationToken = default)
+    {
+        _context.CommentLikes.Remove(like);
+        return Task.CompletedTask;
+    }
+
+    public Task<List<AppUser>> GetCommentLikersAsync(Guid commentId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.CommentLikes.AsNoTracking()
+            .Include(like => like.User)
+            .Where(like => like.CommentId == commentId)
+            .OrderByDescending(like => like.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(like => like.User)
+            .ToListAsync(cancellationToken);
     }
 
     // Comments
@@ -125,12 +275,45 @@ public class SocialRepository : ISocialRepository
             .FirstOrDefaultAsync(c => c.PostId == postId && c.Id == commentId, cancellationToken);
     }
 
-    public async Task<List<Comment>> GetPostCommentsAsync(Guid postId, CancellationToken cancellationToken = default)
+    public Task<List<Comment>> GetTopLevelCommentsAsync(Guid postId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return await _context.Comments
-            .Include(c => c.User)
-            .Where(c => c.PostId == postId)
-            .OrderBy(c => c.CreatedAt)
+        return CommentDetailsQuery(postId)
+            .Where(comment => comment.RootCommentId == null)
+            .OrderByDescending(comment => comment.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<List<Comment>> GetCommentRepliesAsync(Guid postId, Guid rootCommentId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return CommentDetailsQuery(postId)
+            .Where(comment => comment.RootCommentId == rootCommentId)
+            .OrderBy(comment => comment.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    private IQueryable<Comment> CommentDetailsQuery(Guid postId)
+    {
+        return _context.Comments.AsNoTracking()
+            .Include(comment => comment.User)
+            .Include(comment => comment.Likes)
+            .Where(comment => comment.PostId == postId);
+    }
+
+    public Task<List<Post>> GetDiscoverFeedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return _context.Posts
+            .Include(post => post.User)
+            .Include(post => post.Likes)
+            .Include(post => post.Comments)
+                .ThenInclude(comment => comment.User)
+            .Where(post => !post.User.IsPrivate)
+            .OrderByDescending(post => post.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
     }
 

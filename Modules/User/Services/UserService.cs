@@ -66,6 +66,8 @@ public class UserService : IUserService
             user.DisplayName = dto.DisplayName;
         if (dto.Bio != null)
             user.Bio = dto.Bio;
+        if (dto.IsPrivate.HasValue)
+            user.IsPrivate = dto.IsPrivate.Value;
 
         user.UpdatedAt = DateTime.UtcNow;
         var result = await _userManager.UpdateAsync(user);
@@ -122,7 +124,9 @@ public class UserService : IUserService
 
         prefs.UpdatedAt = DateTime.UtcNow;
         user.AppUserPreference = prefs;
-        await _userManager.UpdateAsync(user);
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
 
         return _mapper.Map<UserPreferencesDto>(prefs);
     }

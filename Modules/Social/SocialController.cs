@@ -1,4 +1,6 @@
 using backend.Modules.Social.Features.Common;
+using backend.Modules.Social.Contracts.Posts;
+using backend.Modules.Social.Contracts.Comments;
 using backend.Modules.Social.Features.Feed;
 using backend.Modules.Social.Features.Follow;
 using backend.Modules.Social.Features.Posts;
@@ -20,17 +22,23 @@ public class SocialController : ControllerBase
     private readonly IValidator<CreatePostRequest> _createPostValidator;
     private readonly IValidator<UpdatePostRequest> _updatePostValidator;
     private readonly IValidator<CommentRequest> _commentValidator;
+    private readonly IValidator<UpdateCommentRequest> _updateCommentValidator;
+    private readonly IValidator<ShareWorkoutRequest> _shareWorkoutValidator;
 
     public SocialController(
         IMediator mediator,
         IValidator<CreatePostRequest> createPostValidator,
         IValidator<UpdatePostRequest> updatePostValidator,
-        IValidator<CommentRequest> commentValidator)
+        IValidator<CommentRequest> commentValidator,
+        IValidator<UpdateCommentRequest> updateCommentValidator,
+        IValidator<ShareWorkoutRequest> shareWorkoutValidator)
     {
         _mediator = mediator;
         _createPostValidator = createPostValidator;
         _updatePostValidator = updatePostValidator;
         _commentValidator = commentValidator;
+        _updateCommentValidator = updateCommentValidator;
+        _shareWorkoutValidator = shareWorkoutValidator;
     }
 
     /// <summary>
@@ -44,6 +52,21 @@ public class SocialController : ControllerBase
         var userId = User.GetRequiredUserId();
         var feed = await _mediator.Send(new GetUserFeedQuery(userId, page, pageSize));
         return Ok(feed);
+    }
+
+    [HttpGet("discover")]
+    public async Task<ActionResult<List<FeedItemResponse>>> GetDiscoverFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        var feed = await _mediator.Send(new GetDiscoverFeedQuery(User.GetRequiredUserId(), page, pageSize));
+        return Ok(feed);
+    }
+
+    [HttpGet("posts/{postId:guid}")]
+    public async Task<ActionResult<FeedItemResponse>> GetPost(Guid postId)
+    {
+        var post = await _mediator.Send(new GetPostDetailQuery(User.GetRequiredUserId(), postId));
+        return Ok(post);
     }
 
     /// <summary>
@@ -99,6 +122,14 @@ public class SocialController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("posts/workouts/{workoutId:guid}/share")]
+    public async Task<ActionResult<Guid>> ShareWorkout(Guid workoutId, [FromBody] ShareWorkoutRequest request)
+    {
+        await _shareWorkoutValidator.ValidateAndThrowAsync(request);
+        var postId = await _mediator.Send(new ShareWorkoutCommand(User.GetRequiredUserId(), workoutId, request.Caption));
+        return CreatedAtAction(nameof(GetPost), new { postId }, postId);
+    }
+
     /// <summary>
     /// Like or unlike a post (toggle).
     /// </summary>
@@ -106,8 +137,33 @@ public class SocialController : ControllerBase
     public async Task<ActionResult<LikeResponse>> LikePost(Guid postId)
     {
         var userId = User.GetRequiredUserId();
-        var isLiked = await _mediator.Send(new LikePostCommand(userId, postId));
-        return Ok(new LikeResponse(isLiked));
+        var response = await _mediator.Send(new LikePostCommand(userId, postId));
+        return Ok(response);
+    }
+
+    [HttpPost("posts/{postId:guid}/likes")]
+    public async Task<ActionResult<LikeResponse>> AddPostLike(Guid postId)
+    {
+        var response = await _mediator.Send(new LikePostCommand(User.GetRequiredUserId(), postId, true));
+        return Ok(response);
+    }
+
+    [HttpDelete("posts/{postId:guid}/likes")]
+    public async Task<ActionResult<LikeResponse>> RemovePostLike(Guid postId)
+    {
+        var response = await _mediator.Send(new LikePostCommand(User.GetRequiredUserId(), postId, false));
+        return Ok(response);
+    }
+
+    [HttpGet("posts/{postId:guid}/likes")]
+    public async Task<ActionResult<List<Contracts.Profiles.SocialUserSummaryResponse>>> GetPostLikes(
+        Guid postId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        var users = await _mediator.Send(new GetPostLikedByQuery(User.GetRequiredUserId(), postId, page, pageSize));
+        return Ok(users);
     }
 
     /// <summary>
@@ -119,8 +175,72 @@ public class SocialController : ControllerBase
         await _commentValidator.ValidateAndThrowAsync(request);
 
         var userId = User.GetRequiredUserId();
-        var commentId = await _mediator.Send(new CommentOnPostCommand(userId, postId, request.Content));
+        var commentId = await _mediator.Send(new CommentOnPostCommand(userId, postId, request.Content, request.ReplyToCommentId));
         return Ok(commentId);
+    }
+
+    [HttpGet("posts/{postId:guid}/comments")]
+    public async Task<ActionResult<List<CommentResponse>>> GetPostComments(
+        Guid postId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        var comments = await _mediator.Send(new GetPostCommentsQuery(User.GetRequiredUserId(), postId, page, pageSize));
+        return Ok(comments);
+    }
+
+    [HttpGet("posts/{postId:guid}/comments/{commentId:guid}/replies")]
+    public async Task<ActionResult<List<CommentResponse>>> GetCommentReplies(
+        Guid postId,
+        Guid commentId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        var replies = await _mediator.Send(new GetCommentRepliesQuery(User.GetRequiredUserId(), postId, commentId, page, pageSize));
+        return Ok(replies);
+    }
+
+    [HttpPatch("posts/{postId:guid}/comments/{commentId:guid}")]
+    public async Task<IActionResult> UpdateComment(Guid postId, Guid commentId, [FromBody] UpdateCommentRequest request)
+    {
+        await _updateCommentValidator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateCommentCommand(User.GetRequiredUserId(), postId, commentId, request.Content));
+        return NoContent();
+    }
+
+    [HttpPost("posts/{postId:guid}/comments/{commentId:guid}/like")]
+    public async Task<ActionResult<LikeResponse>> LikeComment(Guid postId, Guid commentId)
+    {
+        var response = await _mediator.Send(new LikeCommentCommand(User.GetRequiredUserId(), postId, commentId));
+        return Ok(response);
+    }
+
+    [HttpPost("posts/{postId:guid}/comments/{commentId:guid}/likes")]
+    public async Task<ActionResult<LikeResponse>> AddCommentLike(Guid postId, Guid commentId)
+    {
+        var response = await _mediator.Send(new LikeCommentCommand(User.GetRequiredUserId(), postId, commentId, true));
+        return Ok(response);
+    }
+
+    [HttpDelete("posts/{postId:guid}/comments/{commentId:guid}/likes")]
+    public async Task<ActionResult<LikeResponse>> RemoveCommentLike(Guid postId, Guid commentId)
+    {
+        var response = await _mediator.Send(new LikeCommentCommand(User.GetRequiredUserId(), postId, commentId, false));
+        return Ok(response);
+    }
+
+    [HttpGet("posts/{postId:guid}/comments/{commentId:guid}/likes")]
+    public async Task<ActionResult<List<Contracts.Profiles.SocialUserSummaryResponse>>> GetCommentLikes(
+        Guid postId,
+        Guid commentId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        var users = await _mediator.Send(new GetCommentLikedByQuery(User.GetRequiredUserId(), postId, commentId, page, pageSize));
+        return Ok(users);
     }
 
     /// <summary>
@@ -135,14 +255,14 @@ public class SocialController : ControllerBase
     }
 
     /// <summary>
-    /// Follow or unfollow a user (toggle).
+    /// Follow a user or request to follow a private user.
     /// </summary>
     [HttpPost("follow/{targetUserId:guid}")]
     public async Task<ActionResult<FollowResponse>> FollowUser(Guid targetUserId)
     {
         var userId = User.GetRequiredUserId();
-        var isFollowing = await _mediator.Send(new FollowUserCommand(userId, targetUserId));
-        return Ok(new FollowResponse(isFollowing));
+        var response = await _mediator.Send(new FollowUserCommand(userId, targetUserId));
+        return Ok(response);
     }
 
     private static void ValidatePagination(int page, int pageSize)
@@ -154,10 +274,3 @@ public class SocialController : ControllerBase
             throw new DomainException("Page size must be between 1 and 100.");
     }
 }
-
-// DTOs
-public record CreatePostRequest(string Content, string? ImageUrl = null);
-public record UpdatePostRequest(string Content, string? ImageUrl = null);
-public record CommentRequest(string Content);
-public record LikeResponse(bool IsLiked);
-public record FollowResponse(bool IsFollowing);

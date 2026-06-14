@@ -22,7 +22,8 @@ public class Post : Entity<Guid>
     // Navigation
     public AppUser User { get; private set; } = null!;
     public ICollection<Comment> Comments { get; private set; } = new List<Comment>();
-    public ICollection<Like> Likes { get; private set; } = new List<Like>();
+    public WorkoutShareSnapshot? WorkoutShareSnapshot { get; private set; }
+    public ICollection<PostLike> Likes { get; private set; } = new List<PostLike>();
     public ICollection<SavedPost> SavedByUsers { get; private set; } = new List<SavedPost>();
 
     private Post() { }
@@ -78,6 +79,16 @@ public class Post : Entity<Guid>
             ReferenceEntityId = goalId,
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    public static Post CreateWorkoutSharePost(
+        Guid userId,
+        WorkoutShareSnapshot snapshot,
+        string? caption = null)
+    {
+        var post = CreateWorkoutSharePost(userId, snapshot.SourceWorkoutId, caption);
+        post.WorkoutShareSnapshot = snapshot;
+        return post;
     }
 
     public void UpdateTextPost(string content, string? imageUrl = null)
