@@ -31,10 +31,14 @@ public class WorkoutCompletedSocialPostHandler : INotificationHandler<WorkoutCom
         if (existingPost is not null)
             return;
 
+        var caption = string.IsNullOrWhiteSpace(notification.Notes)
+            ? BuildCaption(notification.WorkoutType)
+            : notification.Notes.Trim();
+
         var post = Post.CreateWorkoutSharePost(
             notification.UserId,
             notification.WorkoutId,
-            BuildCaption(notification.WorkoutType));
+            caption);
 
         await _socialRepository.AddPostAsync(post, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

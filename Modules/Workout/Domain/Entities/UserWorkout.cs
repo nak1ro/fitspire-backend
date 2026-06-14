@@ -40,7 +40,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         AddDomainEvent(new WorkoutStartedEvent(id, userId, workoutType));
     }
 
-    public void Complete(double? durationMinutes = null)
+    public void Complete(double? durationMinutes = null, string? notes = null, bool? isPrivate = null)
     {
         if (Status == WorkoutStatus.Completed)
             throw new DomainException("Workout is already completed.");
@@ -49,23 +49,29 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         CompletedAt = DateTime.UtcNow;
         if (durationMinutes.HasValue)
             DurationMinutes = durationMinutes.Value;
+        if (notes != null)
+            Notes = notes;
+        if (isPrivate.HasValue)
+            IsPrivate = isPrivate.Value;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new WorkoutCompletedEvent(
-            Id, 
-            UserId, 
-            WorkoutType, 
+            Id,
+            UserId,
+            WorkoutType,
             IsPrivate,
             DurationMinutes,
             GetTotalDistance(),
             CaloriesBurned,
-            GetTotalVolume()
+            GetTotalVolume(),
+            Notes
         ));
     }
 
     // Virtual metric getters for subclasses to override
     public virtual double? GetTotalDistance() => null;
     public virtual double? GetTotalVolume() => null;
+    public virtual int? GetExerciseCount() => null;
 
     public void UpdateNotes(string? notes)
     {

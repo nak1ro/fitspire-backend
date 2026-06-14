@@ -224,7 +224,7 @@ public class WorkoutController : ControllerBase
         await _completeWorkoutValidator.ValidateAndThrowAsync(request);
 
         var userId = User.GetRequiredUserId();
-        await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes));
+        await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes, request.Notes, request.IsPrivate));
         return Ok(new { success = true });
     }
 

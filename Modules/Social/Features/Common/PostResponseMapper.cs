@@ -38,6 +38,7 @@ public record WorkoutSummaryResponse(
     double? DistanceKm,
     int? CaloriesBurned,
     double? TotalVolumeKg,
+    int? ExerciseCount,
     DateTime? CompletedAt
 );
 
@@ -106,6 +107,7 @@ public static class PostResponseMapper
             workout.GetTotalDistance(),
             workout.CaloriesBurned,
             workout.GetTotalVolume(),
+            workout.GetExerciseCount(),
             workout.CompletedAt
         );
     }

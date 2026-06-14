@@ -8,7 +8,9 @@ namespace backend.Modules.Workout.Features.Common;
 public record CompleteWorkoutCommand(
     Guid WorkoutId,
     Guid UserId,
-    double? DurationMinutes
+    double? DurationMinutes,
+    string? Notes,
+    bool? IsPrivate
 ) : IRequest<bool>;
 
 public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bool>
@@ -34,7 +36,7 @@ public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bo
         if (workout.UserId != request.UserId)
             throw new UnauthorizedAccessException("Workout does not belong to the current user.");
 
-        workout.Complete(request.DurationMinutes);
+        workout.Complete(request.DurationMinutes, request.Notes, request.IsPrivate);
 
         var domainEvents = workout.DomainEvents.ToList();
         workout.ClearDomainEvents();

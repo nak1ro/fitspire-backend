@@ -16,7 +16,9 @@ public record ExerciseInputRequest(
 );
 
 public record CompleteWorkoutRequest(
-    double? DurationMinutes
+    double? DurationMinutes,
+    string? Notes,
+    bool? IsPrivate
 );
 
 public record WorkoutFilterRequest(

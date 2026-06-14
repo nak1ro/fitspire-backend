@@ -32,6 +32,7 @@ public class WorkoutRepository : IWorkoutRepository
         var workoutIds = ids.Distinct().ToList();
 
         return await _context.UserWorkouts
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises)
             .Where(w => workoutIds.Contains(w.Id))
             .ToListAsync(cancellationToken);
     }
