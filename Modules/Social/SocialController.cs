@@ -85,6 +85,22 @@ public class SocialController : ControllerBase
         return Ok(posts);
     }
 
+    [HttpGet("users/{targetUserId:guid}/goals")]
+    public async Task<ActionResult<List<Contracts.Profiles.PublicGoalResponse>>> GetUserGoals(Guid targetUserId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicGoalsQuery(User.GetRequiredUserId(), targetUserId)));
+
+    [HttpGet("users/{targetUserId:guid}/badges")]
+    public async Task<ActionResult<List<Contracts.Profiles.PublicBadgeResponse>>> GetUserBadges(Guid targetUserId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicBadgesQuery(User.GetRequiredUserId(), targetUserId, false)));
+
+    [HttpGet("users/{targetUserId:guid}/badges/featured")]
+    public async Task<ActionResult<List<Contracts.Profiles.PublicBadgeResponse>>> GetFeaturedUserBadges(Guid targetUserId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicBadgesQuery(User.GetRequiredUserId(), targetUserId, true)));
+
+    [HttpGet("users/{targetUserId:guid}/challenge-results")]
+    public async Task<ActionResult<List<Contracts.Profiles.PublicChallengeResultResponse>>> GetUserChallengeResults(Guid targetUserId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicChallengeResultsQuery(User.GetRequiredUserId(), targetUserId)));
+
     /// <summary>
     /// Create a new text post.
     /// </summary>

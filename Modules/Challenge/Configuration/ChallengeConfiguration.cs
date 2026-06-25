@@ -22,6 +22,13 @@ public class ChallengeConfiguration : IEntityTypeConfiguration<UserChallenge>
 
         builder.Property(c => c.EndDate)
             .IsRequired();
+        builder.Property(c => c.MetricCode).HasMaxLength(80).IsRequired();
+        builder.Property(c => c.WorkoutType).HasMaxLength(32);
+        builder.Property(c => c.Mode).HasMaxLength(16).IsRequired();
+        builder.Property(c => c.Visibility).HasMaxLength(16).IsRequired();
+        builder.Property(c => c.JoinClosing).HasMaxLength(16).IsRequired();
+        builder.Property(c => c.Status).HasMaxLength(16).IsRequired();
+        builder.HasIndex(c => new { c.Status, c.StartDate, c.EndDate });
 
         builder.HasOne(c => c.CreatedByUser)
             .WithMany(u => u.ChallengesCreated)

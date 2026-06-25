@@ -9,5 +9,12 @@ public enum NotificationType
     FollowRequest = 5,
     FollowRequestAccepted = 6,
     CommentLike = 7,
-    CommentReply = 8
+    CommentReply = 8,
+    GoalPeriodFailed = 9,
+    ChallengeInvitation = 10,
+    ChallengeStarted = 11,
+    ChallengeCancelled = 12,
+    ChallengeCompleted = 13,
+    ChallengeWon = 14,
+    BadgeEarned = 15
 }

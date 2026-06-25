@@ -10,7 +10,9 @@ public record CreateGoalRequest(
     DateTime? Deadline,
     bool IsRecurring = false,
     string? RecurrencePattern = null,
-    bool IsPublic = false
+    bool IsPublic = false,
+    string? SelectedWorkoutType = null,
+    Guid? SelectedExerciseId = null
 );
 
 public record UpdateGoalProgressRequest(
@@ -37,6 +39,10 @@ public record GoalResponse(
     int MilestonePercent,
     DateTime CreatedAt
 );
+
+public record GoalPeriodResponse(Guid Id, DateTime StartAt, DateTime EndAt, double TargetValue, double ProgressValue, string Status, DateTime? CompletedAt, DateTime? FailedAt);
+
+public record UpdateGoalRequest(double TargetValue, bool IsPublic);
 
 public record GoalTypeResponse(
     Guid Id,

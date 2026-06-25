@@ -17,6 +17,8 @@ public class UserGoalConfiguration : IEntityTypeConfiguration<UserGoal>
         builder.Property(g => g.Unit).HasMaxLength(50).IsRequired();
         builder.Property(g => g.Status).HasConversion<string>();
         builder.Property(g => g.RecurrencePattern).HasMaxLength(50);
+        builder.Property(g => g.TimeZoneId).HasMaxLength(128).IsRequired();
+        builder.Property(g => g.SelectedWorkoutType).HasMaxLength(32);
 
         builder.HasOne(g => g.User)
             .WithMany(u => u.Goals)
@@ -30,6 +32,11 @@ public class UserGoalConfiguration : IEntityTypeConfiguration<UserGoal>
         builder.HasMany(g => g.ProgressEntries)
             .WithOne(pe => pe.Goal)
             .HasForeignKey(pe => pe.GoalId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(g => g.Periods)
+            .WithOne(period => period.Goal)
+            .HasForeignKey(period => period.GoalId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

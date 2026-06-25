@@ -208,8 +208,16 @@ public class UpdateWorkoutValidator : AbstractValidator<UpdateWorkoutRequest>
             .When(x => x.Notes is not null);
 
         RuleFor(x => x)
-            .Must(x => x.Date.HasValue || x.DurationMinutes.HasValue || x.Notes is not null || x.IsPrivate.HasValue)
+            .Must(x => x.Date.HasValue || x.DurationMinutes.HasValue || x.Notes is not null || x.IsPrivate.HasValue || x.DistanceKm.HasValue || x.ElevationGainMeters.HasValue || x.StepCount.HasValue || x.MapData is not null || x.IsIndoor.HasValue || x.Laps.HasValue || x.PoolLengthMeters.HasValue || x.DistanceMeters.HasValue || x.StrokeType is not null || x.Style is not null || x.Intensity is not null || x.FocusArea is not null || x.SplitType is not null || x.IntensityLevel is not null || x.Exercises is not null)
             .WithMessage("At least one workout field must be provided.");
+
+        RuleFor(x => x.DistanceKm).GreaterThan(0).When(x => x.DistanceKm.HasValue);
+        RuleFor(x => x.DistanceMeters).GreaterThan(0).When(x => x.DistanceMeters.HasValue);
+        RuleFor(x => x.ElevationGainMeters).GreaterThanOrEqualTo(0).When(x => x.ElevationGainMeters.HasValue);
+        RuleFor(x => x.StepCount).GreaterThanOrEqualTo(0).When(x => x.StepCount.HasValue);
+        RuleFor(x => x.Laps).GreaterThan(0).When(x => x.Laps.HasValue);
+        RuleFor(x => x.PoolLengthMeters).GreaterThan(0).When(x => x.PoolLengthMeters.HasValue);
+        RuleForEach(x => x.Exercises).SetValidator(new ExerciseInputValidator()).When(x => x.Exercises is not null);
     }
 }
 
@@ -259,5 +267,15 @@ public class CreateFromRoutineValidator : AbstractValidator<CreateFromRoutineReq
             .NotEmpty()
             .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
             .WithMessage("Date cannot be in the future.");
+    }
+}
+
+public class UpdateRoutineValidator : AbstractValidator<UpdateRoutineRequest>
+{
+    public UpdateRoutineValidator()
+    {
+        RuleFor(request => request.Name).NotEmpty().MaximumLength(120);
+        RuleFor(request => request.Description).MaximumLength(500).When(request => request.Description is not null);
+        RuleFor(request => request.Definition.ValueKind).Equal(System.Text.Json.JsonValueKind.Object);
     }
 }

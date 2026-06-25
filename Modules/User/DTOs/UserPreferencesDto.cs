@@ -6,4 +6,5 @@ public class UserPreferencesDto
     public bool IsDarkModeEnabled { get; set; }
     public bool ReceiveEmailNotifications { get; set; }
     public string UnitSystem { get; set; } = "metric";
+    public string TimeZoneId { get; set; } = "Central European Standard Time";
 }

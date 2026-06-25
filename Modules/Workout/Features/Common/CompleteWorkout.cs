@@ -28,7 +28,7 @@ public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bo
 
     public async Task<bool> Handle(CompleteWorkoutCommand request, CancellationToken cancellationToken)
     {
-        var workout = await _workoutRepository.GetByIdAsync(request.WorkoutId, cancellationToken);
+        var workout = await _workoutRepository.GetDetailsByIdAsync(request.WorkoutId, cancellationToken);
         
         if (workout is null)
             throw new DomainException($"Workout {request.WorkoutId} not found.");
@@ -43,12 +43,10 @@ public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bo
 
         await _workoutRepository.UpdateAsync(workout, cancellationToken);
 
-        foreach (var domainEvent in domainEvents)
-        {
-            await _publisher.Publish(domainEvent, cancellationToken);
-        }
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        foreach (var domainEvent in domainEvents)
+            await _publisher.Publish(domainEvent, cancellationToken);
 
         return true;
     }

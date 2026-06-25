@@ -6,6 +6,7 @@ using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
+using backend.Modules.Progress.Domain;
 using backend.Modules.Social.Domain;
 using backend.Modules.User.Domain;
 using backend.Modules.Workout.Domain.Entities;
@@ -38,6 +39,9 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
 
     public DbSet<UserChallenge> Challenges { get; set; }
     public DbSet<ChallengeParticipant> ChallengeParticipants { get; set; }
+    public DbSet<ChallengeInvitation> ChallengeInvitations { get; set; }
+    public DbSet<ChallengeScoreContribution> ChallengeScoreContributions { get; set; }
+    public DbSet<ChallengeResult> ChallengeResults { get; set; }
 
     public DbSet<UserGroup> Groups { get; set; }
     public DbSet<GroupMember> GroupMembers { get; set; }
@@ -54,9 +58,13 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<UserGoal> Goals { get; set; }
     public DbSet<GoalType> GoalTypes { get; set; }
     public DbSet<GoalProgressEntry> GoalProgressEntries { get; set; }
+    public DbSet<GoalPeriod> GoalPeriods { get; set; }
 
     public DbSet<AchievementBadge> Badges { get; set; }
     public DbSet<UserBadge> UserBadges { get; set; }
+
+    public DbSet<MetricDefinition> MetricDefinitions { get; set; }
+    public DbSet<ActivityContribution> ActivityContributions { get; set; }
 
     public DbSet<UserWorkout> UserWorkouts { get; set; }
     public DbSet<GymWorkoutExercise> GymWorkoutExercises { get; set; }

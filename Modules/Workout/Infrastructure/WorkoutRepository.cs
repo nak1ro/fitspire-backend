@@ -1,5 +1,6 @@
 using backend.Data;
 using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,15 @@ public class WorkoutRepository : IWorkoutRepository
 
     public async Task<UserWorkout?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.UserWorkouts.FindAsync(new object[] { id }, cancellationToken);
+        return await _context.UserWorkouts
+            .FirstOrDefaultAsync(workout => workout.Id == id && workout.DeletedAt == null, cancellationToken);
+    }
+
+    public async Task<UserWorkout?> GetArchivedByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserWorkouts
+            .Include(workout => ((GymUserWorkoutDetails)workout).Exercises)
+            .FirstOrDefaultAsync(workout => workout.Id == id && workout.DeletedAt != null, cancellationToken);
     }
 
     public async Task<UserWorkout?> GetDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -24,7 +33,18 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.Set<UserWorkout>()
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
                 .ThenInclude(e => e.Exercise)
-            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null, cancellationToken);
+    }
+
+    public async Task<UserWorkout?> GetActiveSessionByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserWorkouts
+            .Where(workout => workout.UserId == userId
+                              && workout.DeletedAt == null
+                              && (workout.Status == WorkoutStatus.InProgress
+                                  || workout.Status == WorkoutStatus.Paused))
+            .OrderByDescending(workout => workout.StartedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<List<UserWorkout>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
@@ -34,6 +54,7 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.UserWorkouts
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
             .Where(w => workoutIds.Contains(w.Id))
+            .Where(w => w.DeletedAt == null)
             .ToListAsync(cancellationToken);
     }
 
@@ -42,13 +63,13 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.Set<GymUserWorkoutDetails>()
             .Include(w => w.Exercises)
                 .ThenInclude(e => e.Exercise)
-            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null, cancellationToken);
     }
 
     public async Task<List<UserWorkout>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.UserWorkouts
-            .Where(w => w.UserId == userId)
+            .Where(w => w.UserId == userId && w.DeletedAt == null)
             .OrderByDescending(w => w.Date)
             .ToListAsync(cancellationToken);
     }
@@ -76,7 +97,7 @@ public class WorkoutRepository : IWorkoutRepository
             // Optimistically include Gym Exercises if it's a gym workout
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
                 .ThenInclude(e => e.Exercise)
-            .Where(w => w.UserId == userId);
+            .Where(w => w.UserId == userId && w.DeletedAt == null);
 
         if (from.HasValue)
             query = query.Where(w => w.Date >= from.Value);
@@ -89,6 +110,14 @@ public class WorkoutRepository : IWorkoutRepository
 
         return await query
             .OrderByDescending(w => w.Date)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<UserWorkout>> GetArchivedByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserWorkouts
+            .Where(workout => workout.UserId == userId && workout.DeletedAt != null)
+            .OrderByDescending(workout => workout.DeletedAt)
             .ToListAsync(cancellationToken);
     }
 

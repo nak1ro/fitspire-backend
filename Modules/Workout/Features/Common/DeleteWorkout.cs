@@ -34,13 +34,11 @@ public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
         var domainEvents = workout.DomainEvents.ToList();
         workout.ClearDomainEvents();
 
-        await _repository.DeleteAsync(workout, cancellationToken);
-
-        foreach (var domainEvent in domainEvents)
-        {
-            await _publisher.Publish(domainEvent, cancellationToken);
-        }
+        await _repository.UpdateAsync(workout, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        foreach (var domainEvent in domainEvents)
+            await _publisher.Publish(domainEvent, cancellationToken);
     }
 }

@@ -37,6 +37,18 @@ public class CreateGoalRequestValidator : AbstractValidator<CreateGoalRequest>
         RuleFor(x => x.RecurrencePattern)
             .Must(pattern => pattern is null || AllowedRecurrencePatterns.Contains(pattern))
             .WithMessage("Recurrence pattern must be daily, weekly, or monthly.");
+
+        RuleFor(x => x.SelectedWorkoutType)
+            .Must(type => type is null or "gym" or "running" or "cycling" or "swimming" or "yoga")
+            .WithMessage("Selected workout type is not supported.");
+    }
+}
+
+public class UpdateGoalRequestValidator : AbstractValidator<UpdateGoalRequest>
+{
+    public UpdateGoalRequestValidator()
+    {
+        RuleFor(request => request.TargetValue).GreaterThan(0);
     }
 }
 

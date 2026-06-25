@@ -121,6 +121,8 @@ public class UserService : IUserService
             prefs.ReceiveEmailNotifications = dto.ReceiveEmailNotifications.Value;
         if (dto.UnitSystem != null)
             prefs.UnitSystem = dto.UnitSystem;
+        if (dto.TimeZoneId != null)
+            prefs.TimeZoneId = dto.TimeZoneId;
 
         prefs.UpdatedAt = DateTime.UtcNow;
         user.AppUserPreference = prefs;

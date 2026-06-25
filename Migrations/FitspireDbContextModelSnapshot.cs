@@ -158,17 +158,57 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("CriterionCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
                     b.Property<string>("IconUrl")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MetricCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SeriesCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
 
                     b.ToTable("Badge", (string)null);
                 });
@@ -179,12 +219,29 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<double?>("AchievedValue")
+                        .HasColumnType("double precision");
+
                     b.Property<DateTime>("AwardedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid>("BadgeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EvidenceSummary")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("EvidenceType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int?>("FeaturedOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TriggeringEntityId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
@@ -197,7 +254,47 @@ namespace backend.Migrations
                     b.HasIndex("UserId", "BadgeId")
                         .IsUnique();
 
+                    b.HasIndex("UserId", "FeaturedOrder")
+                        .IsUnique()
+                        .HasFilter("\"FeaturedOrder\" IS NOT NULL");
+
                     b.ToTable("UserBadge", (string)null);
+                });
+
+            modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InvitedUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedUserId");
+
+                    b.HasIndex("ChallengeId", "InvitedUserId")
+                        .IsUnique();
+
+                    b.ToTable("ChallengeInvitation", (string)null);
                 });
 
             modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeParticipant", b =>
@@ -209,20 +306,102 @@ namespace backend.Migrations
                     b.Property<Guid>("ChallengeId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LeftAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<float>("Score")
                         .HasColumnType("real");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("ChallengeId", "UserId")
                         .IsUnique();
 
+                    b.HasIndex("UserId", "Status");
+
                     b.ToTable("ChallengeParticipant", (string)null);
+                });
+
+            modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsFinisher")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsWinner")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengeId", "ParticipantId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "FinalizedAt");
+
+                    b.ToTable("ChallengeResult", (string)null);
+                });
+
+            modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeScoreContribution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActivityContributionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengeId");
+
+                    b.HasIndex("ParticipantId", "ActivityContributionId")
+                        .IsUnique();
+
+                    b.ToTable("ChallengeScoreContribution", (string)null);
                 });
 
             modelBuilder.Entity("backend.Modules.Challenge.Domain.UserChallenge", b =>
@@ -230,6 +409,12 @@ namespace backend.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -240,16 +425,53 @@ namespace backend.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("JoinClosing")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("MetricCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int>("ParticipantLimit")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<double?>("TargetValue")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("WorkoutType")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
+
+                    b.HasIndex("Status", "StartDate", "EndDate");
 
                     b.ToTable("Challenge", (string)null);
                 });
@@ -322,6 +544,54 @@ namespace backend.Migrations
                         });
                 });
 
+            modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.GoalPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FailedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GoalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("ProgressValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<double>("TargetValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoalId", "StartAt")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "EndAt");
+
+                    b.ToTable("GoalPeriod", (string)null);
+                });
+
             modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.GoalProgressEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -373,6 +643,11 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -385,18 +660,33 @@ namespace backend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
                     b.Property<string>("IconUrl")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("MeasurementType")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("MetricCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ParameterKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid?>("RelatedExerciseId")
                         .HasColumnType("uuid");
@@ -413,6 +703,9 @@ namespace backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
 
                     b.ToTable("GoalType", (string)null);
                 });
@@ -451,6 +744,13 @@ namespace backend.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid?>("SelectedExerciseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SelectedWorkoutType")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -460,6 +760,11 @@ namespace backend.Migrations
 
                     b.Property<double>("TargetValue")
                         .HasColumnType("double precision");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -711,6 +1016,111 @@ namespace backend.Migrations
                     b.HasIndex("MealId");
 
                     b.ToTable("MealItem", (string)null);
+                });
+
+            modelBuilder.Entity("backend.Modules.Progress.Domain.ActivityContribution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ExerciseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MetricCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SourceWorkoutId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("WorkoutType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceWorkoutId", "MetricCode", "ExerciseId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "MetricCode", "OccurredAt");
+
+                    b.HasIndex("UserId", "WorkoutType", "OccurredAt");
+
+                    b.ToTable("ActivityContribution", (string)null);
+                });
+
+            modelBuilder.Entity("backend.Modules.Progress.Domain.MetricDefinition", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Aggregation")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<string>("CanonicalUnit")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsAnalyticsSupported")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsBadgeSupported")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsChallengeSupported")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsGoalSupported")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MetricDefinition", (string)null);
                 });
 
             modelBuilder.Entity("backend.Modules.Social.Domain.Comment", b =>
@@ -1271,6 +1681,11 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AccumulatedPausedSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<int?>("CaloriesBurned")
                         .HasColumnType("integer");
 
@@ -1288,6 +1703,9 @@ namespace backend.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<double?>("DurationMinutes")
                         .HasColumnType("double precision");
 
@@ -1298,6 +1716,12 @@ namespace backend.Migrations
 
                     b.Property<string>("Notes")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("PausedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1314,7 +1738,10 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserWorkout_OneActiveSessionPerUser")
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"Status\" IN (0, 2)");
 
                     b.ToTable("UserWorkout", (string)null);
 
@@ -1519,6 +1946,25 @@ namespace backend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeInvitation", b =>
+                {
+                    b.HasOne("backend.Modules.Challenge.Domain.UserChallenge", "Challenge")
+                        .WithMany("Invitations")
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Modules.User.Domain.AppUser", "InvitedUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Challenge");
+
+                    b.Navigation("InvitedUser");
+                });
+
             modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeParticipant", b =>
                 {
                     b.HasOne("backend.Modules.Challenge.Domain.UserChallenge", "UserChallenge")
@@ -1536,6 +1982,25 @@ namespace backend.Migrations
                     b.Navigation("User");
 
                     b.Navigation("UserChallenge");
+                });
+
+            modelBuilder.Entity("backend.Modules.Challenge.Domain.ChallengeResult", b =>
+                {
+                    b.HasOne("backend.Modules.Challenge.Domain.UserChallenge", "Challenge")
+                        .WithMany("Results")
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Modules.User.Domain.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Challenge");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("backend.Modules.Challenge.Domain.UserChallenge", b =>
@@ -1585,6 +2050,17 @@ namespace backend.Migrations
                     b.Navigation("Addressee");
 
                     b.Navigation("Requester");
+                });
+
+            modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.GoalPeriod", b =>
+                {
+                    b.HasOne("backend.Modules.Goal.Domain.Entities.UserGoal", "Goal")
+                        .WithMany("Periods")
+                        .HasForeignKey("GoalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Goal");
                 });
 
             modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.GoalProgressEntry", b =>
@@ -2047,7 +2523,11 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Modules.Challenge.Domain.UserChallenge", b =>
                 {
+                    b.Navigation("Invitations");
+
                     b.Navigation("Participants");
+
+                    b.Navigation("Results");
                 });
 
             modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.GoalType", b =>
@@ -2057,6 +2537,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Modules.Goal.Domain.Entities.UserGoal", b =>
                 {
+                    b.Navigation("Periods");
+
                     b.Navigation("ProgressEntries");
                 });
 

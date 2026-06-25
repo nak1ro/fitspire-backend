@@ -14,7 +14,11 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public string? Notes { get; private set; }
     public bool IsPrivate { get; private set; }
     public WorkoutStatus Status { get; private set; }
+    public DateTime? StartedAt { get; private set; }
+    public DateTime? PausedAt { get; private set; }
+    public int AccumulatedPausedSeconds { get; private set; }
     public DateTime? CompletedAt { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
     
     // Common stats
     public int? CaloriesBurned { get; private set; }
@@ -35,6 +39,7 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         WorkoutType = workoutType;
         Date = NormalizeDate(date);
         Status = WorkoutStatus.InProgress;
+        StartedAt = DateTime.UtcNow;
         CreatedAt = DateTime.UtcNow;
         
         AddDomainEvent(new WorkoutStartedEvent(id, userId, workoutType));
@@ -45,10 +50,15 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         if (Status == WorkoutStatus.Completed)
             throw new DomainException("Workout is already completed.");
 
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("An archived workout cannot be completed.");
+
+        if (Status == WorkoutStatus.Paused)
+            Resume(DateTime.UtcNow);
+
         Status = WorkoutStatus.Completed;
         CompletedAt = DateTime.UtcNow;
-        if (durationMinutes.HasValue)
-            DurationMinutes = durationMinutes.Value;
+        DurationMinutes = durationMinutes ?? CalculateElapsedMinutes(CompletedAt.Value);
         if (notes != null)
             Notes = notes;
         if (isPrivate.HasValue)
@@ -103,6 +113,9 @@ public abstract class UserWorkout : AggregateRoot<Guid>
 
     public void UpdateDetails(DateTime? date, double? duration, string? notes, bool? isPrivate)
     {
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("An archived workout cannot be edited.");
+
         if (date.HasValue)
             Date = NormalizeDate(date.Value);
         
@@ -123,7 +136,69 @@ public abstract class UserWorkout : AggregateRoot<Guid>
 
     public void Delete()
     {
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Workout is already archived.");
+
+        DeletedAt = DateTime.UtcNow;
+        Status = WorkoutStatus.Archived;
+        UpdatedAt = DateTime.UtcNow;
         AddDomainEvent(new WorkoutDeletedEvent(Id, UserId, WorkoutType));
+    }
+
+    public void Pause(DateTime nowUtc)
+    {
+        if (Status != WorkoutStatus.InProgress)
+            throw new DomainException("Only an active workout can be paused.");
+
+        PausedAt = nowUtc;
+        Status = WorkoutStatus.Paused;
+        UpdatedAt = nowUtc;
+    }
+
+    public void Resume(DateTime nowUtc)
+    {
+        if (Status != WorkoutStatus.Paused || PausedAt is null)
+            throw new DomainException("Only a paused workout can be resumed.");
+
+        AccumulatedPausedSeconds += Math.Max(0, (int)(nowUtc - PausedAt.Value).TotalSeconds);
+        PausedAt = null;
+        Status = WorkoutStatus.InProgress;
+        UpdatedAt = nowUtc;
+    }
+
+    public void Restore()
+    {
+        if (Status != WorkoutStatus.Archived || DeletedAt is null)
+            throw new DomainException("Only an archived workout can be restored.");
+
+        DeletedAt = null;
+        Status = CompletedAt.HasValue ? WorkoutStatus.Completed : WorkoutStatus.InProgress;
+        StartedAt ??= DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Abandon()
+    {
+        if (!IsActiveSession())
+            throw new DomainException("Only an active workout session can be abandoned.");
+
+        DeletedAt = DateTime.UtcNow;
+        Status = WorkoutStatus.Archived;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public bool IsActiveSession() => Status is WorkoutStatus.InProgress or WorkoutStatus.Paused;
+
+    private double CalculateElapsedMinutes(DateTime completedAtUtc)
+    {
+        if (StartedAt is null)
+            return DurationMinutes ?? 0;
+
+        var pausedSeconds = AccumulatedPausedSeconds;
+        if (PausedAt.HasValue)
+            pausedSeconds += Math.Max(0, (int)(completedAtUtc - PausedAt.Value).TotalSeconds);
+
+        return Math.Max(0, (completedAtUtc - StartedAt.Value).TotalMinutes - pausedSeconds / 60d);
     }
 
     private static DateTime NormalizeDate(DateTime date)

@@ -16,15 +16,18 @@ public class GoalController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateGoalRequest> _createGoalValidator;
     private readonly IValidator<UpdateGoalProgressRequest> _updateGoalProgressValidator;
+    private readonly IValidator<UpdateGoalRequest> _updateGoalValidator;
 
     public GoalController(
         IMediator mediator,
         IValidator<CreateGoalRequest> createGoalValidator,
-        IValidator<UpdateGoalProgressRequest> updateGoalProgressValidator)
+        IValidator<UpdateGoalProgressRequest> updateGoalProgressValidator,
+        IValidator<UpdateGoalRequest> updateGoalValidator)
     {
         _mediator = mediator;
         _createGoalValidator = createGoalValidator;
         _updateGoalProgressValidator = updateGoalProgressValidator;
+        _updateGoalValidator = updateGoalValidator;
     }
 
     [HttpPost]
@@ -41,7 +44,9 @@ public class GoalController : ControllerBase
             request.Deadline,
             request.IsRecurring,
             request.RecurrencePattern,
-            request.IsPublic
+            request.IsPublic,
+            request.SelectedWorkoutType,
+            request.SelectedExerciseId
         ));
         return CreatedAtAction(nameof(GetUserGoals), new { id = goalId }, goalId);
     }
@@ -52,6 +57,27 @@ public class GoalController : ControllerBase
         var userId = User.GetRequiredUserId();
         var goals = await _mediator.Send(new GetUserGoalsQuery(userId));
         return Ok(goals);
+    }
+
+    [HttpGet("{id:guid}/periods")]
+    public async Task<ActionResult<List<GoalPeriodResponse>>> GetPeriods(Guid id)
+    {
+        return Ok(await _mediator.Send(new GetGoalPeriodsQuery(User.GetRequiredUserId(), id)));
+    }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> UpdateGoal(Guid id, [FromBody] UpdateGoalRequest request)
+    {
+        await _updateGoalValidator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateGoalCommand(User.GetRequiredUserId(), id, request.TargetValue, request.IsPublic));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/archive")]
+    public async Task<IActionResult> ArchiveGoal(Guid id)
+    {
+        await _mediator.Send(new ArchiveGoalCommand(User.GetRequiredUserId(), id));
+        return NoContent();
     }
 
     [HttpGet("types")]

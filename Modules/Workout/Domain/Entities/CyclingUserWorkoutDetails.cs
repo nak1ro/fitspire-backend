@@ -1,4 +1,5 @@
 using backend.Modules.Workout.Domain.Enums;
+using backend.Modules.Shared.Domain;
 
 namespace backend.Modules.Workout.Domain.Entities;
 
@@ -36,5 +37,11 @@ public class CyclingUserWorkoutDetails : UserWorkout
         ElevationGainMeters = elevationGainMeters;
         MapData = mapData;
     }
+    public void SetDistance(double distanceKm)
+    {
+        if (distanceKm <= 0) throw new DomainException("Distance must be greater than zero.");
+        DistanceKm = distanceKm; UpdatedAt = DateTime.UtcNow;
+    }
+    public void SetIndoor(bool isIndoor) { IsIndoor = isIndoor; UpdatedAt = DateTime.UtcNow; }
     public override double? GetTotalDistance() => DistanceKm;
 }

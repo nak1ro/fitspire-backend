@@ -9,6 +9,7 @@ using backend.Modules.Workout.Features.SwimmingWorkout;
 using backend.Modules.Workout.Features.YogaWorkout;
 using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Features.Sessions;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +34,7 @@ public class WorkoutController : ControllerBase
     private readonly IValidator<WorkoutFilterRequest> _workoutFilterValidator;
     private readonly IValidator<SaveRoutineRequest> _saveRoutineValidator;
     private readonly IValidator<CreateFromRoutineRequest> _createFromRoutineValidator;
+    private readonly IValidator<UpdateRoutineRequest> _updateRoutineValidator;
 
     public WorkoutController(
         IMediator mediator,
@@ -46,7 +48,8 @@ public class WorkoutController : ControllerBase
         IValidator<UpdateWorkoutRequest> updateWorkoutValidator,
         IValidator<WorkoutFilterRequest> workoutFilterValidator,
         IValidator<SaveRoutineRequest> saveRoutineValidator,
-        IValidator<CreateFromRoutineRequest> createFromRoutineValidator)
+        IValidator<CreateFromRoutineRequest> createFromRoutineValidator,
+        IValidator<UpdateRoutineRequest> updateRoutineValidator)
     {
         _mediator = mediator;
         _mapper = mapper;
@@ -60,6 +63,7 @@ public class WorkoutController : ControllerBase
         _workoutFilterValidator = workoutFilterValidator;
         _saveRoutineValidator = saveRoutineValidator;
         _createFromRoutineValidator = createFromRoutineValidator;
+        _updateRoutineValidator = updateRoutineValidator;
     }
 
     [HttpPost("gym")]
@@ -205,6 +209,13 @@ public class WorkoutController : ControllerBase
         return Ok(MapWorkoutDetails(workout));
     }
 
+    [HttpGet("sessions/active")]
+    public async Task<ActionResult<WorkoutSessionResponse>> GetActiveSession()
+    {
+        var session = await _mediator.Send(new GetActiveWorkoutSessionQuery(User.GetRequiredUserId()));
+        return session is null ? NoContent() : Ok(session);
+    }
+
     private object MapWorkoutDetails(UserWorkout workout)
     {
         return workout switch
@@ -226,6 +237,44 @@ public class WorkoutController : ControllerBase
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes, request.Notes, request.IsPrivate));
         return Ok(new { success = true });
+    }
+
+    [HttpPost("{id:guid}/finish")]
+    public async Task<ActionResult> FinishWorkout(Guid id, [FromBody] CompleteWorkoutRequest request)
+    {
+        await _completeWorkoutValidator.ValidateAndThrowAsync(request);
+
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes, request.Notes, request.IsPrivate));
+        return Ok(new { success = true });
+    }
+
+    [HttpPost("{id:guid}/pause")]
+    public async Task<IActionResult> PauseWorkout(Guid id)
+    {
+        await _mediator.Send(new PauseWorkoutSessionCommand(id, User.GetRequiredUserId()));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/resume")]
+    public async Task<IActionResult> ResumeWorkout(Guid id)
+    {
+        await _mediator.Send(new ResumeWorkoutSessionCommand(id, User.GetRequiredUserId()));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/abandon")]
+    public async Task<IActionResult> AbandonWorkout(Guid id)
+    {
+        await _mediator.Send(new AbandonWorkoutSessionCommand(id, User.GetRequiredUserId()));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/restore")]
+    public async Task<IActionResult> RestoreWorkout(Guid id)
+    {
+        await _mediator.Send(new RestoreWorkoutCommand(id, User.GetRequiredUserId()));
+        return NoContent();
     }
 
     [HttpPut("{id:guid}")]
@@ -254,6 +303,27 @@ public class WorkoutController : ControllerBase
         var userId = User.GetRequiredUserId();
         var result = await _mediator.Send(new GetWorkoutsQuery(userId, filter));
         return Ok(result);
+    }
+
+    [HttpGet("history")]
+    public async Task<ActionResult<WorkoutPageResponse>> GetWorkoutHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        return Ok(await _mediator.Send(new GetWorkoutHistoryQuery(User.GetRequiredUserId(), false, page, pageSize)));
+    }
+
+    [HttpGet("archived")]
+    public async Task<ActionResult<WorkoutPageResponse>> GetArchivedWorkouts([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        return Ok(await _mediator.Send(new GetWorkoutHistoryQuery(User.GetRequiredUserId(), true, page, pageSize)));
+    }
+
+    [HttpGet("summary")]
+    public async Task<ActionResult<ActivitySummaryResponse>> GetActivitySummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        if (from.HasValue && to.HasValue && from > to) return BadRequest("from must be before to.");
+        return Ok(await _mediator.Send(new GetActivitySummaryQuery(User.GetRequiredUserId(), from, to)));
     }
 
     [HttpGet("exercise-categories")]
@@ -322,5 +392,19 @@ public class WorkoutController : ControllerBase
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new DeleteWorkoutRoutineCommand(userId, routineId));
         return NoContent();
+    }
+
+    [HttpPatch("routines/{routineId:guid}")]
+    public async Task<IActionResult> UpdateRoutine(Guid routineId, [FromBody] UpdateRoutineRequest request)
+    {
+        await _updateRoutineValidator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateWorkoutRoutineCommand(User.GetRequiredUserId(), routineId, request));
+        return NoContent();
+    }
+
+    private static void ValidatePagination(int page, int pageSize)
+    {
+        if (page < 1 || pageSize is < 1 or > 100)
+            throw new backend.Modules.Shared.Domain.DomainException("Page must be at least one and page size must be between 1 and 100.");
     }
 }

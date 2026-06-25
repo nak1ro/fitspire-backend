@@ -38,11 +38,7 @@ public class SaveWorkoutAsRoutineHandler : IRequestHandler<SaveWorkoutAsRoutineC
         if (workout.UserId != request.CurrentUserId)
             throw new UnauthorizedAccessException("Cannot save another user's workout as routine.");
 
-        // 2. Serialize workout data to JSON (simple snapshot)
-        // In a real app we might map to a cleaner DTO first to avoid circular refs or unnecessary fields,
-        // but for now verifying concept with direct serialization (ignoring cycles).
-        var jsonOptions = new JsonSerializerOptions { ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles };
-        var jsonData = JsonSerializer.Serialize(workout, workout.GetType(), jsonOptions);
+        var jsonData = JsonSerializer.Serialize(WorkoutRoutineSnapshot.Create(workout));
 
         // 3. Create Routine
         var routine = new WorkoutRoutine(
@@ -60,4 +56,21 @@ public class SaveWorkoutAsRoutineHandler : IRequestHandler<SaveWorkoutAsRoutineC
 
         return routine.Id;
     }
+}
+
+internal static class WorkoutRoutineSnapshot
+{
+    public static object Create(UserWorkout workout) => workout switch
+    {
+        GymUserWorkoutDetails gym => new
+        {
+            SchemaVersion = 1, gym.WorkoutType, gym.SplitType, gym.IntensityLevel, gym.DurationMinutes, gym.Notes, gym.IsPrivate, gym.CaloriesBurned,
+            Exercises = gym.Exercises.Select(exercise => new { exercise.ExerciseId, exercise.Sets, exercise.Reps, exercise.Weight })
+        },
+        RunningUserWorkoutDetails running => new { SchemaVersion = 1, running.WorkoutType, running.DistanceKm, running.ElevationGainMeters, running.StepCount, running.MapData, running.DurationMinutes, running.Notes, running.IsPrivate, running.CaloriesBurned },
+        CyclingUserWorkoutDetails cycling => new { SchemaVersion = 1, cycling.WorkoutType, cycling.DistanceKm, cycling.ElevationGainMeters, cycling.MapData, cycling.IsIndoor, cycling.DurationMinutes, cycling.Notes, cycling.IsPrivate, cycling.CaloriesBurned },
+        SwimmingUserWorkoutDetails swimming => new { SchemaVersion = 1, swimming.WorkoutType, swimming.Laps, swimming.PoolLengthMeters, swimming.DistanceMeters, swimming.StrokeType, swimming.DurationMinutes, swimming.Notes, swimming.IsPrivate, swimming.CaloriesBurned },
+        YogaUserWorkoutDetails yoga => new { SchemaVersion = 1, yoga.WorkoutType, yoga.Style, yoga.Intensity, yoga.FocusArea, yoga.DurationMinutes, yoga.Notes, yoga.IsPrivate, yoga.CaloriesBurned },
+        _ => throw new DomainException($"Unsupported workout type: {workout.WorkoutType}")
+    };
 }

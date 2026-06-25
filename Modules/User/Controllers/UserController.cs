@@ -1,6 +1,7 @@
 using backend.Modules.User.DTOs;
 using backend.Modules.User.Services;
 using backend.Modules.Shared.Extensions;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +12,17 @@ namespace backend.Modules.User.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IValidator<UpdateProfileDto> _updateProfileValidator;
+    private readonly IValidator<UpdateUserPreferencesDto> _updatePreferencesValidator;
 
-    public UserController(IUserService userService)
+    public UserController(
+        IUserService userService,
+        IValidator<UpdateProfileDto> updateProfileValidator,
+        IValidator<UpdateUserPreferencesDto> updatePreferencesValidator)
     {
         _userService = userService;
+        _updateProfileValidator = updateProfileValidator;
+        _updatePreferencesValidator = updatePreferencesValidator;
     }
 
     [Authorize]
@@ -29,6 +37,7 @@ public class UserController : ControllerBase
     [HttpPatch("profile")]
     public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
+        await _updateProfileValidator.ValidateAndThrowAsync(dto);
         var updated = await _userService.UpdateProfileAsync(User.GetRequiredUserId(), dto);
         return Ok(updated);
     }
@@ -53,6 +62,7 @@ public class UserController : ControllerBase
     [HttpPatch("preferences")]
     public async Task<ActionResult<UserPreferencesDto>> UpdatePreferences([FromBody] UpdateUserPreferencesDto dto)
     {
+        await _updatePreferencesValidator.ValidateAndThrowAsync(dto);
         var updatedPrefs = await _userService.UpdatePreferencesAsync(User.GetRequiredUserId(), dto);
         return Ok(updatedPrefs);
     }

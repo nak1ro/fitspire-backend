@@ -13,6 +13,8 @@ public class ChallengeParticipantConfiguration : IEntityTypeConfiguration<Challe
         builder.HasKey(cp => cp.Id);
 
         builder.HasIndex(cp => new { cp.ChallengeId, cp.UserId }).IsUnique();
+        builder.Property(cp => cp.Status).HasMaxLength(16).IsRequired();
+        builder.HasIndex(cp => new { cp.UserId, cp.Status });
 
         builder.HasOne(cp => cp.User)
             .WithMany(u => u.ChallengeParticipants)

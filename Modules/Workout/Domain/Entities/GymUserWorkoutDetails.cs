@@ -34,8 +34,8 @@ public class GymUserWorkoutDetails : UserWorkout
 
     public GymWorkoutExercise AddExercise(Guid exerciseId, int sets, int reps, double weight)
     {
-        if (Status == WorkoutStatus.Completed)
-            throw new DomainException("Cannot add exercises to a completed workout.");
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Cannot add exercises to an archived workout.");
 
         var orderIndex = _exercises.Count + 1;
         var exercise = new GymWorkoutExercise(
@@ -56,8 +56,8 @@ public class GymUserWorkoutDetails : UserWorkout
 
     public void UpdateExercise(Guid exerciseEntryId, int? sets = null, int? reps = null, double? weight = null)
     {
-        if (Status == WorkoutStatus.Completed)
-            throw new DomainException("Cannot update exercises in a completed workout.");
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Cannot update exercises in an archived workout.");
 
         var exercise = _exercises.FirstOrDefault(e => e.Id == exerciseEntryId)
             ?? throw new DomainException($"Exercise entry {exerciseEntryId} not found.");
@@ -68,8 +68,8 @@ public class GymUserWorkoutDetails : UserWorkout
 
     public void RemoveExercise(Guid exerciseEntryId)
     {
-        if (Status == WorkoutStatus.Completed)
-            throw new DomainException("Cannot remove exercises from a completed workout.");
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Cannot remove exercises from an archived workout.");
 
         var exercise = _exercises.FirstOrDefault(e => e.Id == exerciseEntryId)
             ?? throw new DomainException($"Exercise entry {exerciseEntryId} not found.");
@@ -104,6 +104,15 @@ public class GymUserWorkoutDetails : UserWorkout
     }
 
     public double CalculateTotalVolume() => _exercises.Sum(e => e.CalculateVolume());
+
+    public void ReplaceExercises(IEnumerable<(Guid ExerciseId, int Sets, int Reps, double Weight)> exercises)
+    {
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Cannot edit an archived workout.");
+        _exercises.Clear();
+        foreach (var (exerciseId, sets, reps, weight) in exercises)
+            AddExercise(exerciseId, sets, reps, weight);
+    }
 
     public double? GetMaxWeight() => _exercises.Any() ? _exercises.Max(e => e.Weight) : null;
     public override double? GetTotalVolume() => CalculateTotalVolume();

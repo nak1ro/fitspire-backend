@@ -12,6 +12,11 @@ using backend.Modules.Social;
 using backend.Modules.Goal.Data;
 using backend.Modules.Shared.Middleware;
 using backend.Modules.Notification;
+using backend.Modules.Progress;
+using backend.Modules.Progress.Data;
+using backend.Modules.Challenge;
+using backend.Modules.Badge.Data;
+using backend.Modules.Badge;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 
@@ -36,7 +41,10 @@ builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddSharedModule(builder.Configuration);
 builder.Services.AddUserModule();
 builder.Services.AddWorkoutModule();
+builder.Services.AddProgressModule();
 builder.Services.AddGoalModule();
+builder.Services.AddChallengeModule();
+builder.Services.AddBadgeModule();
 builder.Services.AddSocialModule();
 builder.Services.AddNotificationModule();
 
@@ -84,6 +92,8 @@ using (var scope = app.Services.CreateScope())
 
     await RoleSeeder.SeedAsync(serviceProvider);
     await backend.Modules.Workout.Data.Seeding.ExerciseSeeder.SeedAsync(serviceProvider);
+    await MetricDefinitionSeeder.SeedAsync(context);
+    await BadgeSeeder.SeedAsync(context);
     await new GoalTypeSeeder(context).SeedAsync();
 }
 

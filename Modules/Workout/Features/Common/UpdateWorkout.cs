@@ -2,6 +2,12 @@ using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.DTOs;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Progress.Services;
+using backend.Modules.Workout.Services;
+using backend.Data;
+using backend.Modules.Workout.Domain.Entities;
+using backend.Modules.Workout.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
@@ -12,16 +18,22 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
 {
     private readonly IWorkoutRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IContributionReconciliationService _contributions;
+    private readonly IPersonalRecordRecalculationService _records;
+    private readonly FitspireDbContext _context;
 
-    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork)
+    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IContributionReconciliationService contributions, IPersonalRecordRecalculationService records, FitspireDbContext context)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _contributions = contributions;
+        _records = records;
+        _context = context;
     }
 
     public async Task Handle(UpdateWorkoutCommand request, CancellationToken cancellationToken)
     {
-        var workout = await _repository.GetByIdAsync(request.WorkoutId, cancellationToken);
+        var workout = await _repository.GetDetailsByIdAsync(request.WorkoutId, cancellationToken);
         
         if (workout == null)
             throw new NotFoundException($"Workout {request.WorkoutId} not found.");
@@ -35,8 +47,55 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
             request.Request.Notes,
             request.Request.IsPrivate
         );
+        await UpdateTypeSpecificFieldsAsync(workout, request.Request, cancellationToken);
 
         await _repository.UpdateAsync(workout, cancellationToken);
+        if (workout.Status == Domain.Enums.WorkoutStatus.Completed)
+        {
+            await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
+            await _records.RecalculateAsync(workout.UserId, cancellationToken);
+        }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
+
+    private async Task UpdateTypeSpecificFieldsAsync(UserWorkout workout, UpdateWorkoutRequest request, CancellationToken cancellationToken)
+    {
+        switch (workout)
+        {
+            case GymUserWorkoutDetails gym:
+                if (request.SplitType is not null) gym.SetSplitType(Parse<WorkoutSplit>(request.SplitType));
+                if (request.IntensityLevel is not null) gym.SetIntensity(Parse<WorkoutIntensity>(request.IntensityLevel));
+                if (request.Exercises is not null)
+                {
+                    var ids = request.Exercises.Select(exercise => exercise.ExerciseId).Distinct().ToList();
+                    if (await _context.Exercises.CountAsync(exercise => ids.Contains(exercise.Id), cancellationToken) != ids.Count)
+                        throw new DomainException("One or more exercises do not exist.");
+                    _context.GymWorkoutExercises.RemoveRange(gym.Exercises);
+                    gym.ReplaceExercises(request.Exercises.Select(exercise => (exercise.ExerciseId, exercise.Sets, exercise.Reps, exercise.WeightKg)));
+                }
+                break;
+            case RunningUserWorkoutDetails running:
+                if (request.DistanceKm.HasValue) running.SetDistance(request.DistanceKm.Value);
+                if (request.ElevationGainMeters.HasValue || request.StepCount.HasValue || request.MapData is not null)
+                    running.SetStats(request.ElevationGainMeters ?? running.ElevationGainMeters, request.StepCount ?? running.StepCount, request.MapData ?? running.MapData);
+                break;
+            case CyclingUserWorkoutDetails cycling:
+                if (request.DistanceKm.HasValue) cycling.SetDistance(request.DistanceKm.Value);
+                if (request.ElevationGainMeters.HasValue || request.MapData is not null) cycling.UpdateStats(request.ElevationGainMeters ?? cycling.ElevationGainMeters, request.MapData ?? cycling.MapData);
+                if (request.IsIndoor.HasValue) cycling.SetIndoor(request.IsIndoor.Value);
+                break;
+            case SwimmingUserWorkoutDetails swimming:
+                if (request.Laps.HasValue || request.PoolLengthMeters.HasValue) swimming.SetPoolDetails(request.Laps ?? swimming.Laps, request.PoolLengthMeters ?? swimming.PoolLengthMeters);
+                if (request.DistanceMeters.HasValue) swimming.SetDistance(request.DistanceMeters.Value);
+                if (request.StrokeType is not null) swimming.SetStrokeType(Parse<SwimmingStroke>(request.StrokeType));
+                break;
+            case YogaUserWorkoutDetails yoga:
+                if (request.Style is not null || request.Intensity is not null || request.FocusArea is not null)
+                    yoga.SetDetails(Parse<YogaStyle>(request.Style) ?? yoga.Style, Parse<YogaIntensity>(request.Intensity) ?? yoga.Intensity, Parse<YogaFocusArea>(request.FocusArea) ?? yoga.FocusArea);
+                break;
+        }
+    }
+
+    private static TEnum? Parse<TEnum>(string? value) where TEnum : struct, Enum =>
+        string.IsNullOrWhiteSpace(value) ? null : Enum.TryParse<TEnum>(value, true, out var parsed) ? parsed : throw new DomainException($"Invalid {typeof(TEnum).Name} value.");
 }

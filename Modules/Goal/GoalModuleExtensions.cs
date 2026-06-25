@@ -2,6 +2,7 @@ using backend.Modules.Goal.DTOs;
 using backend.Modules.Goal.Infrastructure;
 using backend.Modules.Goal.Services.MetricCalculators;
 using backend.Modules.Goal.Validators;
+using backend.Modules.Goal.Services;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,9 @@ public static class GoalModuleExtensions
         services.AddScoped<IGoalRepository, Infrastructure.GoalRepository>();
         services.AddScoped<IValidator<CreateGoalRequest>, CreateGoalRequestValidator>();
         services.AddScoped<IValidator<UpdateGoalProgressRequest>, UpdateGoalProgressRequestValidator>();
+        services.AddScoped<IValidator<UpdateGoalRequest>, UpdateGoalRequestValidator>();
+        services.AddScoped<IGoalProgressService, GoalProgressService>();
+        services.AddHostedService<GamificationLifecycleHostedService>();
         
         // Register Metric Strategies
         services.AddScoped<IMetricCalculator, CountMetricCalculator>();

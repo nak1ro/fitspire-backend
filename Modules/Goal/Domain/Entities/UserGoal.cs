@@ -23,11 +23,15 @@ public class UserGoal : AggregateRoot<Guid>
     public bool IsPublic { get; private set; }
     public int CurrentStreak { get; private set; }
     public DateTime? LastStreakDate { get; private set; }
+    public string TimeZoneId { get; private set; } = "Central European Standard Time";
+    public string? SelectedWorkoutType { get; private set; }
+    public Guid? SelectedExerciseId { get; private set; }
 
     // Navigation
     public AppUser User { get; private set; } = null!;
     public GoalType GoalType { get; private set; } = null!;
     public ICollection<GoalProgressEntry> ProgressEntries { get; private set; } = new List<GoalProgressEntry>();
+    public ICollection<GoalPeriod> Periods { get; private set; } = new List<GoalPeriod>();
 
     private UserGoal() { }
 
@@ -211,6 +215,24 @@ public class UserGoal : AggregateRoot<Guid>
         if (Status == GoalStatus.Active && CurrentValue >= TargetValue)
             Status = GoalStatus.Completed;
 
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetTemplateParameters(string timeZoneId, string? selectedWorkoutType, Guid? selectedExerciseId)
+    {
+        TimeZoneId = timeZoneId;
+        SelectedWorkoutType = selectedWorkoutType?.Trim().ToLowerInvariant();
+        SelectedExerciseId = selectedExerciseId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateTarget(double targetValue, bool isPublic)
+    {
+        if (targetValue <= 0)
+            throw new DomainException("Goal target must be greater than zero.");
+
+        TargetValue = targetValue;
+        IsPublic = isPublic;
         UpdatedAt = DateTime.UtcNow;
     }
 

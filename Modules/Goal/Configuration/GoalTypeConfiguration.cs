@@ -12,6 +12,7 @@ public class GoalTypeConfiguration : IEntityTypeConfiguration<GoalType>
 
         builder.HasKey(gt => gt.Id);
 
+        builder.Property(gt => gt.Code).HasMaxLength(100).IsRequired();
         builder.Property(gt => gt.Name).HasMaxLength(100).IsRequired();
         builder.Property(gt => gt.DefaultUnit).HasMaxLength(50).IsRequired();
         builder.Property(gt => gt.Description).HasMaxLength(500);
@@ -20,6 +21,9 @@ public class GoalTypeConfiguration : IEntityTypeConfiguration<GoalType>
         builder.Property(gt => gt.MeasurementType).HasConversion<string>();
         builder.Property(gt => gt.RelatedWorkoutType).HasMaxLength(50);
         builder.Property(gt => gt.RelatedMetric).HasMaxLength(50);
+        builder.Property(gt => gt.MetricCode).HasMaxLength(80);
+        builder.Property(gt => gt.ParameterKind).HasMaxLength(32).IsRequired();
+        builder.HasIndex(gt => gt.Code).IsUnique();
 
         builder.HasMany(gt => gt.Goals)
             .WithOne(g => g.GoalType)

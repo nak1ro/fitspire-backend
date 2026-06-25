@@ -52,4 +52,14 @@ public class PersonalRecord : AggregateRoot<Guid>
 
         return true;
     }
+
+    public void Replace(double value, Guid workoutId)
+    {
+        if (value <= 0)
+            throw new DomainException("Personal record value must be positive.");
+
+        Value = value;
+        WorkoutId = workoutId;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

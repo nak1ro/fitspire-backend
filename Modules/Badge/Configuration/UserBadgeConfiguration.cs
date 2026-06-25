@@ -16,6 +16,9 @@ public class UserBadgeConfiguration : IEntityTypeConfiguration<UserBadge>
 
         builder.Property(ub => ub.AwardedAt)
             .HasDefaultValueSql("NOW()");
+        builder.Property(ub => ub.EvidenceType).HasMaxLength(64);
+        builder.Property(ub => ub.EvidenceSummary).HasMaxLength(500);
+        builder.HasIndex(ub => new { ub.UserId, ub.FeaturedOrder }).HasFilter("\"FeaturedOrder\" IS NOT NULL").IsUnique();
 
         builder.HasOne(ub => ub.User)
             .WithMany(u => u.Badges)

@@ -6,4 +6,5 @@ public class UpdateUserPreferencesDto
     public bool? IsDarkModeEnabled { get; set; }
     public bool? ReceiveEmailNotifications { get; set; }
     public string? UnitSystem { get; set; } // "metric" or "imperial"
+    public string? TimeZoneId { get; set; }
 }

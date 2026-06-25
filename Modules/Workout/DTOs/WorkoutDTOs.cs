@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace backend.Modules.Workout.DTOs;
 
 // Request DTOs
@@ -21,6 +23,16 @@ public record CompleteWorkoutRequest(
     bool? IsPrivate
 );
 
+public record WorkoutSessionResponse(
+    Guid Id,
+    string WorkoutType,
+    string Status,
+    DateTime? StartedAt,
+    DateTime? PausedAt,
+    int AccumulatedPausedSeconds,
+    double ElapsedMinutes
+);
+
 public record WorkoutFilterRequest(
     DateTime? From,
     DateTime? To,
@@ -31,7 +43,22 @@ public record UpdateWorkoutRequest(
     DateTime? Date,
     double? DurationMinutes,
     string? Notes,
-    bool? IsPrivate
+    bool? IsPrivate,
+    double? DistanceKm = null,
+    double? ElevationGainMeters = null,
+    int? StepCount = null,
+    string? MapData = null,
+    bool? IsIndoor = null,
+    int? Laps = null,
+    double? PoolLengthMeters = null,
+    double? DistanceMeters = null,
+    string? StrokeType = null,
+    string? Style = null,
+    string? Intensity = null,
+    string? FocusArea = null,
+    string? SplitType = null,
+    string? IntensityLevel = null,
+    List<ExerciseInputRequest>? Exercises = null
 );
 
 public record SaveRoutineRequest(
@@ -42,6 +69,10 @@ public record SaveRoutineRequest(
 public record CreateFromRoutineRequest(
     DateTime Date
 );
+
+public record UpdateRoutineRequest(string Name, string? Description, JsonElement Definition);
+public record WorkoutPageResponse(IReadOnlyList<WorkoutResponse> Items, int Page, int PageSize, int TotalCount);
+public record ActivitySummaryResponse(DateTime From, DateTime To, int WorkoutCount, double DurationMinutes, double DistanceKm, double CaloriesBurned, double GymVolumeKg);
 
 // Response DTOs
 public record WorkoutResponse(
