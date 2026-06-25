@@ -7,7 +7,8 @@ namespace backend.Modules.Goal.Services;
 
 public interface IGoalTemplatePolicy
 {
-    GoalCreationRules Resolve(GoalType template, string schedule, DateTime? deadline, string? selectedWorkoutType, Guid? selectedExerciseId);
+    GoalCreationRules Resolve(GoalType template, string schedule, DateTime? deadline, string? selectedWorkoutType,
+        Guid? selectedExerciseId, DateTime? startDate);
 }
 
 public sealed record GoalCreationRules(
@@ -15,7 +16,8 @@ public sealed record GoalCreationRules(
     string? RecurrencePattern,
     DateTime? Deadline,
     string? SelectedWorkoutType,
-    Guid? SelectedExerciseId);
+    Guid? SelectedExerciseId,
+    DateTime StartDate);
 
 public class GoalTemplatePolicy : IGoalTemplatePolicy
 {
@@ -24,19 +26,21 @@ public class GoalTemplatePolicy : IGoalTemplatePolicy
         "gym", "running", "cycling", "swimming", "yoga"
     };
 
-    public GoalCreationRules Resolve(GoalType template, string schedule, DateTime? deadline, string? selectedWorkoutType, Guid? selectedExerciseId)
+    public GoalCreationRules Resolve(GoalType template, string schedule, DateTime? deadline, string? selectedWorkoutType,
+        Guid? selectedExerciseId, DateTime? startDate)
     {
         if (!template.IsActive || string.IsNullOrWhiteSpace(template.MetricCode))
             throw new DomainException("This goal template is not available.");
 
         var normalizedSchedule = NormalizeSchedule(schedule);
-        ValidateSchedule(template, normalizedSchedule, deadline);
+        var resolvedStartDate = (startDate ?? DateTime.UtcNow).ToUniversalTime();
+        ValidateSchedule(template, normalizedSchedule, deadline, resolvedStartDate);
         var workoutType = ResolveWorkoutType(template, selectedWorkoutType);
         ValidateExercise(template, selectedExerciseId);
         return new GoalCreationRules(normalizedSchedule != GoalSchedules.OneOff,
             normalizedSchedule == GoalSchedules.OneOff ? null : normalizedSchedule,
             normalizedSchedule == GoalSchedules.OneOff ? deadline!.Value.ToUniversalTime() : null,
-            workoutType, selectedExerciseId);
+            workoutType, selectedExerciseId, resolvedStartDate);
     }
 
     public static IReadOnlyList<string> GetAllowedSchedules(GoalType template) =>
@@ -51,11 +55,13 @@ public class GoalTemplatePolicy : IGoalTemplatePolicy
         return schedule.Trim().ToLowerInvariant();
     }
 
-    private static void ValidateSchedule(GoalType template, string schedule, DateTime? deadline)
+    private static void ValidateSchedule(GoalType template, string schedule, DateTime? deadline, DateTime startDate)
     {
         if (schedule != GoalSchedules.OneOff && template.MeasurementType != GoalMeasurementType.Cumulative)
             throw new DomainException("Only cumulative goal templates can recur.");
-        if (schedule == GoalSchedules.OneOff && (!deadline.HasValue || deadline.Value <= DateTime.UtcNow))
+        if (startDate < DateTime.UtcNow.AddMinutes(-1))
+            throw new DomainException("Goal start date cannot be in the past.");
+        if (schedule == GoalSchedules.OneOff && (!deadline.HasValue || deadline.Value <= DateTime.UtcNow || deadline.Value <= startDate))
             throw new DomainException("One-off goals require a future deadline.");
         if (schedule != GoalSchedules.OneOff && deadline.HasValue)
             throw new DomainException("Recurring goals do not use an overall deadline.");

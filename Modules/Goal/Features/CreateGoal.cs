@@ -11,7 +11,7 @@ namespace backend.Modules.Goal.Features;
 
 public record CreateGoalCommand(Guid UserId, Guid GoalTypeId, double TargetValue, string Schedule, DateTime? Deadline,
     bool IsPublic = false,
-    string? SelectedWorkoutType = null, Guid? SelectedExerciseId = null) : IRequest<Guid>;
+    string? SelectedWorkoutType = null, Guid? SelectedExerciseId = null, DateTime? StartDate = null) : IRequest<Guid>;
 
 public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
 {
@@ -40,7 +40,8 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
     {
         var goalType = await _repository.GetGoalTypeByIdAsync(request.GoalTypeId, cancellationToken)
             ?? throw new NotFoundException($"Goal type {request.GoalTypeId} not found.");
-        var rules = _templatePolicy.Resolve(goalType, request.Schedule, request.Deadline, request.SelectedWorkoutType, request.SelectedExerciseId);
+        var rules = _templatePolicy.Resolve(goalType, request.Schedule, request.Deadline, request.SelectedWorkoutType,
+            request.SelectedExerciseId, request.StartDate);
         await EnsureMetricAndExerciseAsync(goalType, rules.SelectedExerciseId, cancellationToken);
 
         var definitionKey = GoalDefinitionKeyFactory.Create(goalType, request.Schedule.Trim().ToLowerInvariant(), rules.SelectedWorkoutType, rules.SelectedExerciseId);
@@ -81,8 +82,8 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
     private static (DateTime Start, DateTime End) GetInitialPeriod(GoalCreationRules rules, string timeZoneId)
     {
         if (!rules.IsRecurring)
-            return (DateTime.UtcNow, rules.Deadline!.Value);
-        return GoalPeriodBoundaries.Current(rules.RecurrencePattern, timeZoneId, DateTime.UtcNow);
+            return (rules.StartDate, rules.Deadline!.Value);
+        return GoalPeriodBoundaries.Current(rules.RecurrencePattern, timeZoneId, rules.StartDate);
     }
 
     private static bool IsActiveDefinitionConflict(DbUpdateException exception) =>

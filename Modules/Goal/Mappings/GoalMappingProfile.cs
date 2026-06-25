@@ -11,6 +11,7 @@ public class GoalMappingProfile : Profile
     {
         CreateMap<GoalPeriod, GoalPeriodResponse>();
         CreateMap<GoalProgressEntry, GoalProgressEntryResponse>();
+        CreateMap<GoalTargetChange, GoalTargetChangeResponse>();
         CreateMap<GoalType, GoalTypeResponse>()
             .ForCtorParam(nameof(GoalTypeResponse.AllowedSchedules), options =>
                 options.MapFrom(template => GoalTemplatePolicy.GetAllowedSchedules(template)));

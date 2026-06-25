@@ -47,7 +47,8 @@ public class GoalController : ControllerBase
             request.Deadline,
             request.IsPublic,
             request.SelectedWorkoutType,
-            request.SelectedExerciseId
+            request.SelectedExerciseId,
+            request.StartDate
         ));
         return CreatedAtAction(nameof(GetGoal), new { id = goalId }, goalId);
     }
@@ -78,11 +79,18 @@ public class GoalController : ControllerBase
         return Ok(await _mediator.Send(new GetGoalProgressQuery(User.GetRequiredUserId(), id, pagination)));
     }
 
+    [HttpGet("{id:guid}/target-history")]
+    public async Task<ActionResult<GoalPageResponse<GoalTargetChangeResponse>>> GetTargetHistory(Guid id, [FromQuery] GoalPagination pagination)
+    {
+        await _paginationValidator.ValidateAndThrowAsync(pagination);
+        return Ok(await _mediator.Send(new GetGoalTargetChangesQuery(User.GetRequiredUserId(), id, pagination)));
+    }
+
     [HttpPatch("{id:guid}")]
     public async Task<IActionResult> UpdateGoal(Guid id, [FromBody] UpdateGoalRequest request)
     {
         await _updateGoalValidator.ValidateAndThrowAsync(request);
-        await _mediator.Send(new UpdateGoalCommand(User.GetRequiredUserId(), id, request.TargetValue, request.IsPublic));
+        await _mediator.Send(new UpdateGoalCommand(User.GetRequiredUserId(), id, request.TargetValue, request.IsPublic, request.Deadline));
         return NoContent();
     }
 

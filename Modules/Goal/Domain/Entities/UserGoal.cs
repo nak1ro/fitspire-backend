@@ -28,6 +28,7 @@ public class UserGoal : AggregateRoot<Guid>
     public AppUser User { get; private set; } = null!;
     public GoalType GoalType { get; private set; } = null!;
     public ICollection<GoalProgressEntry> ProgressEntries { get; private set; } = new List<GoalProgressEntry>();
+    public ICollection<GoalTargetChange> TargetChanges { get; private set; } = new List<GoalTargetChange>();
     public ICollection<GoalPeriod> Periods { get; private set; } = new List<GoalPeriod>();
 
     private UserGoal() { }
@@ -93,7 +94,7 @@ public class UserGoal : AggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateTarget(double targetValue, bool isPublic)
+    public void UpdateTarget(double targetValue, bool isPublic, DateTime? deadline)
     {
         if (Status != GoalStatus.Active)
             throw new DomainException("Only active goals can be edited.");
@@ -102,6 +103,14 @@ public class UserGoal : AggregateRoot<Guid>
 
         TargetValue = targetValue;
         IsPublic = isPublic;
+        if (deadline.HasValue)
+        {
+            if (IsRecurring)
+                throw new DomainException("Recurring goals do not use an overall deadline.");
+            if (deadline.Value <= StartDate || deadline.Value <= DateTime.UtcNow)
+                throw new DomainException("Goal deadline must be after the start date and in the future.");
+            Deadline = deadline.Value.ToUniversalTime();
+        }
         UpdatedAt = DateTime.UtcNow;
     }
 

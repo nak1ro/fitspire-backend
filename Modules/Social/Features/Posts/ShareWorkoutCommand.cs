@@ -1,3 +1,5 @@
+using backend.Data;
+using backend.Modules.Badge.Services;
 using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Domain;
@@ -15,17 +17,26 @@ public record ShareWorkoutCommand(Guid UserId, Guid WorkoutId, string? Caption =
 
 public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
 {
+    private readonly FitspireDbContext _context;
     private readonly IWorkoutRepository _workoutRepository;
     private readonly ISocialRepository _socialRepository;
+    private readonly IBadgeEvaluationService _badges;
+    private readonly IBadgeTransactionService _badgeTransactions;
     private readonly IUnitOfWork _unitOfWork;
 
     public ShareWorkoutHandler(
+        FitspireDbContext context,
         IWorkoutRepository workoutRepository,
         ISocialRepository socialRepository,
+        IBadgeEvaluationService badges,
+        IBadgeTransactionService badgeTransactions,
         IUnitOfWork unitOfWork)
     {
+        _context = context;
         _workoutRepository = workoutRepository;
         _socialRepository = socialRepository;
+        _badges = badges;
+        _badgeTransactions = badgeTransactions;
         _unitOfWork = unitOfWork;
     }
 
@@ -46,7 +57,10 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
             request.WorkoutId,
             cancellationToken);
         if (existingPost is not null)
+        {
+            await _badges.EvaluateAsync(request.UserId, [BadgeTriggerContext.ForSocialPost(existingPost.Id)], cancellationToken);
             return existingPost.Id;
+        }
 
         var snapshot = new WorkoutShareSnapshot(
             workout.Id,
@@ -60,19 +74,28 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
             workout.CompletedAt);
         var post = Post.CreateWorkoutSharePost(request.UserId, snapshot, request.Caption);
 
-        await _socialRepository.AddPostAsync(post, cancellationToken);
         try
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _badgeTransactions.ExecuteAsync(async token =>
+            {
+                await _socialRepository.AddPostAsync(post, token);
+                await _unitOfWork.SaveChangesAsync(token);
+                await _badges.EvaluateAsync(request.UserId, [BadgeTriggerContext.ForSocialPost(post.Id)], token);
+                await _unitOfWork.SaveChangesAsync(token);
+            }, cancellationToken);
         }
         catch (DbUpdateException exception) when (IsUniqueViolation(exception))
         {
+            _context.Entry(post).State = EntityState.Detached;
             var concurrentPost = await _socialRepository.GetPostByReferenceAsync(
                 PostType.WorkoutShare,
                 request.WorkoutId,
                 cancellationToken);
             if (concurrentPost is not null)
+            {
+                await _badges.EvaluateAsync(request.UserId, [BadgeTriggerContext.ForSocialPost(concurrentPost.Id)], cancellationToken);
                 return concurrentPost.Id;
+            }
 
             throw;
         }

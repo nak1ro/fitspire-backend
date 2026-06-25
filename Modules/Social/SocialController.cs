@@ -1,3 +1,4 @@
+using backend.Modules.Badge.Contracts;
 using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Contracts.Posts;
 using backend.Modules.Social.Contracts.Comments;
@@ -6,6 +7,7 @@ using backend.Modules.Social.Features.Follow;
 using backend.Modules.Social.Features.Posts;
 using backend.Modules.Shared.Extensions;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Goal.DTOs;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -24,6 +26,7 @@ public class SocialController : ControllerBase
     private readonly IValidator<CommentRequest> _commentValidator;
     private readonly IValidator<UpdateCommentRequest> _updateCommentValidator;
     private readonly IValidator<ShareWorkoutRequest> _shareWorkoutValidator;
+    private readonly IValidator<PublicBadgeFilter> _publicBadgeFilterValidator;
 
     public SocialController(
         IMediator mediator,
@@ -31,7 +34,8 @@ public class SocialController : ControllerBase
         IValidator<UpdatePostRequest> updatePostValidator,
         IValidator<CommentRequest> commentValidator,
         IValidator<UpdateCommentRequest> updateCommentValidator,
-        IValidator<ShareWorkoutRequest> shareWorkoutValidator)
+        IValidator<ShareWorkoutRequest> shareWorkoutValidator,
+        IValidator<PublicBadgeFilter> publicBadgeFilterValidator)
     {
         _mediator = mediator;
         _createPostValidator = createPostValidator;
@@ -39,6 +43,7 @@ public class SocialController : ControllerBase
         _commentValidator = commentValidator;
         _updateCommentValidator = updateCommentValidator;
         _shareWorkoutValidator = shareWorkoutValidator;
+        _publicBadgeFilterValidator = publicBadgeFilterValidator;
     }
 
     /// <summary>
@@ -89,13 +94,26 @@ public class SocialController : ControllerBase
     public async Task<ActionResult<List<Contracts.Profiles.PublicGoalResponse>>> GetUserGoals(Guid targetUserId) =>
         Ok(await _mediator.Send(new Features.Profiles.GetPublicGoalsQuery(User.GetRequiredUserId(), targetUserId)));
 
+    [HttpGet("users/{targetUserId:guid}/goal-periods")]
+    public async Task<ActionResult<GoalPageResponse<Contracts.Profiles.PublicGoalPeriodResponse>>> GetUserGoalPeriods(
+        Guid targetUserId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        return Ok(await _mediator.Send(new Features.Profiles.GetPublicGoalPeriodsQuery(
+            User.GetRequiredUserId(), targetUserId, page, pageSize)));
+    }
+
     [HttpGet("users/{targetUserId:guid}/badges")]
-    public async Task<ActionResult<List<Contracts.Profiles.PublicBadgeResponse>>> GetUserBadges(Guid targetUserId) =>
-        Ok(await _mediator.Send(new Features.Profiles.GetPublicBadgesQuery(User.GetRequiredUserId(), targetUserId, false)));
+    public async Task<ActionResult<BadgePageResponse<PublicBadgeResponse>>> GetUserBadges(Guid targetUserId,
+        [FromQuery] PublicBadgeFilter filter)
+    {
+        await _publicBadgeFilterValidator.ValidateAndThrowAsync(filter);
+        return Ok(await _mediator.Send(new Features.Profiles.GetPublicBadgesQuery(User.GetRequiredUserId(), targetUserId, filter)));
+    }
 
     [HttpGet("users/{targetUserId:guid}/badges/featured")]
-    public async Task<ActionResult<List<Contracts.Profiles.PublicBadgeResponse>>> GetFeaturedUserBadges(Guid targetUserId) =>
-        Ok(await _mediator.Send(new Features.Profiles.GetPublicBadgesQuery(User.GetRequiredUserId(), targetUserId, true)));
+    public async Task<ActionResult<IReadOnlyList<PublicBadgeResponse>>> GetFeaturedUserBadges(Guid targetUserId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetFeaturedPublicBadgesQuery(User.GetRequiredUserId(), targetUserId)));
 
     [HttpGet("users/{targetUserId:guid}/challenge-results")]
     public async Task<ActionResult<List<Contracts.Profiles.PublicChallengeResultResponse>>> GetUserChallengeResults(Guid targetUserId) =>

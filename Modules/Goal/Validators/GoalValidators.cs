@@ -32,6 +32,16 @@ public class CreateGoalRequestValidator : AbstractValidator<CreateGoalRequest>
             .When(x => !string.Equals(x.Schedule, GoalSchedules.OneOff, StringComparison.OrdinalIgnoreCase))
             .WithMessage("Recurring goals do not use an overall deadline.");
 
+        RuleFor(x => x.StartDate)
+            .GreaterThanOrEqualTo(DateTime.UtcNow.AddMinutes(-1))
+            .When(x => x.StartDate.HasValue)
+            .WithMessage("Goal start date cannot be in the past.");
+
+        RuleFor(x => x.Deadline)
+            .GreaterThan(x => x.StartDate!.Value)
+            .When(x => x.StartDate.HasValue && x.Deadline.HasValue)
+            .WithMessage("Goal deadline must be after its start date.");
+
         RuleFor(x => x.SelectedWorkoutType)
             .Must(type => type is null or "gym" or "running" or "cycling" or "swimming" or "yoga")
             .WithMessage("Selected workout type is not supported.");
@@ -46,6 +56,10 @@ public class UpdateGoalRequestValidator : AbstractValidator<UpdateGoalRequest>
             .Must(value => !double.IsNaN(value) && !double.IsInfinity(value))
             .GreaterThan(0)
             .LessThanOrEqualTo(1_000_000_000);
+        RuleFor(request => request.Deadline)
+            .GreaterThan(DateTime.UtcNow)
+            .When(request => request.Deadline.HasValue)
+            .WithMessage("Goal deadline must be in the future.");
     }
 }
 

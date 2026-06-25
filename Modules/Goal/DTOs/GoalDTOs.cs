@@ -10,7 +10,8 @@ public record CreateGoalRequest(
     DateTime? Deadline,
     bool IsPublic = false,
     string? SelectedWorkoutType = null,
-    Guid? SelectedExerciseId = null
+    Guid? SelectedExerciseId = null,
+    DateTime? StartDate = null
 );
 
 // Response DTOs
@@ -42,7 +43,7 @@ public record GoalPagination(int Page = 1, int PageSize = 20);
 
 public record GoalPeriodResponse(Guid Id, DateTime StartAt, DateTime EndAt, double TargetValue, double ProgressValue, string Status, DateTime? CompletedAt, DateTime? FailedAt);
 
-public record UpdateGoalRequest(double TargetValue, bool IsPublic);
+public record UpdateGoalRequest(double TargetValue, bool IsPublic, DateTime? Deadline = null);
 
 public record GoalTypeResponse(
     Guid Id,
@@ -68,3 +69,5 @@ public record GoalProgressEntryResponse(
     DateTime RecordedAt,
     string? Source
 );
+
+public record GoalTargetChangeResponse(Guid Id, double PreviousTargetValue, double NewTargetValue, DateTime ChangedAt);

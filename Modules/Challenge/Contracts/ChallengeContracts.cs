@@ -11,6 +11,8 @@ public record UpdateChallengeRequest(
     string Title, string? Description, string MetricCode, string? WorkoutType, string Mode, double? TargetValue,
     string Visibility, DateTime StartDate, DateTime EndDate, string JoinClosing, int ParticipantLimit);
 
+public record UpdateActiveChallengeCopyRequest(string Title, string? Description);
+
 public record InviteChallengeUserRequest(Guid UserId);
 public record ChallengeListFilter(string? Role = null, string? Status = null, string? MetricCode = null, int Page = 1, int PageSize = 20);
 
@@ -55,6 +57,15 @@ public class UpdateChallengeRequestValidator : AbstractValidator<UpdateChallenge
 public class InviteChallengeUserRequestValidator : AbstractValidator<InviteChallengeUserRequest>
 {
     public InviteChallengeUserRequestValidator() => RuleFor(item => item.UserId).NotEmpty();
+}
+
+public class UpdateActiveChallengeCopyRequestValidator : AbstractValidator<UpdateActiveChallengeCopyRequest>
+{
+    public UpdateActiveChallengeCopyRequestValidator()
+    {
+        RuleFor(item => item.Title).NotEmpty().MaximumLength(120);
+        RuleFor(item => item.Description).MaximumLength(1000);
+    }
 }
 
 public class ChallengeListFilterValidator : AbstractValidator<ChallengeListFilter>

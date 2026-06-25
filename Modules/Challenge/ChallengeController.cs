@@ -17,18 +17,29 @@ public class ChallengeController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateChallengeRequest> _createValidator;
     private readonly IValidator<UpdateChallengeRequest> _updateValidator;
+    private readonly IValidator<UpdateActiveChallengeCopyRequest> _activeCopyValidator;
     private readonly IValidator<InviteChallengeUserRequest> _inviteValidator;
     private readonly IValidator<ChallengeListFilter> _listValidator;
 
     public ChallengeController(IMediator mediator, IValidator<CreateChallengeRequest> createValidator,
-        IValidator<UpdateChallengeRequest> updateValidator, IValidator<InviteChallengeUserRequest> inviteValidator,
+        IValidator<UpdateChallengeRequest> updateValidator, IValidator<UpdateActiveChallengeCopyRequest> activeCopyValidator,
+        IValidator<InviteChallengeUserRequest> inviteValidator,
         IValidator<ChallengeListFilter> listValidator)
     {
         _mediator = mediator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _activeCopyValidator = activeCopyValidator;
         _inviteValidator = inviteValidator;
         _listValidator = listValidator;
+    }
+
+    [HttpPatch("{challengeId:guid}/copy")]
+    public async Task<IActionResult> UpdateActiveCopy(Guid challengeId, UpdateActiveChallengeCopyRequest request)
+    {
+        await _activeCopyValidator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateActiveChallengeCopyCommand(User.GetRequiredUserId(), challengeId, request));
+        return NoContent();
     }
 
     [HttpPost]

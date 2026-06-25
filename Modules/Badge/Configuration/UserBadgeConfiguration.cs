@@ -10,24 +10,27 @@ public class UserBadgeConfiguration : IEntityTypeConfiguration<UserBadge>
     {
         builder.ToTable("UserBadge");
 
-        builder.HasKey(ub => ub.Id);
+        builder.HasKey(award => award.Id);
+        builder.HasIndex(award => new { award.UserId, award.BadgeId }).IsUnique();
+        builder.HasIndex(award => new { award.UserId, award.FeaturedOrder })
+            .HasFilter("\"FeaturedOrder\" IS NOT NULL")
+            .IsUnique();
 
-        builder.HasIndex(ub => new { ub.UserId, ub.BadgeId }).IsUnique();
-
-        builder.Property(ub => ub.AwardedAt)
+        builder.Property(award => award.AwardedAt)
             .HasDefaultValueSql("NOW()");
-        builder.Property(ub => ub.EvidenceType).HasMaxLength(64);
-        builder.Property(ub => ub.EvidenceSummary).HasMaxLength(500);
-        builder.HasIndex(ub => new { ub.UserId, ub.FeaturedOrder }).HasFilter("\"FeaturedOrder\" IS NOT NULL").IsUnique();
+        builder.Property(award => award.CriterionCode).HasColumnName("EvidenceType").HasMaxLength(80);
+        builder.Property(award => award.CanonicalUnit).HasMaxLength(32);
+        builder.Property(award => award.TriggeringEntityType).HasMaxLength(64);
+        builder.Property(award => award.EvidenceSummary).HasMaxLength(500);
 
-        builder.HasOne(ub => ub.User)
-            .WithMany(u => u.Badges)
-            .HasForeignKey(ub => ub.UserId)
+        builder.HasOne(award => award.User)
+            .WithMany(user => user.Badges)
+            .HasForeignKey(award => award.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(ub => ub.AchievementBadge)
-            .WithMany(b => b.UserBadges)
-            .HasForeignKey(ub => ub.BadgeId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(award => award.AchievementBadge)
+            .WithMany(badge => badge.UserBadges)
+            .HasForeignKey(award => award.BadgeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

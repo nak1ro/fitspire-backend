@@ -59,6 +59,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<GoalType> GoalTypes { get; set; }
     public DbSet<GoalProgressEntry> GoalProgressEntries { get; set; }
     public DbSet<GoalPeriod> GoalPeriods { get; set; }
+    public DbSet<GoalTargetChange> GoalTargetChanges { get; set; }
 
     public DbSet<AchievementBadge> Badges { get; set; }
     public DbSet<UserBadge> UserBadges { get; set; }

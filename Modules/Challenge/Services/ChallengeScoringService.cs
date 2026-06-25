@@ -104,8 +104,10 @@ public class ChallengeScoringService : IChallengeScoringService
 
         challenge.Complete(nowUtc);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        foreach (var participant in ranking)
-            await _badges.EvaluateAsync(participant.UserId, cancellationToken);
+        var results = await _context.ChallengeResults.Where(result => result.ChallengeId == challenge.Id)
+            .OrderBy(result => result.Id).ToListAsync(cancellationToken);
+        foreach (var result in results)
+            await _badges.EvaluateAsync(result.UserId, [BadgeTriggerContext.ForChallengeResult(result.Id)], cancellationToken);
     }
 
     private async Task RecalculateParticipantAsync(ChallengeParticipant participant, CancellationToken cancellationToken)
@@ -141,23 +143,28 @@ public class ChallengeScoringService : IChallengeScoringService
         return aggregation == "Maximum" ? list.DefaultIfEmpty(0).Max() : list.Sum();
     }
 
-    private async Task CreateResultAsync(UserChallenge challenge, ChallengeParticipant participant, int rank, DateTime nowUtc, CancellationToken cancellationToken)
+    private async Task CreateResultAsync(UserChallenge challenge, ChallengeParticipant participant, int rank,
+        DateTime nowUtc, CancellationToken cancellationToken)
     {
         var exists = await _context.ChallengeResults.AnyAsync(item => item.ChallengeId == challenge.Id && item.ParticipantId == participant.Id, cancellationToken);
-        if (exists) return;
+        if (exists)
+            return;
 
         var isFinisher = challenge.Mode == ChallengeModes.Target && participant.Score >= challenge.TargetValue;
         var isWinner = challenge.Mode == ChallengeModes.Leaderboard && rank == 1;
-        await _context.ChallengeResults.AddAsync(new ChallengeResult
+        var result = new ChallengeResult
         {
             Id = Guid.NewGuid(), ChallengeId = challenge.Id, ParticipantId = participant.Id, UserId = participant.UserId,
             Score = participant.Score, Rank = rank, IsFinisher = isFinisher, IsWinner = isWinner, FinalizedAt = nowUtc
-        }, cancellationToken);
+        };
+        await _context.ChallengeResults.AddAsync(result, cancellationToken);
 
-        if (!isFinisher && !isWinner) return;
-        var type = isWinner ? NotificationType.ChallengeWon : NotificationType.ChallengeCompleted;
-        var message = isWinner ? $"You won {challenge.Title}." : $"You completed {challenge.Title}.";
-        await _notifications.CreateAsync(participant.UserId, type, message, referenceEntityId: challenge.Id,
-            referenceEntityType: NotificationReferenceTypes.Challenge, cancellationToken: cancellationToken);
+        if (isFinisher || isWinner)
+        {
+            var type = isWinner ? NotificationType.ChallengeWon : NotificationType.ChallengeCompleted;
+            var message = isWinner ? $"You won {challenge.Title}." : $"You completed {challenge.Title}.";
+            await _notifications.CreateAsync(participant.UserId, type, message, referenceEntityId: challenge.Id,
+                referenceEntityType: NotificationReferenceTypes.Challenge, cancellationToken: cancellationToken);
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace backend.Modules.Challenge.Features;
 
 public record CreateChallengeCommand(Guid UserId, CreateChallengeRequest Request) : IRequest<Guid>;
 public record UpdateChallengeCommand(Guid UserId, Guid ChallengeId, UpdateChallengeRequest Request) : IRequest;
+public record UpdateActiveChallengeCopyCommand(Guid UserId, Guid ChallengeId, UpdateActiveChallengeCopyRequest Request) : IRequest;
 public record CancelChallengeCommand(Guid UserId, Guid ChallengeId) : IRequest;
 public record RemoveChallengeParticipantCommand(Guid UserId, Guid ChallengeId, Guid ParticipantUserId) : IRequest;
 
@@ -104,6 +105,42 @@ public class UpdateChallengeHandler : IRequestHandler<UpdateChallengeCommand>
         foreach (var recipientId in recipientIds)
             await _notifications.CreateAsync(recipientId, NotificationType.ChallengeUpdated, $"{challenge.Title} was updated.", actorUserId,
                 challenge.Id, NotificationReferenceTypes.Challenge, cancellationToken);
+    }
+}
+
+public class UpdateActiveChallengeCopyHandler : IRequestHandler<UpdateActiveChallengeCopyCommand>
+{
+    private readonly FitspireDbContext _context;
+    private readonly IChallengeTransactionService _transactions;
+    private readonly INotificationService _notifications;
+
+    public UpdateActiveChallengeCopyHandler(FitspireDbContext context, IChallengeTransactionService transactions,
+        INotificationService notifications)
+    {
+        _context = context;
+        _transactions = transactions;
+        _notifications = notifications;
+    }
+
+    public Task Handle(UpdateActiveChallengeCopyCommand request, CancellationToken cancellationToken) =>
+        _transactions.ExecuteAsync(token => UpdateAsync(request, token), cancellationToken);
+
+    private async Task UpdateAsync(UpdateActiveChallengeCopyCommand request, CancellationToken cancellationToken)
+    {
+        var challenge = await _context.Challenges.Include(item => item.Participants).Include(item => item.Invitations)
+            .FirstOrDefaultAsync(item => item.Id == request.ChallengeId, cancellationToken)
+            ?? throw new NotFoundException("Challenge not found.");
+        if (challenge.CreatedBy != request.UserId)
+            throw new UnauthorizedAccessException("Only the creator can edit a challenge.");
+
+        challenge.UpdateActiveCopy(request.Request.Title, request.Request.Description);
+        var recipients = challenge.Participants.Where(item => item.Status == ChallengeParticipantStatuses.Active && item.UserId != request.UserId)
+            .Select(item => item.UserId).Concat(challenge.Invitations.Where(item => item.Status == ChallengeInvitationStatuses.Pending)
+                .Select(item => item.InvitedUserId)).Distinct();
+        foreach (var recipientId in recipients)
+            await _notifications.CreateAsync(recipientId, NotificationType.ChallengeUpdated, $"{challenge.Title} was updated.",
+                request.UserId, challenge.Id, NotificationReferenceTypes.Challenge, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
 

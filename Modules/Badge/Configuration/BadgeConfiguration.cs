@@ -10,23 +10,23 @@ public class BadgeConfiguration : IEntityTypeConfiguration<AchievementBadge>
     {
         builder.ToTable("Badge");
 
-        builder.HasKey(b => b.Id);
+        builder.HasKey(badge => badge.Id);
+        builder.Property(badge => badge.Name).HasMaxLength(160).IsRequired();
+        builder.Property(badge => badge.Description).HasMaxLength(500);
+        builder.Property(badge => badge.IconUrl).HasMaxLength(500);
+        builder.Property(badge => badge.Code).HasMaxLength(80).IsRequired();
+        builder.Property(badge => badge.Category).HasMaxLength(32).IsRequired();
+        builder.Property(badge => badge.SeriesCode).HasMaxLength(80);
+        builder.Property(badge => badge.Tier).HasMaxLength(16).IsRequired();
+        builder.Property(badge => badge.CriterionCode).HasMaxLength(80).IsRequired();
+        builder.Property(badge => badge.MetricCode).HasMaxLength(80);
+        builder.Property(badge => badge.CanonicalUnit).HasMaxLength(32).IsRequired();
+        builder.Property(badge => badge.ShowProgressWhenLocked).HasDefaultValue(true);
+        builder.HasIndex(badge => badge.Code).IsUnique();
 
-        builder.Property(b => b.Name)
-            .IsRequired();
-
-        builder.Property(b => b.Description);
-        builder.Property(b => b.IconUrl);
-        builder.Property(b => b.Code).HasMaxLength(80).IsRequired();
-        builder.Property(b => b.Category).HasMaxLength(32).IsRequired();
-        builder.Property(b => b.SeriesCode).HasMaxLength(80);
-        builder.Property(b => b.Tier).HasMaxLength(16).IsRequired();
-        builder.Property(b => b.CriterionCode).HasMaxLength(80).IsRequired();
-        builder.Property(b => b.MetricCode).HasMaxLength(80);
-        builder.HasIndex(b => b.Code).IsUnique();
-
-        builder.HasMany(b => b.UserBadges)
-            .WithOne(ub => ub.AchievementBadge)
-            .HasForeignKey(ub => ub.BadgeId);
+        builder.HasMany(badge => badge.UserBadges)
+            .WithOne(award => award.AchievementBadge)
+            .HasForeignKey(award => award.BadgeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

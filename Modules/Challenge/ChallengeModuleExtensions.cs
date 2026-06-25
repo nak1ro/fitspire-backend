@@ -14,6 +14,7 @@ public static class ChallengeModuleExtensions
         services.AddScoped<IChallengeAccessService, ChallengeAccessService>();
         services.AddScoped<IValidator<CreateChallengeRequest>, CreateChallengeRequestValidator>();
         services.AddScoped<IValidator<UpdateChallengeRequest>, UpdateChallengeRequestValidator>();
+        services.AddScoped<IValidator<UpdateActiveChallengeCopyRequest>, UpdateActiveChallengeCopyRequestValidator>();
         services.AddScoped<IValidator<InviteChallengeUserRequest>, InviteChallengeUserRequestValidator>();
         services.AddScoped<IValidator<ChallengeListFilter>, ChallengeListFilterValidator>();
         return services;

@@ -51,6 +51,7 @@ public class GoalTypeSeeder
     private static GoalTemplateSeed[] CreateTemplates() =>
     [
         new("workout-count", "Complete workouts", "workouts", MetricCatalogue.WorkoutCount, GoalMeasurementType.Cumulative, null, "WorkoutType"),
+        new("workout-streak", "Workout streak", "days", MetricCatalogue.WorkoutCount, GoalMeasurementType.Streak, null, "None"),
         new("workout-duration", "Workout minutes", "minutes", MetricCatalogue.DurationMinutes, GoalMeasurementType.Cumulative, null, "WorkoutType"),
         new("gym-volume", "Total lifting volume", "kg", MetricCatalogue.GymVolumeKg, GoalMeasurementType.Cumulative, "gym", "None"),
         new("workout-calories-canonical", "Burn calories", "kcal", MetricCatalogue.CaloriesKcal, GoalMeasurementType.Cumulative, null, "WorkoutType"),

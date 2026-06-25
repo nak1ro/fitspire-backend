@@ -36,7 +36,11 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await RecalculateConsumersAsync(workout.UserId, cancellationToken);
+        var completedGoalPeriods = await RecalculateConsumersAsync(workout.UserId, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var triggers = new List<BadgeTriggerContext> { BadgeTriggerContext.ForWorkout(workout.Id) };
+        triggers.AddRange(completedGoalPeriods.Select(BadgeTriggerContext.ForGoalPeriod));
+        await _badges.EvaluateAsync(workout.UserId, triggers, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
@@ -53,11 +57,11 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
         await transaction.CommitAsync(cancellationToken);
     }
 
-    private async Task RecalculateConsumersAsync(Guid userId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<Guid>> RecalculateConsumersAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await _goals.RecalculateForUserAsync(userId, cancellationToken);
+        var completedGoalPeriods = await _goals.RecalculateForUserAsync(userId, cancellationToken);
         await _challenges.RecalculateForUserAsync(userId, cancellationToken);
         await _records.RecalculateAsync(userId, cancellationToken);
-        await _badges.EvaluateAsync(userId, cancellationToken);
+        return completedGoalPeriods;
     }
 }

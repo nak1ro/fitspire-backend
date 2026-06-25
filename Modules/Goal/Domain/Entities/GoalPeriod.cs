@@ -63,6 +63,17 @@ public class GoalPeriod : Entity<Guid>
         SetProgress(ProgressValue);
     }
 
+    public void UpdateEndAt(DateTime endAt)
+    {
+        if (Status != "Active")
+            throw new DomainException("Only active goal periods can be edited.");
+        if (endAt <= StartAt)
+            throw new DomainException("A goal deadline must be after the period start.");
+
+        EndAt = endAt.ToUniversalTime();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public bool FailIfDue(DateTime nowUtc)
     {
         if (Status != "Active" || EndAt > nowUtc)

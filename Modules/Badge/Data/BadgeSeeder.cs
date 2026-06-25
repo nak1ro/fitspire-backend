@@ -1,28 +1,54 @@
 using backend.Data;
 using backend.Modules.Badge.Domain;
+using backend.Modules.Badge.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Modules.Badge.Data;
 
 public static class BadgeSeeder
 {
-    public static async Task SeedAsync(FitspireDbContext context)
+    public static async Task SeedAsync(FitspireDbContext context, CancellationToken cancellationToken = default)
     {
-        var definitions = new[]
+        var definitions = BadgeDefinitionCatalogue.Definitions;
+        await ValidateDefinitionsAsync(context, definitions, cancellationToken);
+
+        var existing = await context.Badges.ToDictionaryAsync(badge => badge.Code, StringComparer.OrdinalIgnoreCase, cancellationToken);
+        foreach (var definition in definitions)
         {
-            ("workouts-1", "First step", "Complete your first workout", "WorkoutCount", 1d, "Bronze"),
-            ("workouts-10", "Building momentum", "Complete ten workouts", "WorkoutCount", 10d, "Silver"),
-            ("workouts-100", "Centurion", "Complete one hundred workouts", "WorkoutCount", 100d, "Gold"),
-            ("challenges-1", "Challenger", "Finish your first challenge", "ChallengeFinishes", 1d, "Bronze"),
-            ("challenge-wins-1", "Winner", "Win a leaderboard challenge", "ChallengeWins", 1d, "Gold")
-        };
-        for (var index = 0; index < definitions.Length; index++)
-        {
-            var (code, name, description, criterion, threshold, tier) = definitions[index];
-            if (!await context.Badges.AnyAsync(badge => badge.Code == code))
-                await context.Badges.AddAsync(new AchievementBadge { Id = Guid.NewGuid(), Code = code, Name = name, Description = description,
-                    CriterionCode = criterion, Threshold = threshold, Tier = tier, DisplayOrder = index + 1 });
+            if (existing.TryGetValue(definition.Code, out var badge))
+                badge.Synchronize(definition);
+            else
+                await context.Badges.AddAsync(AchievementBadge.Create(definition), cancellationToken);
         }
-        await context.SaveChangesAsync();
+
+        foreach (var code in BadgeDefinitionCatalogue.RetiredCodes)
+            if (existing.TryGetValue(code, out var badge))
+                badge.Retire();
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task ValidateDefinitionsAsync(FitspireDbContext context, IReadOnlyList<BadgeDefinition> definitions,
+        CancellationToken cancellationToken)
+    {
+        if (definitions.Select(definition => definition.Code).Distinct(StringComparer.OrdinalIgnoreCase).Count() != definitions.Count)
+            throw new InvalidOperationException("Badge definition codes must be unique.");
+        if (definitions.Select(definition => definition.DisplayOrder).Distinct().Count() != definitions.Count)
+            throw new InvalidOperationException("Badge definition display orders must be unique.");
+
+        foreach (var definition in definitions)
+        {
+            definition.EnsureValid();
+            if (!BadgeCriterionCodes.IsKnown(definition.CriterionCode))
+                throw new InvalidOperationException($"Badge criterion '{definition.CriterionCode}' is not registered.");
+        }
+
+        var metricCodes = definitions.Where(definition => !string.IsNullOrWhiteSpace(definition.MetricCode))
+            .Select(definition => definition.MetricCode!).Distinct(StringComparer.Ordinal).ToList();
+        var supportedMetricCodes = await context.MetricDefinitions.Where(metric => metricCodes.Contains(metric.Id) && metric.IsBadgeSupported)
+            .Select(metric => metric.Id).ToListAsync(cancellationToken);
+        var missingMetric = metricCodes.Except(supportedMetricCodes, StringComparer.Ordinal).FirstOrDefault();
+        if (missingMetric is not null)
+            throw new InvalidOperationException($"Badge metric '{missingMetric}' is not active and badge-supported.");
     }
 }

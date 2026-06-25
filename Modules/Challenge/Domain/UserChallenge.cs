@@ -84,6 +84,17 @@ public class UserChallenge
         ParticipantLimit = participantLimit;
     }
 
+    public void UpdateActiveCopy(string title, string? description)
+    {
+        if (Status != ChallengeStatuses.Active)
+            throw new DomainException("Only active challenges can receive copy updates.");
+        if (string.IsNullOrWhiteSpace(title))
+            throw new DomainException("Challenge title is required.");
+
+        Title = title.Trim();
+        Description = NormalizeDescription(description);
+    }
+
     public void Start(DateTime nowUtc)
     {
         if (Status != ChallengeStatuses.Upcoming || StartDate > nowUtc)

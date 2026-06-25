@@ -37,6 +37,11 @@ public class UserGoalConfiguration : IEntityTypeConfiguration<UserGoal>
             .HasForeignKey(pe => pe.GoalId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasMany(g => g.TargetChanges)
+            .WithOne(change => change.Goal)
+            .HasForeignKey(change => change.GoalId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(g => g.Periods)
             .WithOne(period => period.Goal)
             .HasForeignKey(period => period.GoalId)
