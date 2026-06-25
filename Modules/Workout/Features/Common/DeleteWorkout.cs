@@ -1,6 +1,6 @@
-using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Workout.Services;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
@@ -10,14 +10,12 @@ public record DeleteWorkoutCommand(Guid WorkoutId, Guid UserId) : IRequest;
 public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
 {
     private readonly IWorkoutRepository _repository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IPublisher _publisher;
+    private readonly IWorkoutDerivedDataService _derivedData;
 
-    public DeleteWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IPublisher publisher)
+    public DeleteWorkoutHandler(IWorkoutRepository repository, IWorkoutDerivedDataService derivedData)
     {
         _repository = repository;
-        _unitOfWork = unitOfWork;
-        _publisher = publisher;
+        _derivedData = derivedData;
     }
 
     public async Task Handle(DeleteWorkoutCommand request, CancellationToken cancellationToken)
@@ -31,14 +29,6 @@ public class DeleteWorkoutHandler : IRequestHandler<DeleteWorkoutCommand>
             throw new UnauthorizedAccessException("Cannot delete another user's workout.");
 
         workout.Delete();
-        var domainEvents = workout.DomainEvents.ToList();
-        workout.ClearDomainEvents();
-
-        await _repository.UpdateAsync(workout, cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        foreach (var domainEvent in domainEvents)
-            await _publisher.Publish(domainEvent, cancellationToken);
+        await _derivedData.ReconcileDeletedWorkoutAsync(workout.UserId, workout.Id, cancellationToken);
     }
 }

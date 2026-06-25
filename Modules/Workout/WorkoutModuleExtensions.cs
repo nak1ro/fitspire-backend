@@ -13,6 +13,7 @@ public static class WorkoutModuleExtensions
         // Repository
         services.AddScoped<IWorkoutRepository, WorkoutRepository>();
         services.AddScoped<IPersonalRecordRecalculationService, PersonalRecordRecalculationService>();
+        services.AddScoped<IWorkoutDerivedDataService, WorkoutDerivedDataService>();
         services.AddScoped<IValidator<CreateGymWorkoutRequest>, CreateGymWorkoutValidator>();
         services.AddScoped<IValidator<CreateRunningWorkoutRequest>, CreateRunningWorkoutValidator>();
         services.AddScoped<IValidator<CreateCyclingWorkoutRequest>, CreateCyclingWorkoutValidator>();

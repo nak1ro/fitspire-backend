@@ -1,7 +1,7 @@
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
-using backend.Modules.Workout.Features.Common;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Workout.Services;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.RunningWorkout;
@@ -23,13 +23,13 @@ public class CreateRunningWorkoutHandler : IRequestHandler<CreateRunningWorkoutC
 {
     private readonly IWorkoutRepository _workoutRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IPublisher _publisher;
+    private readonly IWorkoutDerivedDataService _derivedData;
 
-    public CreateRunningWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork, IPublisher publisher)
+    public CreateRunningWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork, IWorkoutDerivedDataService derivedData)
     {
         _workoutRepository = workoutRepository;
         _unitOfWork = unitOfWork;
-        _publisher = publisher;
+        _derivedData = derivedData;
     }
 
     public async Task<Guid> Handle(CreateRunningWorkoutCommand request, CancellationToken cancellationToken)
@@ -54,11 +54,11 @@ public class CreateRunningWorkoutHandler : IRequestHandler<CreateRunningWorkoutC
         if (request.DurationMinutes.HasValue)
             workout.Complete(request.DurationMinutes);
 
-        var completionEvents = WorkoutDomainEvents.PullCompletionEvents(workout);
-
         await _workoutRepository.AddAsync(workout, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await WorkoutDomainEvents.PublishAsync(_publisher, completionEvents, cancellationToken);
+        if (workout.Status == Domain.Enums.WorkoutStatus.Completed)
+            await _derivedData.ReconcileCompletedWorkoutAsync(workout, cancellationToken);
+        else
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return workout.Id;
     }

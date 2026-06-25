@@ -15,18 +15,15 @@ public class GoalController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateGoalRequest> _createGoalValidator;
-    private readonly IValidator<UpdateGoalProgressRequest> _updateGoalProgressValidator;
     private readonly IValidator<UpdateGoalRequest> _updateGoalValidator;
 
     public GoalController(
         IMediator mediator,
         IValidator<CreateGoalRequest> createGoalValidator,
-        IValidator<UpdateGoalProgressRequest> updateGoalProgressValidator,
         IValidator<UpdateGoalRequest> updateGoalValidator)
     {
         _mediator = mediator;
         _createGoalValidator = createGoalValidator;
-        _updateGoalProgressValidator = updateGoalProgressValidator;
         _updateGoalValidator = updateGoalValidator;
     }
 
@@ -87,19 +84,4 @@ public class GoalController : ControllerBase
         return Ok(types);
     }
 
-    [HttpPost("{id:guid}/progress")]
-    public async Task<IActionResult> UpdateProgress(Guid id, [FromBody] UpdateGoalProgressRequest request)
-    {
-        await _updateGoalProgressValidator.ValidateAndThrowAsync(request);
-
-        var userId = User.GetRequiredUserId();
-        await _mediator.Send(new UpdateGoalProgressCommand(
-            id,
-            userId,
-            request.Delta,
-            request.Source,
-            request.SourceEntityId
-        ));
-        return NoContent();
-    }
 }

@@ -208,13 +208,14 @@ public class UpdateWorkoutValidator : AbstractValidator<UpdateWorkoutRequest>
             .When(x => x.Notes is not null);
 
         RuleFor(x => x)
-            .Must(x => x.Date.HasValue || x.DurationMinutes.HasValue || x.Notes is not null || x.IsPrivate.HasValue || x.DistanceKm.HasValue || x.ElevationGainMeters.HasValue || x.StepCount.HasValue || x.MapData is not null || x.IsIndoor.HasValue || x.Laps.HasValue || x.PoolLengthMeters.HasValue || x.DistanceMeters.HasValue || x.StrokeType is not null || x.Style is not null || x.Intensity is not null || x.FocusArea is not null || x.SplitType is not null || x.IntensityLevel is not null || x.Exercises is not null)
+            .Must(x => x.Date.HasValue || x.DurationMinutes.HasValue || x.Notes is not null || x.IsPrivate.HasValue || x.CaloriesBurned.HasValue || x.DistanceKm.HasValue || x.ElevationGainMeters.HasValue || x.StepCount.HasValue || x.MapData is not null || x.IsIndoor.HasValue || x.Laps.HasValue || x.PoolLengthMeters.HasValue || x.DistanceMeters.HasValue || x.StrokeType is not null || x.Style is not null || x.Intensity is not null || x.FocusArea is not null || x.SplitType is not null || x.IntensityLevel is not null || x.Exercises is not null)
             .WithMessage("At least one workout field must be provided.");
 
         RuleFor(x => x.DistanceKm).GreaterThan(0).When(x => x.DistanceKm.HasValue);
         RuleFor(x => x.DistanceMeters).GreaterThan(0).When(x => x.DistanceMeters.HasValue);
         RuleFor(x => x.ElevationGainMeters).GreaterThanOrEqualTo(0).When(x => x.ElevationGainMeters.HasValue);
         RuleFor(x => x.StepCount).GreaterThanOrEqualTo(0).When(x => x.StepCount.HasValue);
+        RuleFor(x => x.CaloriesBurned).GreaterThanOrEqualTo(0).When(x => x.CaloriesBurned.HasValue);
         RuleFor(x => x.Laps).GreaterThan(0).When(x => x.Laps.HasValue);
         RuleFor(x => x.PoolLengthMeters).GreaterThan(0).When(x => x.PoolLengthMeters.HasValue);
         RuleForEach(x => x.Exercises).SetValidator(new ExerciseInputValidator()).When(x => x.Exercises is not null);

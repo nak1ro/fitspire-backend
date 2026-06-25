@@ -1,6 +1,6 @@
-using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Workout.Services;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
@@ -16,14 +16,12 @@ public record CompleteWorkoutCommand(
 public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bool>
 {
     private readonly IWorkoutRepository _workoutRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IPublisher _publisher;
+    private readonly IWorkoutDerivedDataService _derivedData;
 
-    public CompleteWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork, IPublisher publisher)
+    public CompleteWorkoutHandler(IWorkoutRepository workoutRepository, IWorkoutDerivedDataService derivedData)
     {
         _workoutRepository = workoutRepository;
-        _unitOfWork = unitOfWork;
-        _publisher = publisher;
+        _derivedData = derivedData;
     }
 
     public async Task<bool> Handle(CompleteWorkoutCommand request, CancellationToken cancellationToken)
@@ -38,15 +36,7 @@ public class CompleteWorkoutHandler : IRequestHandler<CompleteWorkoutCommand, bo
 
         workout.Complete(request.DurationMinutes, request.Notes, request.IsPrivate);
 
-        var domainEvents = workout.DomainEvents.ToList();
-        workout.ClearDomainEvents();
-
-        await _workoutRepository.UpdateAsync(workout, cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        foreach (var domainEvent in domainEvents)
-            await _publisher.Publish(domainEvent, cancellationToken);
+        await _derivedData.ReconcileCompletedWorkoutAsync(workout, cancellationToken);
 
         return true;
     }

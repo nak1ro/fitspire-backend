@@ -4,7 +4,9 @@ using backend.Modules.Goal.Domain.Enums;
 using backend.Modules.Notification.Domain.Constants;
 using backend.Modules.Notification.Domain.Enums;
 using backend.Modules.Notification.Services;
+using backend.Modules.Shared;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Modules.Goal.Services;
 
@@ -18,12 +20,14 @@ public class GoalProgressService : IGoalProgressService
 {
     private readonly FitspireDbContext _context;
     private readonly INotificationService _notifications;
-    public GoalProgressService(FitspireDbContext context, INotificationService notifications) { _context = context; _notifications = notifications; }
+    private readonly IUnitOfWork _unitOfWork;
+    public GoalProgressService(FitspireDbContext context, INotificationService notifications, IUnitOfWork unitOfWork) { _context = context; _notifications = notifications; _unitOfWork = unitOfWork; }
 
     public async Task RecalculateForUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var periods = await _context.GoalPeriods.Include(period => period.Goal).ThenInclude(goal => goal.GoalType)
             .Where(period => period.Goal.UserId == userId && (period.Status == "Active" || period.Status == "Completed"))
+            .OrderBy(period => period.StartAt)
             .ToListAsync(cancellationToken);
         foreach (var period in periods)
         {
@@ -46,17 +50,24 @@ public class GoalProgressService : IGoalProgressService
 
     public async Task ProcessDuePeriodsAsync(DateTime nowUtc, CancellationToken cancellationToken = default)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var periods = await _context.GoalPeriods.Include(period => period.Goal)
-            .Where(period => period.Status == "Active" && period.EndAt <= nowUtc).ToListAsync(cancellationToken);
+            .Where(period => (period.Status == "Active" || period.Status == "Completed") && period.EndAt <= nowUtc).ToListAsync(cancellationToken);
         foreach (var period in periods)
         {
-            if (!period.FailIfDue(nowUtc)) continue;
-            await _notifications.CreateAsync(period.Goal.UserId, NotificationType.GoalPeriodFailed, "Your goal period ended before its target was reached.", referenceEntityId: period.GoalId, referenceEntityType: NotificationReferenceTypes.Goal, cancellationToken: cancellationToken);
+            var failed = period.FailIfDue(nowUtc);
+            if (failed)
+                await _notifications.CreateAsync(period.Goal.UserId, NotificationType.GoalPeriodFailed, "Your goal period ended before its target was reached.", referenceEntityId: period.GoalId, referenceEntityType: NotificationReferenceTypes.Goal, cancellationToken: cancellationToken);
             if (!period.Goal.IsRecurring || string.IsNullOrWhiteSpace(period.Goal.RecurrencePattern)) continue;
             var (start, end) = GoalPeriodBoundaries.Next(period.EndAt, period.Goal.RecurrencePattern!, period.Goal.TimeZoneId);
             if (!await _context.GoalPeriods.AnyAsync(item => item.GoalId == period.GoalId && item.StartAt == start, cancellationToken))
+            {
                 await _context.GoalPeriods.AddAsync(new GoalPeriod(period.GoalId, start, end, period.Goal.TargetValue), cancellationToken);
+                period.Goal.RestoreProgress(0);
+            }
         }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }
 

@@ -20,13 +20,19 @@ public class ContributionReconciliationService : IContributionReconciliationServ
     public async Task ReconcileWorkoutAsync(UserWorkout workout, CancellationToken cancellationToken = default)
     {
         var existing = await _context.ActivityContributions
-            .Where(contribution => contribution.SourceWorkoutId == workout.Id && contribution.IsActive)
+            .Where(contribution => contribution.SourceWorkoutId == workout.Id)
             .ToListAsync(cancellationToken);
-        foreach (var contribution in existing)
+        var incoming = WorkoutContributionFactory.Create(workout);
+        foreach (var contribution in incoming)
+        {
+            var current = existing.SingleOrDefault(item => item.MetricCode == contribution.MetricCode && item.ExerciseId == contribution.ExerciseId);
+            if (current is null)
+                await _context.ActivityContributions.AddAsync(contribution, cancellationToken);
+            else
+                current.Replace(contribution.Value, contribution.WorkoutType, contribution.OccurredAt);
+        }
+        foreach (var contribution in existing.Where(item => incoming.All(candidate => candidate.MetricCode != item.MetricCode || candidate.ExerciseId != item.ExerciseId)))
             contribution.Deactivate();
-
-        foreach (var contribution in WorkoutContributionFactory.Create(workout))
-            await _context.ActivityContributions.AddAsync(contribution, cancellationToken);
     }
 
     public async Task DeactivateWorkoutAsync(Guid workoutId, CancellationToken cancellationToken = default)

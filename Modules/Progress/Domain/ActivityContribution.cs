@@ -42,4 +42,17 @@ public class ActivityContribution : Entity<Guid>
         DeactivatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void Replace(double value, string workoutType, DateTime occurredAt)
+    {
+        if (value < 0)
+            throw new DomainException("A contribution value cannot be negative.");
+
+        Value = value;
+        WorkoutType = workoutType;
+        OccurredAt = occurredAt;
+        IsActive = true;
+        DeactivatedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

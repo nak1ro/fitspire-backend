@@ -44,6 +44,7 @@ public record UpdateWorkoutRequest(
     double? DurationMinutes,
     string? Notes,
     bool? IsPrivate,
+    int? CaloriesBurned = null,
     double? DistanceKm = null,
     double? ElevationGainMeters = null,
     int? StepCount = null,

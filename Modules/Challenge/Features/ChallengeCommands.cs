@@ -6,6 +6,7 @@ using backend.Modules.Notification.Domain.Enums;
 using backend.Modules.Notification.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Modules.Challenge.Features;
 
@@ -27,6 +28,7 @@ public class CreateChallengeHandler : IRequestHandler<CreateChallengeCommand, Gu
     private readonly FitspireDbContext _context; public CreateChallengeHandler(FitspireDbContext context) => _context = context;
     public async Task<Guid> Handle(CreateChallengeCommand request, CancellationToken cancellationToken)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         if (!await _context.MetricDefinitions.AnyAsync(metric => metric.Id == request.Request.MetricCode && metric.IsChallengeSupported, cancellationToken))
             throw new DomainException("Challenge metric is not supported.");
         var owned = await _context.Challenges.CountAsync(item => item.CreatedBy == request.UserId && (item.Status == "Upcoming" || item.Status == "Active"), cancellationToken);
@@ -35,10 +37,10 @@ public class CreateChallengeHandler : IRequestHandler<CreateChallengeCommand, Gu
             MetricCode = request.Request.MetricCode, WorkoutType = request.Request.WorkoutType?.ToLowerInvariant(), Mode = request.Request.Mode, TargetValue = request.Request.TargetValue,
             Visibility = request.Request.Visibility, StartDate = request.Request.StartDate.ToUniversalTime(), EndDate = request.Request.EndDate.ToUniversalTime(), JoinClosing = request.Request.JoinClosing,
             ParticipantLimit = request.Request.ParticipantLimit, Status = request.Request.StartDate <= DateTime.UtcNow ? "Active" : "Upcoming" };
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         await _context.Challenges.AddAsync(challenge, cancellationToken);
         await _context.ChallengeParticipants.AddAsync(new Domain.ChallengeParticipant { Id = Guid.NewGuid(), ChallengeId = challenge.Id, UserId = request.UserId, JoinedAt = DateTime.UtcNow, Status = "Active" }, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return challenge.Id;
     }
 }
@@ -48,17 +50,23 @@ public class JoinChallengeHandler : IRequestHandler<JoinChallengeCommand>
     private readonly FitspireDbContext _context; public JoinChallengeHandler(FitspireDbContext context) => _context = context;
     public async Task Handle(JoinChallengeCommand request, CancellationToken cancellationToken)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var challenge = await _context.Challenges.Include(item => item.Participants).FirstOrDefaultAsync(item => item.Id == request.ChallengeId, cancellationToken)
             ?? throw new NotFoundException("Challenge not found.");
         if (challenge.Status is not ("Upcoming" or "Active")) throw new DomainException("This challenge can no longer be joined.");
         if (challenge.JoinClosing == "AtStart" && DateTime.UtcNow >= challenge.StartDate) throw new DomainException("Joining closed when the challenge started.");
-        if (challenge.Participants.Any(item => item.UserId == request.UserId && item.Status == "Active")) return;
+        if (challenge.Participants.Any(item => item.UserId == request.UserId && item.Status == "Active"))
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return;
+        }
         if (challenge.Participants.Count(item => item.Status == "Active") >= challenge.ParticipantLimit) throw new DomainException("This challenge is full.");
         if (challenge.Visibility == "FollowersOnly" && !await _context.Followers.AnyAsync(item => item.FollowerId == request.UserId && item.FollowedId == challenge.CreatedBy, cancellationToken)) throw new UnauthorizedAccessException("Only followers of the creator can join.");
         if (challenge.Visibility == "InviteOnly" && !await _context.ChallengeInvitations.AnyAsync(item => item.ChallengeId == challenge.Id && item.InvitedUserId == request.UserId && item.Status == "Accepted", cancellationToken)) throw new UnauthorizedAccessException("An accepted invitation is required.");
         var old = challenge.Participants.FirstOrDefault(item => item.UserId == request.UserId);
         if (old is not null) { old.Status = "Active"; old.LeftAt = null; old.JoinedAt = DateTime.UtcNow; old.Score = 0; } else await _context.ChallengeParticipants.AddAsync(new Domain.ChallengeParticipant { Id = Guid.NewGuid(), ChallengeId = challenge.Id, UserId = request.UserId, Status = "Active", JoinedAt = DateTime.UtcNow }, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }
 
@@ -111,6 +119,7 @@ public class GetChallengeHandler : IRequestHandler<GetChallengeQuery, ChallengeR
     public async Task<ChallengeResponse> Handle(GetChallengeQuery request, CancellationToken cancellationToken)
     {
         var item = await _context.Challenges.Include(challenge => challenge.Participants).FirstOrDefaultAsync(challenge => challenge.Id == request.ChallengeId, cancellationToken) ?? throw new NotFoundException("Challenge not found.");
+        await ChallengeAccess.EnsureCanViewAsync(_context, item, request.UserId, cancellationToken);
         return Map(item, request.UserId);
     }
     internal static ChallengeResponse Map(Domain.UserChallenge item, Guid userId) => new(item.Id, item.Title, item.Description, item.MetricCode, item.WorkoutType, item.Mode, item.TargetValue, item.Visibility, item.StartDate, item.EndDate, item.JoinClosing, item.ParticipantLimit, item.Status, item.Participants.Count(participant => participant.Status == "Active"), item.Participants.Any(participant => participant.UserId == userId && participant.Status == "Active"));
@@ -121,6 +130,8 @@ public class GetChallengeLeaderboardHandler : IRequestHandler<GetChallengeLeader
     private readonly FitspireDbContext _context; public GetChallengeLeaderboardHandler(FitspireDbContext context) => _context = context;
     public async Task<List<ChallengeLeaderboardEntry>> Handle(GetChallengeLeaderboardQuery request, CancellationToken cancellationToken)
     {
+        var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
+        await ChallengeAccess.EnsureCanViewAsync(_context, challenge, request.UserId, cancellationToken);
         var rows = await _context.ChallengeParticipants.Include(item => item.User).Where(item => item.ChallengeId == request.ChallengeId && item.Status == "Active").OrderByDescending(item => item.Score).ToListAsync(cancellationToken);
         var rank = 0; float last = float.NaN; return rows.Select((item, index) => { if (item.Score != last) rank = index + 1; last = item.Score; return new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, item.Score, rank); }).ToList();
     }
@@ -172,6 +183,31 @@ public class CancelChallengeHandler : IRequestHandler<CancelChallengeCommand>
 public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQuery, List<ChallengeLeaderboardEntry>>
 {
     private readonly FitspireDbContext _context; public GetChallengeResultsHandler(FitspireDbContext context) => _context = context;
-    public async Task<List<ChallengeLeaderboardEntry>> Handle(GetChallengeResultsQuery request, CancellationToken cancellationToken) => await _context.ChallengeResults.Include(item => item.User).Where(item => item.ChallengeId == request.ChallengeId)
-        .OrderBy(item => item.Rank).Select(item => new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, item.Score, item.Rank)).ToListAsync(cancellationToken);
+    public async Task<List<ChallengeLeaderboardEntry>> Handle(GetChallengeResultsQuery request, CancellationToken cancellationToken)
+    {
+        var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
+        await ChallengeAccess.EnsureCanViewAsync(_context, challenge, request.UserId, cancellationToken);
+        return await _context.ChallengeResults.Include(item => item.User).Where(item => item.ChallengeId == request.ChallengeId)
+            .OrderBy(item => item.Rank).Select(item => new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, item.Score, item.Rank)).ToListAsync(cancellationToken);
+    }
+}
+
+internal static class ChallengeAccess
+{
+    public static async Task EnsureCanViewAsync(FitspireDbContext context, Domain.UserChallenge challenge, Guid userId, CancellationToken cancellationToken)
+    {
+        if (challenge.Visibility == "Public" || challenge.CreatedBy == userId ||
+            await context.ChallengeParticipants.AnyAsync(item => item.ChallengeId == challenge.Id && item.UserId == userId && item.Status == "Active", cancellationToken))
+            return;
+
+        if (challenge.Visibility == "FollowersOnly" &&
+            await context.Followers.AnyAsync(item => item.FollowerId == userId && item.FollowedId == challenge.CreatedBy, cancellationToken))
+            return;
+
+        if (challenge.Visibility == "InviteOnly" &&
+            await context.ChallengeInvitations.AnyAsync(item => item.ChallengeId == challenge.Id && item.InvitedUserId == userId && (item.Status == "Pending" || item.Status == "Accepted"), cancellationToken))
+            return;
+
+        throw new UnauthorizedAccessException("You do not have access to this challenge.");
+    }
 }

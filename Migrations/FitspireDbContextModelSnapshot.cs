@@ -2432,7 +2432,7 @@ namespace backend.Migrations
                     b.HasOne("backend.Modules.Workout.Domain.Entities.UserWorkout", "UserWorkout")
                         .WithMany()
                         .HasForeignKey("WorkoutId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");

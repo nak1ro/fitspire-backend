@@ -1,6 +1,5 @@
 using backend.Modules.Goal.DTOs;
 using backend.Modules.Goal.Infrastructure;
-using backend.Modules.Goal.Services.MetricCalculators;
 using backend.Modules.Goal.Validators;
 using backend.Modules.Goal.Services;
 using FluentValidation;
@@ -14,32 +13,9 @@ public static class GoalModuleExtensions
     {
         services.AddScoped<IGoalRepository, Infrastructure.GoalRepository>();
         services.AddScoped<IValidator<CreateGoalRequest>, CreateGoalRequestValidator>();
-        services.AddScoped<IValidator<UpdateGoalProgressRequest>, UpdateGoalProgressRequestValidator>();
         services.AddScoped<IValidator<UpdateGoalRequest>, UpdateGoalRequestValidator>();
         services.AddScoped<IGoalProgressService, GoalProgressService>();
         services.AddHostedService<GamificationLifecycleHostedService>();
-        
-        // Register Metric Strategies
-        services.AddScoped<IMetricCalculator, CountMetricCalculator>();
-        services.AddScoped<IMetricCalculator, DistanceMetricCalculator>();
-        services.AddScoped<IMetricCalculator, DurationMetricCalculator>();
-        services.AddScoped<IMetricCalculator, VolumeMetricCalculator>();
-        services.AddScoped<IMetricCalculator, CaloriesMetricCalculator>();
-        
-        // Register Exercise Metric Strategies
-        services.AddScoped<IExerciseMetricCalculator, MaxWeightCalculator>();
-        services.AddScoped<IExerciseMetricCalculator, ExerciseVolumeCalculator>();
-        services.AddScoped<IExerciseMetricCalculator, ExerciseRepsCalculator>();
-        services.AddScoped<IExerciseMetricCalculator, ExerciseRepsCalculator>();
-        services.AddScoped<IExerciseMetricCalculator, ExerciseCountCalculator>();
-        
-        // Register Workout Goal Processors
-        services.AddScoped<Services.GoalProcessors.IWorkoutGoalProcessor, Services.GoalProcessors.GymGoalProcessor>();
-        services.AddScoped<Services.GoalProcessors.IWorkoutGoalProcessor, Services.GoalProcessors.RunningGoalProcessor>();
-        services.AddScoped<Services.GoalProcessors.IWorkoutGoalProcessor, Services.GoalProcessors.CyclingGoalProcessor>();
-        services.AddScoped<Services.GoalProcessors.IWorkoutGoalProcessor, Services.GoalProcessors.SwimmingGoalProcessor>();
-        services.AddScoped<Services.GoalProcessors.IWorkoutGoalProcessor, Services.GoalProcessors.YogaGoalProcessor>();
-        
         return services;
     }
 }

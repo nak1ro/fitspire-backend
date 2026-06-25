@@ -17,7 +17,9 @@ public class GetGoalTypesHandler : IRequestHandler<GetGoalTypesQuery, List<GoalT
 
     public async Task<List<GoalTypeResponse>> Handle(GetGoalTypesQuery request, CancellationToken cancellationToken)
     {
-        var types = await _repository.GetAllGoalTypesAsync(cancellationToken);
+        var types = (await _repository.GetAllGoalTypesAsync(cancellationToken))
+            .Where(type => type.IsActive && !string.IsNullOrWhiteSpace(type.MetricCode))
+            .ToList();
         
         return types.Select(t => new GoalTypeResponse(
             t.Id,

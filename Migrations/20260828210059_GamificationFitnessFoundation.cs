@@ -11,6 +11,18 @@ namespace backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_PersonalRecord_UserWorkout_WorkoutId",
+                table: "PersonalRecord");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PersonalRecord_UserWorkout_WorkoutId",
+                table: "PersonalRecord",
+                column: "WorkoutId",
+                principalTable: "UserWorkout",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
+
             migrationBuilder.DropIndex(
                 name: "IX_UserWorkout_UserId",
                 table: "UserWorkout");
@@ -549,6 +561,18 @@ namespace backend.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_PersonalRecord_UserWorkout_WorkoutId",
+                table: "PersonalRecord");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PersonalRecord_UserWorkout_WorkoutId",
+                table: "PersonalRecord",
+                column: "WorkoutId",
+                principalTable: "UserWorkout",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
             migrationBuilder.DropTable(
                 name: "ActivityContribution");
 

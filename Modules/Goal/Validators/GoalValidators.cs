@@ -51,20 +51,3 @@ public class UpdateGoalRequestValidator : AbstractValidator<UpdateGoalRequest>
         RuleFor(request => request.TargetValue).GreaterThan(0);
     }
 }
-
-public class UpdateGoalProgressRequestValidator : AbstractValidator<UpdateGoalProgressRequest>
-{
-    public UpdateGoalProgressRequestValidator()
-    {
-        RuleFor(x => x.Delta)
-            .GreaterThan(0);
-
-        RuleFor(x => x.Source)
-            .NotEmpty()
-            .When(x => x.Source is not null);
-
-        RuleFor(x => x.Source)
-            .MaximumLength(64)
-            .When(x => x.Source is not null);
-    }
-}

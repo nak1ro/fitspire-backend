@@ -2,7 +2,6 @@ using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.DTOs;
 using backend.Modules.Workout.Infrastructure;
-using backend.Modules.Progress.Services;
 using backend.Modules.Workout.Services;
 using backend.Data;
 using backend.Modules.Workout.Domain.Entities;
@@ -18,16 +17,14 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
 {
     private readonly IWorkoutRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IContributionReconciliationService _contributions;
-    private readonly IPersonalRecordRecalculationService _records;
+    private readonly IWorkoutDerivedDataService _derivedData;
     private readonly FitspireDbContext _context;
 
-    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IContributionReconciliationService contributions, IPersonalRecordRecalculationService records, FitspireDbContext context)
+    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IWorkoutDerivedDataService derivedData, FitspireDbContext context)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
-        _contributions = contributions;
-        _records = records;
+        _derivedData = derivedData;
         _context = context;
     }
 
@@ -47,15 +44,14 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
             request.Request.Notes,
             request.Request.IsPrivate
         );
+        if (request.Request.CaloriesBurned.HasValue)
+            workout.SetCalories(request.Request.CaloriesBurned.Value);
         await UpdateTypeSpecificFieldsAsync(workout, request.Request, cancellationToken);
 
-        await _repository.UpdateAsync(workout, cancellationToken);
         if (workout.Status == Domain.Enums.WorkoutStatus.Completed)
-        {
-            await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
-            await _records.RecalculateAsync(workout.UserId, cancellationToken);
-        }
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _derivedData.ReconcileCompletedWorkoutAsync(workout, cancellationToken);
+        else
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private async Task UpdateTypeSpecificFieldsAsync(UserWorkout workout, UpdateWorkoutRequest request, CancellationToken cancellationToken)

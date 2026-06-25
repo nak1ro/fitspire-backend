@@ -15,12 +15,6 @@ public record CreateGoalRequest(
     Guid? SelectedExerciseId = null
 );
 
-public record UpdateGoalProgressRequest(
-    double Delta,
-    string? Source = null,
-    Guid? SourceEntityId = null
-);
-
 // Response DTOs
 public record GoalResponse(
     Guid Id,

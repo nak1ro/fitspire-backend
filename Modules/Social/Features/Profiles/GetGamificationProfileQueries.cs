@@ -31,8 +31,11 @@ public class GetPublicBadgesHandler : IRequestHandler<GetPublicBadgesQuery, List
     {
         if (!await _access.CanViewProtectedContentAsync(request.ViewerId, request.OwnerId, cancellationToken)) throw new UnauthorizedAccessException("This profile is private.");
         var query = _context.UserBadges.Include(award => award.AchievementBadge).Where(award => award.UserId == request.OwnerId);
-        if (request.FeaturedOnly) query = query.Where(award => award.FeaturedOrder != null).OrderBy(award => award.FeaturedOrder);
-        return await query.OrderByDescending(award => award.AwardedAt).Select(award => new PublicBadgeResponse(award.BadgeId, award.AchievementBadge.Code, award.AchievementBadge.Name, award.AchievementBadge.Description, award.AchievementBadge.Tier, award.AwardedAt, award.FeaturedOrder)).ToListAsync(cancellationToken);
+        if (request.FeaturedOnly)
+            return await query.Where(award => award.FeaturedOrder != null).OrderBy(award => award.FeaturedOrder)
+                .Select(award => new PublicBadgeResponse(award.BadgeId, award.AchievementBadge.Code, award.AchievementBadge.Name, award.AchievementBadge.Description, award.AchievementBadge.Tier, award.AwardedAt, award.FeaturedOrder)).ToListAsync(cancellationToken);
+        return await query.OrderByDescending(award => award.AwardedAt)
+            .Select(award => new PublicBadgeResponse(award.BadgeId, award.AchievementBadge.Code, award.AchievementBadge.Name, award.AchievementBadge.Description, award.AchievementBadge.Tier, award.AwardedAt, award.FeaturedOrder)).ToListAsync(cancellationToken);
     }
 }
 public class GetPublicChallengeResultsHandler : IRequestHandler<GetPublicChallengeResultsQuery, List<PublicChallengeResultResponse>>

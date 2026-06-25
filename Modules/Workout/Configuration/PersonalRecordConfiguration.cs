@@ -25,7 +25,7 @@ public class PersonalRecordConfiguration : IEntityTypeConfiguration<PersonalReco
         builder.HasOne(pr => pr.UserWorkout)
             .WithMany()
             .HasForeignKey(pr => pr.WorkoutId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(pr => new { pr.UserId, pr.WorkoutType, pr.Metric })
             .IsUnique();

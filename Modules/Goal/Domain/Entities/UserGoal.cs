@@ -209,6 +209,14 @@ public class UserGoal : AggregateRoot<Guid>
     {
         CurrentValue = Math.Max(0, currentValue);
 
+        if (IsRecurring)
+        {
+            if (Status != GoalStatus.Archived)
+                Status = GoalStatus.Active;
+            UpdatedAt = DateTime.UtcNow;
+            return;
+        }
+
         if (Status == GoalStatus.Completed && CurrentValue < TargetValue)
             Status = GoalStatus.Active;
 

@@ -3,7 +3,7 @@ using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.DTOs;
 using backend.Modules.Workout.Infrastructure;
-using backend.Modules.Progress.Services;
+using backend.Modules.Workout.Services;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.Sessions;
@@ -78,13 +78,13 @@ public class RestoreWorkoutHandler : IRequestHandler<RestoreWorkoutCommand>
 {
     private readonly IWorkoutRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IContributionReconciliationService _contributions;
+    private readonly IWorkoutDerivedDataService _derivedData;
 
-    public RestoreWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IContributionReconciliationService contributions)
+    public RestoreWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IWorkoutDerivedDataService derivedData)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
-        _contributions = contributions;
+        _derivedData = derivedData;
     }
 
     public async Task Handle(RestoreWorkoutCommand request, CancellationToken cancellationToken)
@@ -95,11 +95,14 @@ public class RestoreWorkoutHandler : IRequestHandler<RestoreWorkoutCommand>
         if (workout.UserId != request.UserId)
             throw new UnauthorizedAccessException("Cannot restore another user's workout.");
 
+        if (workout.CompletedAt is null && await _repository.GetActiveSessionByUserIdAsync(request.UserId, cancellationToken) is not null)
+            throw new DomainException("Finish or abandon the current active session before restoring another session.");
+
         workout.Restore();
-        await _repository.UpdateAsync(workout, cancellationToken);
         if (workout.Status == Domain.Enums.WorkoutStatus.Completed)
-            await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _derivedData.ReconcileCompletedWorkoutAsync(workout, cancellationToken);
+        else
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
 
