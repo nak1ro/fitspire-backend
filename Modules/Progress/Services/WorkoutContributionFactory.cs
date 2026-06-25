@@ -16,14 +16,35 @@ public static class WorkoutContributionFactory
         };
 
         AddIfPositive(contributions, workout, MetricCatalogue.DurationMinutes, workout.DurationMinutes);
-        AddIfPositive(contributions, workout, MetricCatalogue.Calories, workout.CaloriesBurned);
-        AddIfPositive(contributions, workout, MetricCatalogue.DistanceKm, workout.GetTotalDistance());
+        AddIfPositive(contributions, workout, MetricCatalogue.LegacyCalories, workout.CaloriesBurned);
+        AddIfPositive(contributions, workout, MetricCatalogue.CaloriesKcal, workout.CaloriesBurned);
+        AddIfPositive(contributions, workout, MetricCatalogue.LegacyDistanceKm, workout.GetTotalDistance());
+
+        switch (workout)
+        {
+            case RunningUserWorkoutDetails:
+                AddIfPositive(contributions, workout, MetricCatalogue.RunningDistanceKm, workout.GetTotalDistance());
+                break;
+            case CyclingUserWorkoutDetails:
+                AddIfPositive(contributions, workout, MetricCatalogue.CyclingDistanceKm, workout.GetTotalDistance());
+                break;
+            case SwimmingUserWorkoutDetails swimming:
+                AddIfPositive(contributions, workout, MetricCatalogue.SwimmingDistanceMeters, swimming.DistanceMeters);
+                break;
+            case YogaUserWorkoutDetails:
+                AddIfPositive(contributions, workout, MetricCatalogue.YogaDurationMinutes, workout.DurationMinutes);
+                break;
+        }
 
         if (workout is GymUserWorkoutDetails gym)
         {
             AddIfPositive(contributions, workout, MetricCatalogue.GymVolumeKg, gym.GetTotalVolume());
+            AddIfPositive(contributions, workout, MetricCatalogue.GymExerciseCount, gym.GetExerciseCount());
             foreach (var exercise in gym.Exercises)
-                AddIfPositive(contributions, workout, MetricCatalogue.GymMaxWeightKg, exercise.Weight, exercise.ExerciseId);
+            {
+                AddIfPositive(contributions, workout, MetricCatalogue.LegacyGymMaxWeightKg, exercise.Weight, exercise.ExerciseId);
+                AddIfPositive(contributions, workout, MetricCatalogue.ExerciseMaxWeightKg, exercise.Weight, exercise.ExerciseId);
+            }
         }
 
         return contributions;

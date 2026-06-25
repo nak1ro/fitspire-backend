@@ -16,5 +16,6 @@ public enum NotificationType
     ChallengeCancelled = 12,
     ChallengeCompleted = 13,
     ChallengeWon = 14,
-    BadgeEarned = 15
+    BadgeEarned = 15,
+    ChallengeUpdated = 16
 }

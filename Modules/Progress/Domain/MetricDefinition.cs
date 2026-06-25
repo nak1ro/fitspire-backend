@@ -16,18 +16,33 @@ public class MetricDefinition : Entity<string>
 
     private MetricDefinition() { }
 
-    public MetricDefinition(string code, string displayName, string canonicalUnit, string aggregation, int displayOrder)
+    public MetricDefinition(string code, string displayName, string canonicalUnit, string aggregation, int displayOrder,
+        bool isGoalSupported = true, bool isChallengeSupported = true, bool isBadgeSupported = true, bool isAnalyticsSupported = true)
     {
         Id = code;
         DisplayName = displayName;
         CanonicalUnit = canonicalUnit;
         Aggregation = aggregation;
         DisplayOrder = displayOrder;
-        IsGoalSupported = true;
-        IsChallengeSupported = true;
-        IsBadgeSupported = true;
-        IsAnalyticsSupported = true;
+        IsGoalSupported = isGoalSupported;
+        IsChallengeSupported = isChallengeSupported;
+        IsBadgeSupported = isBadgeSupported;
+        IsAnalyticsSupported = isAnalyticsSupported;
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Synchronize(string displayName, string canonicalUnit, string aggregation, int displayOrder,
+        bool isGoalSupported, bool isChallengeSupported, bool isBadgeSupported, bool isAnalyticsSupported)
+    {
+        DisplayName = displayName;
+        CanonicalUnit = canonicalUnit;
+        Aggregation = aggregation;
+        DisplayOrder = displayOrder;
+        IsGoalSupported = isGoalSupported;
+        IsChallengeSupported = isChallengeSupported;
+        IsBadgeSupported = isBadgeSupported;
+        IsAnalyticsSupported = isAnalyticsSupported;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

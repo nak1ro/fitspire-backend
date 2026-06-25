@@ -11,9 +11,32 @@ public static class MetricDefinitionSeeder
     {
         for (var index = 0; index < MetricCatalogue.Definitions.Count; index++)
         {
-            var (code, name, unit, aggregation) = MetricCatalogue.Definitions[index];
-            if (!await context.Set<MetricDefinition>().AnyAsync(metric => metric.Id == code, cancellationToken))
-                await context.Set<MetricDefinition>().AddAsync(new MetricDefinition(code, name, unit, aggregation, index + 1), cancellationToken);
+            var definition = MetricCatalogue.Definitions[index];
+            var metric = await context.Set<MetricDefinition>().FindAsync([definition.Code], cancellationToken);
+            if (metric is null)
+            {
+                await context.Set<MetricDefinition>().AddAsync(new MetricDefinition(
+                    definition.Code,
+                    definition.Name,
+                    definition.Unit,
+                    definition.Aggregation,
+                    index + 1,
+                    definition.IsGoalSupported,
+                    definition.IsChallengeSupported,
+                    definition.IsBadgeSupported,
+                    definition.IsAnalyticsSupported), cancellationToken);
+                continue;
+            }
+
+            metric.Synchronize(
+                definition.Name,
+                definition.Unit,
+                definition.Aggregation,
+                index + 1,
+                definition.IsGoalSupported,
+                definition.IsChallengeSupported,
+                definition.IsBadgeSupported,
+                definition.IsAnalyticsSupported);
         }
 
         await context.SaveChangesAsync(cancellationToken);
