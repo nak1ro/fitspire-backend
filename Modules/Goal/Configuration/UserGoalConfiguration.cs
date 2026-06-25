@@ -19,6 +19,9 @@ public class UserGoalConfiguration : IEntityTypeConfiguration<UserGoal>
         builder.Property(g => g.RecurrencePattern).HasMaxLength(50);
         builder.Property(g => g.TimeZoneId).HasMaxLength(128).IsRequired();
         builder.Property(g => g.SelectedWorkoutType).HasMaxLength(32);
+        builder.Property(g => g.DefinitionKey).HasMaxLength(256).IsRequired();
+        builder.HasIndex(g => new { g.UserId, g.DefinitionKey }).IsUnique().HasDatabaseName("UX_UserGoal_ActiveDefinition")
+            .HasFilter("\"Status\" = 'Active'");
 
         builder.HasOne(g => g.User)
             .WithMany(u => u.Goals)

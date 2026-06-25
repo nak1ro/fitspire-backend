@@ -16,15 +16,21 @@ public class GoalController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IValidator<CreateGoalRequest> _createGoalValidator;
     private readonly IValidator<UpdateGoalRequest> _updateGoalValidator;
+    private readonly IValidator<GoalListFilter> _listFilterValidator;
+    private readonly IValidator<GoalPagination> _paginationValidator;
 
     public GoalController(
         IMediator mediator,
         IValidator<CreateGoalRequest> createGoalValidator,
-        IValidator<UpdateGoalRequest> updateGoalValidator)
+        IValidator<UpdateGoalRequest> updateGoalValidator,
+        IValidator<GoalListFilter> listFilterValidator,
+        IValidator<GoalPagination> paginationValidator)
     {
         _mediator = mediator;
         _createGoalValidator = createGoalValidator;
         _updateGoalValidator = updateGoalValidator;
+        _listFilterValidator = listFilterValidator;
+        _paginationValidator = paginationValidator;
     }
 
     [HttpPost]
@@ -37,29 +43,39 @@ public class GoalController : ControllerBase
             userId,
             request.GoalTypeId,
             request.TargetValue,
-            request.Unit,
+            request.Schedule,
             request.Deadline,
-            request.IsRecurring,
-            request.RecurrencePattern,
             request.IsPublic,
             request.SelectedWorkoutType,
             request.SelectedExerciseId
         ));
-        return CreatedAtAction(nameof(GetUserGoals), new { id = goalId }, goalId);
+        return CreatedAtAction(nameof(GetGoal), new { id = goalId }, goalId);
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<GoalResponse>>> GetUserGoals()
+    public async Task<ActionResult<GoalPageResponse<GoalResponse>>> GetUserGoals([FromQuery] GoalListFilter filter)
     {
-        var userId = User.GetRequiredUserId();
-        var goals = await _mediator.Send(new GetUserGoalsQuery(userId));
+        await _listFilterValidator.ValidateAndThrowAsync(filter);
+        var goals = await _mediator.Send(new GetUserGoalsQuery(User.GetRequiredUserId(), filter));
         return Ok(goals);
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<GoalDetailResponse>> GetGoal(Guid id) =>
+        Ok(await _mediator.Send(new GetGoalDetailQuery(User.GetRequiredUserId(), id)));
+
     [HttpGet("{id:guid}/periods")]
-    public async Task<ActionResult<List<GoalPeriodResponse>>> GetPeriods(Guid id)
+    public async Task<ActionResult<GoalPageResponse<GoalPeriodResponse>>> GetPeriods(Guid id, [FromQuery] GoalPagination pagination)
     {
-        return Ok(await _mediator.Send(new GetGoalPeriodsQuery(User.GetRequiredUserId(), id)));
+        await _paginationValidator.ValidateAndThrowAsync(pagination);
+        return Ok(await _mediator.Send(new GetGoalPeriodsQuery(User.GetRequiredUserId(), id, pagination)));
+    }
+
+    [HttpGet("{id:guid}/progress")]
+    public async Task<ActionResult<GoalPageResponse<GoalProgressEntryResponse>>> GetProgress(Guid id, [FromQuery] GoalPagination pagination)
+    {
+        await _paginationValidator.ValidateAndThrowAsync(pagination);
+        return Ok(await _mediator.Send(new GetGoalProgressQuery(User.GetRequiredUserId(), id, pagination)));
     }
 
     [HttpPatch("{id:guid}")]

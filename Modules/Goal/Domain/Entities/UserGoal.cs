@@ -1,5 +1,5 @@
+using backend.Modules.Goal.Domain.Constants;
 using backend.Modules.Goal.Domain.Enums;
-using backend.Modules.Goal.Domain.Events;
 using backend.Modules.Shared.Domain;
 using backend.Modules.User.Domain;
 
@@ -7,9 +7,6 @@ namespace backend.Modules.Goal.Domain.Entities;
 
 public class UserGoal : AggregateRoot<Guid>
 {
-    // Polish timezone for streak calculations
-    private static readonly TimeZoneInfo PolishTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
-
     public Guid UserId { get; private set; }
     public Guid GoalTypeId { get; private set; }
     public double TargetValue { get; private set; }
@@ -18,7 +15,7 @@ public class UserGoal : AggregateRoot<Guid>
     public DateTime StartDate { get; private set; }
     public DateTime? Deadline { get; private set; }
     public bool IsRecurring { get; private set; }
-    public string? RecurrencePattern { get; private set; } // "daily", "weekly", "monthly"
+    public string? RecurrencePattern { get; private set; }
     public GoalStatus Status { get; private set; }
     public bool IsPublic { get; private set; }
     public int CurrentStreak { get; private set; }
@@ -26,8 +23,8 @@ public class UserGoal : AggregateRoot<Guid>
     public string TimeZoneId { get; private set; } = "Central European Standard Time";
     public string? SelectedWorkoutType { get; private set; }
     public Guid? SelectedExerciseId { get; private set; }
+    public string DefinitionKey { get; private set; } = null!;
 
-    // Navigation
     public AppUser User { get; private set; } = null!;
     public GoalType GoalType { get; private set; } = null!;
     public ICollection<GoalProgressEntry> ProgressEntries { get; private set; } = new List<GoalProgressEntry>();
@@ -35,207 +32,71 @@ public class UserGoal : AggregateRoot<Guid>
 
     private UserGoal() { }
 
-    public UserGoal(
-        Guid id,
-        Guid userId,
-        Guid goalTypeId,
-        double targetValue,
-        string unit,
-        DateTime startDate,
-        DateTime? deadline = null,
-        bool isRecurring = false,
-        string? recurrencePattern = null,
-        bool isPublic = false)
+    public UserGoal(Guid id, Guid userId, Guid goalTypeId, double targetValue, string unit, DateTime startDate,
+        DateTime? deadline, bool isRecurring, string? recurrencePattern, bool isPublic)
     {
-        if (goalTypeId == Guid.Empty)
-            throw new DomainException("Goal type is required.");
-
-        if (targetValue <= 0)
-            throw new DomainException("Target value must be greater than zero.");
-
-        if (string.IsNullOrWhiteSpace(unit))
-            throw new DomainException("Goal unit is required.");
-
-        if (deadline.HasValue && deadline.Value <= DateTime.UtcNow)
-            throw new DomainException("Goal deadline must be in the future.");
-
-        if (isRecurring && string.IsNullOrWhiteSpace(recurrencePattern))
-            throw new DomainException("Recurrence pattern is required for recurring goals.");
-
+        ValidateCreation(userId, goalTypeId, targetValue, unit, deadline, isRecurring, recurrencePattern);
         Id = id;
         UserId = userId;
         GoalTypeId = goalTypeId;
         TargetValue = targetValue;
         Unit = unit.Trim();
-        StartDate = startDate;
-        Deadline = deadline;
+        StartDate = startDate.ToUniversalTime();
+        Deadline = deadline?.ToUniversalTime();
         IsRecurring = isRecurring;
-        RecurrencePattern = string.IsNullOrWhiteSpace(recurrencePattern) ? null : recurrencePattern.Trim().ToLowerInvariant();
+        RecurrencePattern = recurrencePattern?.Trim().ToLowerInvariant();
         IsPublic = isPublic;
         Status = GoalStatus.Active;
-        CurrentValue = 0;
-        CurrentStreak = 0;
         CreatedAt = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Updates progress based on the goal's measurement type.
-    /// </summary>
-    public void UpdateProgress(double delta, GoalMeasurementType measurementType, DateTime eventDateUtc, TimeZoneInfo? timeZone = null)
+    public bool ApplyCurrentPeriodProgress(double currentValue, bool periodCompleted)
     {
-        if (Status != GoalStatus.Active) return;
+        if (Status != GoalStatus.Active)
+            return false;
 
-        var previousValue = CurrentValue;
-
-        switch (measurementType)
-        {
-            case GoalMeasurementType.Cumulative:
-                CurrentValue += delta;
-                break;
-
-            case GoalMeasurementType.SingleEvent:
-                // For single event, we check if the delta itself meets the target
-                if (delta >= TargetValue)
-                {
-                    CurrentValue = delta;
-                    MarkCompleted();
-                }
-                else if (delta > CurrentValue)
-                {
-                    CurrentValue = delta; // Track best attempt
-                }
-                break;
-
-            case GoalMeasurementType.Threshold:
-                // Threshold just updates to new value (snapshot)
-                CurrentValue = delta;
-                break;
-
-            case GoalMeasurementType.Streak:
-                UpdateStreak(eventDateUtc, timeZone ?? PolishTimeZone);
-                break;
-        }
-
+        var normalizedValue = Math.Max(0, currentValue);
+        var changed = CurrentValue != normalizedValue;
+        CurrentValue = normalizedValue;
         UpdatedAt = DateTime.UtcNow;
-
-        // Check if goal is now complete (for Cumulative/Threshold)
-        if (measurementType != GoalMeasurementType.SingleEvent && CurrentValue >= TargetValue)
-        {
+        if (!IsRecurring && periodCompleted)
             MarkCompleted();
-        }
-
-        // Fire progress event
-        AddDomainEvent(new GoalProgressUpdatedEvent(Id, UserId, previousValue, CurrentValue, GetMilestonePercent()));
+        return changed;
     }
 
-    /// <summary>
-    /// Updates streak based on provided timezone.
-    /// </summary>
-    private void UpdateStreak(DateTime eventDateUtc, TimeZoneInfo localTimeZone)
+    public void ResetCurrentPeriodProgress()
     {
-        var polishDate = TimeZoneInfo.ConvertTimeFromUtc(eventDateUtc, localTimeZone).Date;
-
-        if (LastStreakDate == null)
-        {
-            // First streak entry
-            CurrentStreak = 1;
-            LastStreakDate = polishDate;
-            CurrentValue = 1;
-        }
-        else
-        {
-            var lastPolishDate = LastStreakDate.Value;
-            var daysDiff = (polishDate - lastPolishDate).Days;
-
-            if (daysDiff == 0)
-            {
-                // Same day - no change
-            }
-            else if (daysDiff == 1)
-            {
-                // Consecutive day - increment streak
-                CurrentStreak++;
-                CurrentValue = CurrentStreak;
-                LastStreakDate = polishDate;
-            }
-            else
-            {
-                // Streak broken - reset
-                CurrentStreak = 1;
-                CurrentValue = 1;
-                LastStreakDate = polishDate;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Checks if streak has been broken (call daily).
-    /// </summary>
-    public void CheckStreakExpiry()
-    {
-        if (GoalType?.MeasurementType != GoalMeasurementType.Streak || Status != GoalStatus.Active)
+        if (Status != GoalStatus.Active || !IsRecurring)
             return;
 
-        if (LastStreakDate == null) return;
-
-        var polishNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PolishTimeZone).Date;
-        var daysSinceLastStreak = (polishNow - LastStreakDate.Value).Days;
-
-        if (daysSinceLastStreak > 1)
-        {
-            // Streak broken
-            CurrentStreak = 0;
-            CurrentValue = 0;
-            UpdatedAt = DateTime.UtcNow;
-        }
-    }
-
-    public void MarkCompleted()
-    {
-        if (Status == GoalStatus.Completed) return;
-
-        Status = GoalStatus.Completed;
-        UpdatedAt = DateTime.UtcNow;
-
-        AddDomainEvent(new GoalCompletedEvent(Id, UserId, GoalTypeId, TargetValue, CurrentValue));
-
-        if (IsRecurring && !string.IsNullOrEmpty(RecurrencePattern) && Deadline.HasValue)
-        {
-            AddDomainEvent(new GoalRecurringEvent(Id, UserId, GoalTypeId, TargetValue, Unit, Deadline.Value, RecurrencePattern));
-        }
-    }
-
-    public void RestoreProgress(double currentValue)
-    {
-        CurrentValue = Math.Max(0, currentValue);
-
-        if (IsRecurring)
-        {
-            if (Status != GoalStatus.Archived)
-                Status = GoalStatus.Active;
-            UpdatedAt = DateTime.UtcNow;
-            return;
-        }
-
-        if (Status == GoalStatus.Completed && CurrentValue < TargetValue)
-            Status = GoalStatus.Active;
-
-        if (Status == GoalStatus.Active && CurrentValue >= TargetValue)
-            Status = GoalStatus.Completed;
-
+        CurrentValue = 0;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void SetTemplateParameters(string timeZoneId, string? selectedWorkoutType, Guid? selectedExerciseId)
     {
-        TimeZoneId = timeZoneId;
+        if (string.IsNullOrWhiteSpace(timeZoneId))
+            throw new DomainException("Goal timezone is required.");
+
+        TimeZoneId = timeZoneId.Trim();
         SelectedWorkoutType = selectedWorkoutType?.Trim().ToLowerInvariant();
         SelectedExerciseId = selectedExerciseId;
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void SetDefinitionKey(string definitionKey)
+    {
+        if (string.IsNullOrWhiteSpace(definitionKey))
+            throw new DomainException("Goal definition is required.");
+
+        DefinitionKey = definitionKey;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdateTarget(double targetValue, bool isPublic)
     {
+        if (Status != GoalStatus.Active)
+            throw new DomainException("Only active goals can be edited.");
         if (targetValue <= 0)
             throw new DomainException("Goal target must be greater than zero.");
 
@@ -246,29 +107,65 @@ public class UserGoal : AggregateRoot<Guid>
 
     public void MarkFailed()
     {
+        if (Status != GoalStatus.Active)
+            return;
+
         Status = GoalStatus.Failed;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Archive()
     {
+        if (Status == GoalStatus.Archived)
+            return;
+        if (Status != GoalStatus.Active)
+            throw new DomainException("Only active goals can be archived.");
+
         Status = GoalStatus.Archived;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public int GetMilestonePercent()
     {
-        if (TargetValue <= 0) return 0;
-        var percent = (CurrentValue / TargetValue) * 100;
-        if (percent >= 100) return 100;
-        if (percent >= 75) return 75;
-        if (percent >= 50) return 50;
-        if (percent >= 25) return 25;
-        return 0;
+        if (TargetValue <= 0)
+            return 0;
+        var percent = CurrentValue / TargetValue * 100;
+        return percent switch
+        {
+            >= 100 => 100,
+            >= 75 => 75,
+            >= 50 => 50,
+            >= 25 => 25,
+            _ => 0
+        };
     }
 
-    public bool IsExpired()
+    private void MarkCompleted()
     {
-        return Deadline.HasValue && DateTime.UtcNow > Deadline.Value && Status == GoalStatus.Active;
+        Status = GoalStatus.Completed;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void ValidateCreation(Guid userId, Guid goalTypeId, double targetValue, string unit, DateTime? deadline,
+        bool isRecurring, string? recurrencePattern)
+    {
+        if (userId == Guid.Empty || goalTypeId == Guid.Empty)
+            throw new DomainException("Goal owner and template are required.");
+        if (targetValue <= 0 || double.IsNaN(targetValue) || double.IsInfinity(targetValue))
+            throw new DomainException("Goal target must be greater than zero.");
+        if (string.IsNullOrWhiteSpace(unit))
+            throw new DomainException("Goal unit is required.");
+        if (isRecurring && (!string.IsNullOrWhiteSpace(recurrencePattern) && GoalSchedules.Recurring.Contains(recurrencePattern)))
+        {
+            if (deadline.HasValue)
+                throw new DomainException("Recurring goals do not use an overall deadline.");
+            return;
+        }
+        if (isRecurring)
+            throw new DomainException("Recurring goals require a supported recurrence pattern.");
+        if (deadline is null || deadline.Value <= DateTime.UtcNow)
+            throw new DomainException("One-off goals require a future deadline.");
+        if (!string.IsNullOrWhiteSpace(recurrencePattern))
+            throw new DomainException("One-off goals do not use a recurrence pattern.");
     }
 }

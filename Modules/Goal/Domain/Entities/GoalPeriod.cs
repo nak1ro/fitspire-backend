@@ -19,8 +19,12 @@ public class GoalPeriod : Entity<Guid>
 
     public GoalPeriod(Guid goalId, DateTime startAt, DateTime endAt, double targetValue)
     {
+        if (goalId == Guid.Empty)
+            throw new DomainException("Goal period requires a goal.");
         if (endAt <= startAt)
             throw new DomainException("A goal period must end after it starts.");
+        if (targetValue <= 0 || double.IsNaN(targetValue) || double.IsInfinity(targetValue))
+            throw new DomainException("Goal target must be greater than zero.");
 
         Id = Guid.NewGuid();
         GoalId = goalId;
@@ -31,25 +35,27 @@ public class GoalPeriod : Entity<Guid>
         CreatedAt = DateTime.UtcNow;
     }
 
-    public void SetProgress(double value)
+    public bool SetProgress(double value)
     {
+        if (Status != "Active")
+            return false;
+
+        var previousValue = ProgressValue;
         ProgressValue = Math.Max(0, value);
-        if (Status == "Active" && ProgressValue >= TargetValue)
+        if (ProgressValue >= TargetValue)
         {
             Status = "Completed";
             CompletedAt = DateTime.UtcNow;
         }
-        else if (Status == "Completed" && ProgressValue < TargetValue)
-        {
-            Status = "Active";
-            CompletedAt = null;
-        }
 
         UpdatedAt = DateTime.UtcNow;
+        return previousValue != ProgressValue;
     }
 
     public void UpdateTarget(double targetValue)
     {
+        if (Status != "Active")
+            throw new DomainException("Only active goal periods can be edited.");
         if (targetValue <= 0)
             throw new DomainException("Goal target must be greater than zero.");
 

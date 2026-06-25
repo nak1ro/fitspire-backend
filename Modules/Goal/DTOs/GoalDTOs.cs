@@ -6,10 +6,8 @@ namespace backend.Modules.Goal.DTOs;
 public record CreateGoalRequest(
     Guid GoalTypeId,
     double TargetValue,
-    string Unit,
+    string Schedule,
     DateTime? Deadline,
-    bool IsRecurring = false,
-    string? RecurrencePattern = null,
     bool IsPublic = false,
     string? SelectedWorkoutType = null,
     Guid? SelectedExerciseId = null
@@ -34,6 +32,14 @@ public record GoalResponse(
     DateTime CreatedAt
 );
 
+public record GoalDetailResponse(GoalResponse Goal, GoalPeriodResponse? CurrentPeriod, bool CanEdit, bool CanArchive);
+
+public record GoalPageResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
+
+public record GoalListFilter(string Scope = "active", string? Status = null, int Page = 1, int PageSize = 20);
+
+public record GoalPagination(int Page = 1, int PageSize = 20);
+
 public record GoalPeriodResponse(Guid Id, DateTime StartAt, DateTime EndAt, double TargetValue, double ProgressValue, string Status, DateTime? CompletedAt, DateTime? FailedAt);
 
 public record UpdateGoalRequest(double TargetValue, bool IsPublic);
@@ -47,7 +53,11 @@ public record GoalTypeResponse(
     string MeasurementType,
     string? IconUrl,
     string? RelatedWorkoutType,
-    string? RelatedMetric
+    string? RelatedMetric,
+    string Code,
+    string? MetricCode,
+    string ParameterKind,
+    IReadOnlyList<string> AllowedSchedules
 );
 
 public record GoalProgressEntryResponse(

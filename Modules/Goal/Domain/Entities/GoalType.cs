@@ -57,4 +57,40 @@ public class GoalType : Entity<Guid>
         DisplayOrder = displayOrder;
         CreatedAt = DateTime.UtcNow;
     }
+
+    public void Synchronize(
+        string name,
+        string defaultUnit,
+        GoalCategory category,
+        GoalMeasurementType measurementType,
+        string? description,
+        string? iconUrl,
+        string? relatedWorkoutType,
+        string? relatedMetric,
+        Guid? relatedExerciseId,
+        string? metricCode,
+        string parameterKind,
+        int displayOrder)
+    {
+        Name = name;
+        DefaultUnit = defaultUnit;
+        Category = category;
+        MeasurementType = measurementType;
+        Description = description;
+        IconUrl = iconUrl;
+        RelatedWorkoutType = relatedWorkoutType;
+        RelatedMetric = relatedMetric;
+        RelatedExerciseId = relatedExerciseId;
+        MetricCode = metricCode;
+        ParameterKind = parameterKind;
+        DisplayOrder = displayOrder;
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Retire()
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

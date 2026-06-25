@@ -14,7 +14,11 @@ public static class GoalModuleExtensions
         services.AddScoped<IGoalRepository, Infrastructure.GoalRepository>();
         services.AddScoped<IValidator<CreateGoalRequest>, CreateGoalRequestValidator>();
         services.AddScoped<IValidator<UpdateGoalRequest>, UpdateGoalRequestValidator>();
+        services.AddScoped<IValidator<GoalListFilter>, GoalListFilterValidator>();
+        services.AddScoped<IValidator<GoalPagination>, GoalPaginationValidator>();
         services.AddScoped<IGoalProgressService, GoalProgressService>();
+        services.AddScoped<IGoalTemplatePolicy, GoalTemplatePolicy>();
+        services.AddScoped<IGoalTransactionService, GoalTransactionService>();
         services.AddHostedService<GamificationLifecycleHostedService>();
         return services;
     }

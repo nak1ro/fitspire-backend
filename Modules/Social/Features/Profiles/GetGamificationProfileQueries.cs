@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Modules.Goal.Domain.Enums;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Contracts.Profiles;
 using backend.Modules.Social.Services;
@@ -19,7 +20,8 @@ public class GetPublicGoalsHandler : IRequestHandler<GetPublicGoalsQuery, List<P
     {
         if (!await _access.CanViewProtectedContentAsync(request.ViewerId, request.OwnerId, cancellationToken)) throw new UnauthorizedAccessException("This profile is private.");
         var query = _context.Goals.Include(goal => goal.GoalType).Where(goal => goal.UserId == request.OwnerId);
-        if (request.ViewerId != request.OwnerId) query = query.Where(goal => goal.IsPublic);
+        if (request.ViewerId != request.OwnerId)
+            query = query.Where(goal => goal.IsPublic && (goal.Status == GoalStatus.Active || goal.Status == GoalStatus.Completed));
         return await query.OrderByDescending(goal => goal.CreatedAt).Select(goal => new PublicGoalResponse(goal.Id, goal.GoalType.Name, goal.TargetValue, goal.CurrentValue, goal.Unit, goal.Status.ToString(), goal.IsRecurring, goal.CreatedAt)).ToListAsync(cancellationToken);
     }
 }

@@ -19,9 +19,7 @@ public class GamificationLifecycleHostedService : BackgroundService
                 using var scope = _scopeFactory.CreateScope();
                 var goals = scope.ServiceProvider.GetRequiredService<IGoalProgressService>();
                 var challenges = scope.ServiceProvider.GetRequiredService<IChallengeScoringService>();
-                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 await goals.ProcessDuePeriodsAsync(DateTime.UtcNow, stoppingToken);
-                await unitOfWork.SaveChangesAsync(stoppingToken);
                 await challenges.ProcessLifecycleAsync(DateTime.UtcNow, stoppingToken);
             }
             catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
