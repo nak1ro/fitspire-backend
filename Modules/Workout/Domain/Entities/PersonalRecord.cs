@@ -9,33 +9,36 @@ public class PersonalRecord : AggregateRoot<Guid>
     public Guid UserId { get; private set; }
     public string WorkoutType { get; private set; } = null!;
     public string Metric { get; private set; } = null!;
+    public Guid? ExerciseId { get; private set; }
     public double Value { get; private set; }
     public Guid WorkoutId { get; private set; }
 
     // Navigation
     public AppUser User { get; private set; } = null!;
     public UserWorkout UserWorkout { get; private set; } = null!;
+    public Exercise? Exercise { get; private set; }
 
     // EF Core constructor
     private PersonalRecord() { }
 
-    private PersonalRecord(Guid id, Guid userId, string workoutType, string metric, double value, Guid workoutId)
+    private PersonalRecord(Guid id, Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId)
     {
         Id = id;
         UserId = userId;
         WorkoutType = workoutType;
         Metric = metric;
+        ExerciseId = exerciseId;
         Value = value;
         WorkoutId = workoutId;
         CreatedAt = DateTime.UtcNow;
     }
 
-    public static PersonalRecord Create(Guid userId, string workoutType, string metric, double value, Guid workoutId)
+    public static PersonalRecord Create(Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId)
     {
         if (value <= 0)
             throw new DomainException("Personal record value must be positive.");
 
-        return new PersonalRecord(Guid.NewGuid(), userId, workoutType, metric, value, workoutId);
+        return new PersonalRecord(Guid.NewGuid(), userId, workoutType, metric, exerciseId, value, workoutId);
     }
 
     public bool TryBeat(double newValue, Guid workoutId)

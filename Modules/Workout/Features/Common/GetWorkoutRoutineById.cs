@@ -1,4 +1,3 @@
-using AutoMapper;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.DTOs;
 using backend.Modules.Workout.Infrastructure;
@@ -11,12 +10,10 @@ public record GetWorkoutRoutineByIdQuery(Guid UserId, Guid RoutineId) : IRequest
 public class GetWorkoutRoutineByIdHandler : IRequestHandler<GetWorkoutRoutineByIdQuery, WorkoutRoutineResponse>
 {
     private readonly IWorkoutRepository _workoutRepository;
-    private readonly IMapper _mapper;
 
-    public GetWorkoutRoutineByIdHandler(IWorkoutRepository workoutRepository, IMapper mapper)
+    public GetWorkoutRoutineByIdHandler(IWorkoutRepository workoutRepository)
     {
         _workoutRepository = workoutRepository;
-        _mapper = mapper;
     }
 
     public async Task<WorkoutRoutineResponse> Handle(GetWorkoutRoutineByIdQuery request, CancellationToken cancellationToken)
@@ -29,6 +26,6 @@ public class GetWorkoutRoutineByIdHandler : IRequestHandler<GetWorkoutRoutineByI
         if (routine.UserId != request.UserId)
             throw new UnauthorizedAccessException("Cannot view another user's routine.");
 
-        return _mapper.Map<WorkoutRoutineResponse>(routine);
+        return WorkoutRoutineResponseFactory.Create(routine);
     }
 }

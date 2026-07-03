@@ -54,6 +54,18 @@ public class GymUserWorkoutDetails : UserWorkout
         return exercise;
     }
 
+    public GymWorkoutExercise AddExercise(Guid exerciseId, string? notes = null)
+    {
+        if (Status == WorkoutStatus.Archived)
+            throw new DomainException("Cannot add exercises to an archived workout.");
+
+        var exercise = new GymWorkoutExercise(Guid.NewGuid(), Id, exerciseId, 0, 0, 0, _exercises.Count + 1);
+        exercise.UpdateNotes(notes);
+        _exercises.Add(exercise);
+        UpdatedAt = DateTime.UtcNow;
+        return exercise;
+    }
+
     public void UpdateExercise(Guid exerciseEntryId, int? sets = null, int? reps = null, double? weight = null)
     {
         if (Status == WorkoutStatus.Archived)
@@ -81,7 +93,7 @@ public class GymUserWorkoutDetails : UserWorkout
 
     public void ReorderExercises(List<Guid> orderedIds)
     {
-        if (orderedIds.Count != _exercises.Count)
+        if (orderedIds.Count != _exercises.Count || orderedIds.Distinct().Count() != orderedIds.Count)
             throw new DomainException("Must provide all exercise IDs for reordering.");
 
         for (int i = 0; i < orderedIds.Count; i++)
@@ -114,7 +126,23 @@ public class GymUserWorkoutDetails : UserWorkout
             AddExercise(exerciseId, sets, reps, weight);
     }
 
-    public double? GetMaxWeight() => _exercises.Any() ? _exercises.Max(e => e.Weight) : null;
+    public GymWorkoutExercise FindExercise(Guid exerciseEntryId) => _exercises.FirstOrDefault(exercise => exercise.Id == exerciseEntryId)
+        ?? throw new DomainException($"Exercise entry {exerciseEntryId} was not found.");
+
+    public void EnsureLiveSessionMutationAllowed()
+    {
+        if (!IsActiveSession())
+            throw new DomainException("Exercise and set mutations require an active or paused workout session.");
+    }
+
+    public bool HasCompletedSets() => _exercises.SelectMany(exercise => exercise.WorkoutSets).Any(set => set.IsCompleted);
+    public double? GetMaxWeight() => _exercises.Select(exercise => exercise.GetMaximumCompletedWeight()).Max();
     public override double? GetTotalVolume() => CalculateTotalVolume();
     public override int? GetExerciseCount() => _exercises.Count;
+
+    protected override void EnsureCanComplete()
+    {
+        if (!HasCompletedSets())
+            throw new DomainException("A gym workout requires at least one completed set.");
+    }
 }

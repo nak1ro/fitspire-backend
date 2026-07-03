@@ -5,6 +5,7 @@ using backend.Modules.Goal.Services;
 using backend.Modules.Progress.Services;
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
+using System.Data;
 
 namespace backend.Modules.Workout.Services;
 
@@ -33,7 +34,10 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
 
     public async Task ReconcileCompletedWorkoutAsync(UserWorkout workout, CancellationToken cancellationToken = default)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var ownsTransaction = _context.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            : null;
         await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         var completedGoalPeriods = await RecalculateConsumersAsync(workout.UserId, cancellationToken);
@@ -42,19 +46,24 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
         triggers.AddRange(completedGoalPeriods.Select(BadgeTriggerContext.ForGoalPeriod));
         await _badges.EvaluateAsync(workout.UserId, triggers, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task ReconcileDeletedWorkoutAsync(Guid userId, Guid workoutId, CancellationToken cancellationToken = default)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var ownsTransaction = _context.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            : null;
         await _contributions.DeactivateWorkoutAsync(workoutId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await _goals.RecalculateForUserAsync(userId, cancellationToken);
         await _challenges.RecalculateForUserAsync(userId, cancellationToken);
         await _records.RecalculateAsync(userId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<Guid>> RecalculateConsumersAsync(Guid userId, CancellationToken cancellationToken)

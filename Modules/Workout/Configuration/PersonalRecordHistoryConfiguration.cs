@@ -26,5 +26,10 @@ public class PersonalRecordHistoryConfiguration : IEntityTypeConfiguration<Perso
             .WithMany()
             .HasForeignKey(prh => prh.WorkoutId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(prh => prh.Exercise)
+            .WithMany()
+            .HasForeignKey(prh => prh.ExerciseId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

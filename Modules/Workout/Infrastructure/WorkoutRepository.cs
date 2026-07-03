@@ -25,6 +25,7 @@ public class WorkoutRepository : IWorkoutRepository
     {
         return await _context.UserWorkouts
             .Include(workout => ((GymUserWorkoutDetails)workout).Exercises)
+                .ThenInclude(exercise => exercise.WorkoutSets)
             .FirstOrDefaultAsync(workout => workout.Id == id && workout.DeletedAt != null, cancellationToken);
     }
 
@@ -33,6 +34,8 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.Set<UserWorkout>()
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
                 .ThenInclude(e => e.Exercise)
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises)
+                .ThenInclude(e => e.WorkoutSets)
             .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null, cancellationToken);
     }
 
@@ -53,6 +56,7 @@ public class WorkoutRepository : IWorkoutRepository
 
         return await _context.UserWorkouts
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
+                .ThenInclude(exercise => exercise.WorkoutSets)
             .Where(w => workoutIds.Contains(w.Id))
             .Where(w => w.DeletedAt == null)
             .ToListAsync(cancellationToken);
@@ -63,6 +67,8 @@ public class WorkoutRepository : IWorkoutRepository
         return await _context.Set<GymUserWorkoutDetails>()
             .Include(w => w.Exercises)
                 .ThenInclude(e => e.Exercise)
+            .Include(w => w.Exercises)
+                .ThenInclude(e => e.WorkoutSets)
             .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null, cancellationToken);
     }
 
@@ -97,6 +103,8 @@ public class WorkoutRepository : IWorkoutRepository
             // Optimistically include Gym Exercises if it's a gym workout
             .Include(w => ((GymUserWorkoutDetails)w).Exercises)
                 .ThenInclude(e => e.Exercise)
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises)
+                .ThenInclude(e => e.WorkoutSets)
             .Where(w => w.UserId == userId && w.DeletedAt == null);
 
         if (from.HasValue)
@@ -177,6 +185,7 @@ public class WorkoutRepository : IWorkoutRepository
     public async Task<List<PersonalRecord>> GetPersonalRecordsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.PersonalRecords
+            .Include(record => record.Exercise)
             .Where(record => record.UserId == userId)
             .OrderBy(record => record.WorkoutType)
             .ThenBy(record => record.Metric)

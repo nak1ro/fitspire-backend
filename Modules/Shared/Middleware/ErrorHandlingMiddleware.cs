@@ -2,6 +2,8 @@ using System.Net;
 using System.Text.Json;
 using backend.Modules.Shared.Domain;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Shared.Middleware;
 
@@ -48,6 +50,8 @@ public class ErrorHandlingMiddleware
         DomainException => HttpStatusCode.BadRequest,
         InvalidOperationException => HttpStatusCode.BadRequest,
         StorageUnavailableException => HttpStatusCode.ServiceUnavailable,
+        ConflictException => HttpStatusCode.Conflict,
+        DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => HttpStatusCode.Conflict,
         NotFoundException => HttpStatusCode.NotFound,
         UnauthorizedAccessException => HttpStatusCode.Forbidden,
         _ => HttpStatusCode.InternalServerError
@@ -59,6 +63,8 @@ public class ErrorHandlingMiddleware
         DomainException => "Domain rule violation",
         InvalidOperationException => "Invalid operation",
         StorageUnavailableException => "Storage service unavailable",
+        ConflictException => "Conflict",
+        DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => "Conflict",
         NotFoundException => "Resource not found",
         UnauthorizedAccessException => "Forbidden",
         _ => "Server error"

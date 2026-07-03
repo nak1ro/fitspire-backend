@@ -19,13 +19,17 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWorkoutDerivedDataService _derivedData;
     private readonly FitspireDbContext _context;
+    private readonly IWorkoutOccurrenceTimeService _occurrenceTimeService;
 
-    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork, IWorkoutDerivedDataService derivedData, FitspireDbContext context)
+    public UpdateWorkoutHandler(IWorkoutRepository repository, IUnitOfWork unitOfWork,
+        IWorkoutDerivedDataService derivedData, FitspireDbContext context,
+        IWorkoutOccurrenceTimeService occurrenceTimeService)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _derivedData = derivedData;
         _context = context;
+        _occurrenceTimeService = occurrenceTimeService;
     }
 
     public async Task Handle(UpdateWorkoutCommand request, CancellationToken cancellationToken)
@@ -38,8 +42,11 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
         if (workout.UserId != request.UserId)
             throw new UnauthorizedAccessException("Cannot update another user's workout.");
 
+        var occurredAtUtc = request.Request.Date.HasValue
+            ? await _occurrenceTimeService.ResolveUtcAsync(request.UserId, request.Request.Date.Value, cancellationToken)
+            : (DateTime?)null;
         workout.UpdateDetails(
-            request.Request.Date,
+            occurredAtUtc,
             request.Request.DurationMinutes,
             request.Request.Notes,
             request.Request.IsPrivate
@@ -66,8 +73,16 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
                     var ids = request.Exercises.Select(exercise => exercise.ExerciseId).Distinct().ToList();
                     if (await _context.Exercises.CountAsync(exercise => ids.Contains(exercise.Id), cancellationToken) != ids.Count)
                         throw new DomainException("One or more exercises do not exist.");
-                    _context.GymWorkoutExercises.RemoveRange(gym.Exercises);
-                    gym.ReplaceExercises(request.Exercises.Select(exercise => (exercise.ExerciseId, exercise.Sets, exercise.Reps, exercise.WeightKg)));
+                    var existingExercises = gym.Exercises.ToList();
+                    _context.GymWorkoutExercises.RemoveRange(existingExercises);
+                    gym.ReplaceExercises([]);
+                    foreach (var exercise in request.Exercises)
+                    {
+                        var entry = gym.AddExercise(exercise.ExerciseId, exercise.Notes);
+                        foreach (var set in exercise.Sets)
+                            entry.AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters,
+                                set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+                    }
                 }
                 break;
             case RunningUserWorkoutDetails running:

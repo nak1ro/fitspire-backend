@@ -9,87 +9,92 @@ public interface IPersonalRecordRecalculationService { Task RecalculateAsync(Gui
 
 public class PersonalRecordRecalculationService : IPersonalRecordRecalculationService
 {
-    private readonly FitspireDbContext _context; public PersonalRecordRecalculationService(FitspireDbContext context) => _context = context;
+    private readonly FitspireDbContext _context;
+    public PersonalRecordRecalculationService(FitspireDbContext context) => _context = context;
+
     public async Task RecalculateAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var workouts = await _context.UserWorkouts.Include(item => ((GymUserWorkoutDetails)item).Exercises)
-            .Where(item => item.UserId == userId && item.Status == WorkoutStatus.Completed && item.DeletedAt == null)
-            .ToListAsync(cancellationToken);
-        var candidates = new Dictionary<(string Type, string Metric), (double Value, Guid WorkoutId)>();
-        foreach (var workout in workouts)
-        {
-            Add(candidates, workout.WorkoutType, "duration", workout.DurationMinutes, workout.Id);
-            Add(candidates, workout.WorkoutType, "calories", workout.CaloriesBurned, workout.Id);
-            Add(candidates, workout.WorkoutType, "distance", workout.GetTotalDistance(), workout.Id);
-            if (workout is GymUserWorkoutDetails gym)
-            {
-                Add(candidates, "gym", "max_weight", gym.GetMaxWeight(), workout.Id);
-                Add(candidates, "gym", "total_volume", gym.CalculateTotalVolume(), workout.Id);
-            }
-        }
-
-        var historicalMaximums = await GetHistoricalMaximumsAsync(userId, cancellationToken);
+        var workouts = await _context.UserWorkouts
+            .Include(w => ((GymUserWorkoutDetails)w).Exercises).ThenInclude(e => e.WorkoutSets)
+            .Where(w => w.UserId == userId && w.Status == WorkoutStatus.Completed && w.DeletedAt == null)
+            .OrderBy(w => w.Date).ThenBy(w => w.Id).ToListAsync(cancellationToken);
+        var candidates = BuildCandidates(workouts);
+        var history = await GetHistoricalMaximumsAsync(userId, cancellationToken);
         var existing = await _context.PersonalRecords.Where(record => record.UserId == userId).ToListAsync(cancellationToken);
+
         foreach (var record in existing)
         {
-            if (candidates.Remove((record.WorkoutType, record.Metric), out var candidate))
-            {
-                if (record.Value != candidate.Value || record.WorkoutId != candidate.WorkoutId)
-                {
-                    if (candidate.Value > record.Value)
-                        record.TryBeat(candidate.Value, candidate.WorkoutId);
-                    else
-                        record.Replace(candidate.Value, candidate.WorkoutId);
-
-                    await AddAchievementHistoryIfNewAsync(record, historicalMaximums, cancellationToken);
-                }
-            }
-            else
-            {
-                _context.PersonalRecords.Remove(record);
-            }
+            var key = new RecordKey(record.WorkoutType, record.Metric, record.ExerciseId);
+            if (!candidates.Remove(key, out var candidate)) { _context.PersonalRecords.Remove(record); continue; }
+            if (record.Value == candidate.Value && record.WorkoutId == candidate.WorkoutId) continue;
+            if (candidate.Value > record.Value) record.TryBeat(candidate.Value, candidate.WorkoutId);
+            else record.Replace(candidate.Value, candidate.WorkoutId);
+            await AddHistoryIfNewAsync(record, history, cancellationToken);
         }
 
-        foreach (var ((type, metric), candidate) in candidates)
+        foreach (var (key, candidate) in candidates)
         {
-            var record = PersonalRecord.Create(userId, type, metric, candidate.Value, candidate.WorkoutId);
+            var record = PersonalRecord.Create(userId, key.WorkoutType, key.Metric, key.ExerciseId, candidate.Value, candidate.WorkoutId);
             await _context.PersonalRecords.AddAsync(record, cancellationToken);
-            await AddAchievementHistoryIfNewAsync(record, historicalMaximums, cancellationToken);
+            await AddHistoryIfNewAsync(record, history, cancellationToken);
         }
     }
 
-    private static void Add(Dictionary<(string, string), (double, Guid)> values, string type, string metric, double? value, Guid workoutId)
+    private static Dictionary<RecordKey, Candidate> BuildCandidates(IEnumerable<UserWorkout> workouts)
     {
-        if (value is not > 0)
-            return;
-
-        var key = (type, metric);
-        if (!values.TryGetValue(key, out var current) || value > current.Item1)
-            values[key] = (value.Value, workoutId);
+        var candidates = new Dictionary<RecordKey, Candidate>();
+        foreach (var workout in workouts)
+        {
+            Add(candidates, workout, PersonalRecordMetricCatalogue.DurationMinutes, workout.DurationMinutes);
+            Add(candidates, workout, PersonalRecordMetricCatalogue.Calories, workout.CaloriesBurned);
+            Add(candidates, workout, PersonalRecordMetricCatalogue.Distance, workout.GetTotalDistance());
+            if (workout is GymUserWorkoutDetails gym) AddGymCandidates(candidates, gym);
+        }
+        return candidates;
     }
 
-    private async Task<Dictionary<(string Type, string Metric), double>> GetHistoricalMaximumsAsync(Guid userId,
-        CancellationToken cancellationToken)
+    private static void AddGymCandidates(IDictionary<RecordKey, Candidate> candidates, GymUserWorkoutDetails gym)
+    {
+        Add(candidates, gym, PersonalRecordMetricCatalogue.TotalVolume, gym.CalculateTotalVolume());
+        Add(candidates, gym, PersonalRecordMetricCatalogue.MaximumWeight, gym.GetMaxWeight());
+        foreach (var exercise in gym.Exercises)
+        {
+            var sets = exercise.WorkoutSets.Where(set => set.IsCompleted).ToList();
+            Add(candidates, gym, PersonalRecordMetricCatalogue.MaximumWeight, exercise.GetMaximumCompletedWeight(), exercise.ExerciseId);
+            Add(candidates, gym, PersonalRecordMetricCatalogue.TotalVolume, exercise.CalculateCompletedSetVolume(), exercise.ExerciseId);
+            Add(candidates, gym, PersonalRecordMetricCatalogue.MaximumSetVolume, sets.Where(s => s.Reps.HasValue && s.WeightKg.HasValue).Select(s => (double?)(s.Reps!.Value * s.WeightKg!.Value)).Max(), exercise.ExerciseId);
+            Add(candidates, gym, PersonalRecordMetricCatalogue.MaximumReps, sets.Select(s => s.Reps).Max(), exercise.ExerciseId);
+            Add(candidates, gym, PersonalRecordMetricCatalogue.EstimatedOneRepMax, sets.Where(s => s.Reps.HasValue && s.WeightKg.HasValue).Select(s => (double?)(s.WeightKg!.Value * (1d + s.Reps!.Value / 30d))).Max(), exercise.ExerciseId);
+        }
+    }
+
+    private static void Add(IDictionary<RecordKey, Candidate> candidates, UserWorkout workout, string metric, double? value, Guid? exerciseId = null)
+    {
+        if (value is not > 0) return;
+        var key = new RecordKey(workout.WorkoutType, metric, exerciseId);
+        var candidate = new Candidate(value.Value, workout.Id, workout.Date);
+        if (!candidates.TryGetValue(key, out var current) || candidate.IsBetterThan(current)) candidates[key] = candidate;
+    }
+
+    private async Task<Dictionary<RecordKey, double>> GetHistoricalMaximumsAsync(Guid userId, CancellationToken cancellationToken)
     {
         var values = await _context.PersonalRecordHistory.Where(history => history.UserId == userId)
-            .GroupBy(history => new { history.WorkoutType, history.Metric })
-            .Select(group => new { group.Key.WorkoutType, group.Key.Metric, Value = group.Max(history => history.Value) })
-            .ToListAsync(cancellationToken);
-        return values.ToDictionary(value => (value.WorkoutType, value.Metric), value => value.Value);
+            .GroupBy(history => new { history.WorkoutType, history.Metric, history.ExerciseId })
+            .Select(group => new { group.Key.WorkoutType, group.Key.Metric, group.Key.ExerciseId, Value = group.Max(history => history.Value) }).ToListAsync(cancellationToken);
+        return values.ToDictionary(value => new RecordKey(value.WorkoutType, value.Metric, value.ExerciseId), value => value.Value);
     }
 
-    private async Task AddAchievementHistoryIfNewAsync(PersonalRecord record,
-        IDictionary<(string Type, string Metric), double> historicalMaximums, CancellationToken cancellationToken)
+    private async Task AddHistoryIfNewAsync(PersonalRecord record, IDictionary<RecordKey, double> history, CancellationToken cancellationToken)
     {
-        var key = (record.WorkoutType, record.Metric);
-        if (historicalMaximums.TryGetValue(key, out var highestValue) && record.Value <= highestValue)
-            return;
+        var key = new RecordKey(record.WorkoutType, record.Metric, record.ExerciseId);
+        if (history.TryGetValue(key, out var highest) && record.Value <= highest) return;
+        await _context.PersonalRecordHistory.AddAsync(new PersonalRecordHistory { Id = Guid.NewGuid(), UserId = record.UserId, WorkoutType = record.WorkoutType, Metric = record.Metric, ExerciseId = record.ExerciseId, Value = record.Value, WorkoutId = record.WorkoutId, RecordedAt = DateTime.UtcNow }, cancellationToken);
+        history[key] = record.Value;
+    }
 
-        await _context.PersonalRecordHistory.AddAsync(new PersonalRecordHistory
-        {
-            Id = Guid.NewGuid(), UserId = record.UserId, WorkoutType = record.WorkoutType, Metric = record.Metric,
-            Value = record.Value, WorkoutId = record.WorkoutId, RecordedAt = DateTime.UtcNow
-        }, cancellationToken);
-        historicalMaximums[key] = record.Value;
+    private readonly record struct RecordKey(string WorkoutType, string Metric, Guid? ExerciseId);
+    private readonly record struct Candidate(double Value, Guid WorkoutId, DateTime OccurredAt)
+    {
+        public bool IsBetterThan(Candidate other) => Value > other.Value || (Value == other.Value && OccurredAt < other.OccurredAt);
     }
 }

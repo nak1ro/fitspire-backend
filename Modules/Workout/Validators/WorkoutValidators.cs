@@ -40,17 +40,58 @@ public class ExerciseInputValidator : AbstractValidator<ExerciseInputRequest>
             .NotEmpty()
             .WithMessage("ExerciseId is required.");
 
-        RuleFor(x => x.Sets)
-            .GreaterThan(0)
-            .WithMessage("Sets must be greater than 0.");
+        RuleFor(x => x.Sets).NotEmpty();
+        RuleForEach(x => x.Sets).SetValidator(new GymSetInputValidator());
+        RuleFor(x => x.Notes).MaximumLength(500).When(x => x.Notes is not null);
+    }
+}
 
-        RuleFor(x => x.Reps)
-            .GreaterThan(0)
-            .WithMessage("Reps must be greater than 0.");
+public class GymSetInputValidator : AbstractValidator<GymSetInputRequest>
+{
+    public GymSetInputValidator()
+    {
+        RuleFor(set => set.Reps).GreaterThan(0).When(set => set.Reps.HasValue);
+        RuleFor(set => set.WeightKg).GreaterThanOrEqualTo(0).When(set => set.WeightKg.HasValue);
+        RuleFor(set => set.DurationSeconds).GreaterThan(0).When(set => set.DurationSeconds.HasValue);
+        RuleFor(set => set.DistanceMeters).GreaterThan(0).When(set => set.DistanceMeters.HasValue);
+        RuleFor(set => set.Rpe).InclusiveBetween(1, 10).When(set => set.Rpe.HasValue);
+        RuleFor(set => set.Notes).MaximumLength(500).When(set => set.Notes is not null);
+        RuleFor(set => set).Must(set => !set.IsCompleted || set.Reps.HasValue || set.DurationSeconds.HasValue || set.DistanceMeters.HasValue)
+            .WithMessage("A completed set requires reps, duration, or distance.");
+    }
+}
 
-        RuleFor(x => x.WeightKg)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Weight cannot be negative.");
+public class AddGymExerciseRequestValidator : AbstractValidator<AddGymExerciseRequest>
+{
+    public AddGymExerciseRequestValidator()
+    {
+        RuleFor(request => request.ExerciseId).NotEmpty();
+        RuleForEach(request => request.Sets).SetValidator(new GymSetInputValidator()).When(request => request.Sets is not null);
+        RuleFor(request => request.Notes).MaximumLength(500).When(request => request.Notes is not null);
+    }
+}
+
+public class UpdateGymExerciseRequestValidator : AbstractValidator<UpdateGymExerciseRequest>
+{
+    public UpdateGymExerciseRequestValidator() => RuleFor(request => request.Notes).MaximumLength(500).When(request => request.Notes is not null);
+}
+
+public class ReorderGymItemsRequestValidator : AbstractValidator<ReorderGymItemsRequest>
+{
+    public ReorderGymItemsRequestValidator() => RuleFor(request => request.OrderedIds).NotEmpty().Must(ids => ids.Distinct().Count() == ids.Count)
+        .WithMessage("Ordered IDs must be unique and non-empty.");
+}
+
+public class UpdateGymSetRequestValidator : AbstractValidator<UpdateGymSetRequest>
+{
+    public UpdateGymSetRequestValidator()
+    {
+        RuleFor(request => request.Reps).GreaterThan(0).When(request => request.Reps.HasValue);
+        RuleFor(request => request.WeightKg).GreaterThanOrEqualTo(0).When(request => request.WeightKg.HasValue);
+        RuleFor(request => request.DurationSeconds).GreaterThan(0).When(request => request.DurationSeconds.HasValue);
+        RuleFor(request => request.DistanceMeters).GreaterThan(0).When(request => request.DistanceMeters.HasValue);
+        RuleFor(request => request.Rpe).InclusiveBetween(1, 10).When(request => request.Rpe.HasValue);
+        RuleFor(request => request.Notes).MaximumLength(500).When(request => request.Notes is not null);
     }
 }
 

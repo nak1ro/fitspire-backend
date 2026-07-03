@@ -27,7 +27,17 @@ public class PersonalRecordConfiguration : IEntityTypeConfiguration<PersonalReco
             .HasForeignKey(pr => pr.WorkoutId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(pr => pr.Exercise)
+            .WithMany()
+            .HasForeignKey(pr => pr.ExerciseId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(pr => new { pr.UserId, pr.WorkoutType, pr.Metric })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"ExerciseId\" IS NULL");
+
+        builder.HasIndex(pr => new { pr.UserId, pr.WorkoutType, pr.Metric, pr.ExerciseId })
+            .IsUnique()
+            .HasFilter("\"ExerciseId\" IS NOT NULL");
     }
 }

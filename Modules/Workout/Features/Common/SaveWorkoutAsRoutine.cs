@@ -65,7 +65,32 @@ internal static class WorkoutRoutineSnapshot
         GymUserWorkoutDetails gym => new
         {
             SchemaVersion = 1, gym.WorkoutType, gym.SplitType, gym.IntensityLevel, gym.DurationMinutes, gym.Notes, gym.IsPrivate, gym.CaloriesBurned,
-            Exercises = gym.Exercises.Select(exercise => new { exercise.ExerciseId, exercise.Sets, exercise.Reps, exercise.Weight })
+            Exercises = gym.Exercises.OrderBy(exercise => exercise.OrderIndex).Select(exercise => new
+            {
+                exercise.ExerciseId,
+                exercise.Notes,
+                Sets = exercise.WorkoutSets.Count != 0
+                    ? exercise.WorkoutSets.OrderBy(set => set.OrderIndex).Select(set => new
+                    {
+                        set.Reps,
+                        set.WeightKg,
+                        set.DurationSeconds,
+                        set.DistanceMeters,
+                        set.IsWarmup,
+                        set.Rpe,
+                        set.Notes
+                    })
+                    : Enumerable.Range(0, exercise.Sets).Select(_ => new
+                    {
+                        Reps = (int?)exercise.Reps,
+                        WeightKg = (double?)exercise.Weight,
+                        DurationSeconds = (int?)null,
+                        DistanceMeters = (double?)null,
+                        IsWarmup = false,
+                        Rpe = (double?)null,
+                        Notes = (string?)null
+                    })
+            })
         },
         RunningUserWorkoutDetails running => new { SchemaVersion = 1, running.WorkoutType, running.DistanceKm, running.ElevationGainMeters, running.StepCount, running.MapData, running.DurationMinutes, running.Notes, running.IsPrivate, running.CaloriesBurned },
         CyclingUserWorkoutDetails cycling => new { SchemaVersion = 1, cycling.WorkoutType, cycling.DistanceKm, cycling.ElevationGainMeters, cycling.MapData, cycling.IsIndoor, cycling.DurationMinutes, cycling.Notes, cycling.IsPrivate, cycling.CaloriesBurned },

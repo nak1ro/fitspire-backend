@@ -12,10 +12,25 @@ public record CreateGymWorkoutRequest(
 
 public record ExerciseInputRequest(
     Guid ExerciseId,
-    int Sets,
-    int Reps,
-    double WeightKg
+    List<GymSetInputRequest> Sets,
+    string? Notes = null
 );
+
+public record GymSetInputRequest(
+    int? Reps,
+    double? WeightKg,
+    int? DurationSeconds,
+    double? DistanceMeters,
+    bool IsWarmup,
+    double? Rpe,
+    string? Notes,
+    bool IsCompleted = false);
+
+public record AddGymExerciseRequest(Guid ExerciseId, List<GymSetInputRequest>? Sets = null, string? Notes = null);
+public record UpdateGymExerciseRequest(string? Notes);
+public record ReorderGymItemsRequest(IReadOnlyList<Guid> OrderedIds);
+public record UpdateGymSetRequest(int? Reps, double? WeightKg, int? DurationSeconds, double? DistanceMeters, bool IsWarmup, double? Rpe, string? Notes);
+public record SetCompletionRequest(bool IsCompleted);
 
 public record CompleteWorkoutRequest(
     double? DurationMinutes,
@@ -72,7 +87,7 @@ public record CreateFromRoutineRequest(
 );
 
 public record UpdateRoutineRequest(string Name, string? Description, JsonElement Definition);
-public record WorkoutPageResponse(IReadOnlyList<WorkoutResponse> Items, int Page, int PageSize, int TotalCount);
+public record WorkoutPageResponse(IReadOnlyList<WorkoutHistoryItemResponse> Items, int Page, int PageSize, int TotalCount);
 public record ActivitySummaryResponse(DateTime From, DateTime To, int WorkoutCount, double DurationMinutes, double DistanceKm, double CaloriesBurned, double GymVolumeKg);
 
 // Response DTOs
@@ -113,11 +128,23 @@ public record GymExerciseResponse(
     Guid Id,
     Guid ExerciseId,
     string ExerciseName,
-    int Sets,
-    int Reps,
-    double Weight,
-    int OrderIndex
+    int OrderIndex,
+    string? Notes,
+    IReadOnlyList<GymSetResponse> Sets
 );
+
+public record GymSetResponse(
+    Guid Id,
+    int OrderIndex,
+    int? Reps,
+    double? WeightKg,
+    int? DurationSeconds,
+    double? DistanceMeters,
+    bool IsWarmup,
+    double? Rpe,
+    string? Notes,
+    bool IsCompleted,
+    DateTime? CompletedAtUtc);
 
 public record ExerciseCategoryResponse(
     Guid Id,
@@ -139,18 +166,33 @@ public record WorkoutRoutineResponse(
     string Name,
     string? Description,
     string WorkoutType,
+    int SchemaVersion,
+    JsonElement Definition,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
-);
+    DateTime? UpdatedAt);
 
 public record PersonalRecordResponse(
     Guid Id,
     string WorkoutType,
     string Metric,
+    string Unit,
     double Value,
     Guid WorkoutId,
+    Guid? ExerciseId,
+    string? ExerciseName,
     DateTime AchievedAt
 );
+
+public record WorkoutHistoryItemResponse(
+    Guid Id, string WorkoutType, DateTime Date, double? DurationMinutes, int? CaloriesBurned,
+    bool IsPrivate, string Status, DateTime? CompletedAt, Guid? CreatedFromRoutineId, string? NotesPreview,
+    WorkoutHistorySummaryResponse Summary);
+
+public record WorkoutHistorySummaryResponse(
+    int? ExerciseCount = null, int? CompletedSetCount = null, double? TotalVolumeKg = null, double? MaximumWeightKg = null,
+    double? DistanceKm = null, double? ElevationGainMeters = null, int? StepCount = null, double? AveragePaceMinutesPerKm = null,
+    bool? IsIndoor = null, double? AverageSpeedKph = null, double? DistanceMeters = null, int? Laps = null,
+    double? PoolLengthMeters = null, string? StrokeType = null, string? Style = null, string? Intensity = null, string? FocusArea = null);
 
 public record CreateRunningWorkoutRequest(
     DateTime Date,

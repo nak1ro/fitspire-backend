@@ -56,6 +56,8 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         if (Status == WorkoutStatus.Paused)
             Resume(DateTime.UtcNow);
 
+        EnsureCanComplete();
+
         Status = WorkoutStatus.Completed;
         CompletedAt = DateTime.UtcNow;
         DurationMinutes = durationMinutes ?? CalculateElapsedMinutes(CompletedAt.Value);
@@ -82,6 +84,9 @@ public abstract class UserWorkout : AggregateRoot<Guid>
     public virtual double? GetTotalDistance() => null;
     public virtual double? GetTotalVolume() => null;
     public virtual int? GetExerciseCount() => null;
+    protected virtual void EnsureCanComplete()
+    {
+    }
 
     public void UpdateNotes(string? notes)
     {

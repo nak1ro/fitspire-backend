@@ -79,9 +79,16 @@ public class WorkoutController : ControllerBase
             request.IntensityLevel,
             request.Exercises.Select(e => new ExerciseInput(
                 e.ExerciseId,
-                e.Sets,
-                e.Reps,
-                e.WeightKg
+                e.Sets.Select(set => new SetInput(
+                    set.Reps,
+                    set.WeightKg,
+                    set.DurationSeconds,
+                    set.DistanceMeters,
+                    set.IsWarmup,
+                    set.Rpe,
+                    set.Notes,
+                    set.IsCompleted)).ToList(),
+                e.Notes
             )).ToList()
         );
 
@@ -284,6 +291,81 @@ public class WorkoutController : ControllerBase
 
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new UpdateWorkoutCommand(id, userId, request));
+        return NoContent();
+    }
+
+    [HttpPost("gym/{id:guid}/exercises")]
+    public async Task<IActionResult> AddGymExercise(Guid id, [FromBody] AddGymExerciseRequest request,
+        [FromServices] IValidator<AddGymExerciseRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new AddGymExerciseCommand(id, User.GetRequiredUserId(), request));
+        return NoContent();
+    }
+
+    [HttpPatch("gym/{id:guid}/exercises/{exerciseEntryId:guid}")]
+    public async Task<IActionResult> UpdateGymExercise(Guid id, Guid exerciseEntryId, [FromBody] UpdateGymExerciseRequest request,
+        [FromServices] IValidator<UpdateGymExerciseRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateGymExerciseCommand(id, User.GetRequiredUserId(), exerciseEntryId, request));
+        return NoContent();
+    }
+
+    [HttpDelete("gym/{id:guid}/exercises/{exerciseEntryId:guid}")]
+    public async Task<IActionResult> RemoveGymExercise(Guid id, Guid exerciseEntryId)
+    {
+        await _mediator.Send(new RemoveGymExerciseCommand(id, User.GetRequiredUserId(), exerciseEntryId));
+        return NoContent();
+    }
+
+    [HttpPut("gym/{id:guid}/exercises/order")]
+    public async Task<IActionResult> ReorderGymExercises(Guid id, [FromBody] ReorderGymItemsRequest request,
+        [FromServices] IValidator<ReorderGymItemsRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new ReorderGymExercisesCommand(id, User.GetRequiredUserId(), request));
+        return NoContent();
+    }
+
+    [HttpPost("gym/{id:guid}/exercises/{exerciseEntryId:guid}/sets")]
+    public async Task<IActionResult> AddGymSet(Guid id, Guid exerciseEntryId, [FromBody] GymSetInputRequest request,
+        [FromServices] IValidator<GymSetInputRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new AddGymSetCommand(id, User.GetRequiredUserId(), exerciseEntryId, request));
+        return NoContent();
+    }
+
+    [HttpPatch("gym/{id:guid}/exercises/{exerciseEntryId:guid}/sets/{setId:guid}")]
+    public async Task<IActionResult> UpdateGymSet(Guid id, Guid exerciseEntryId, Guid setId, [FromBody] UpdateGymSetRequest request,
+        [FromServices] IValidator<UpdateGymSetRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new UpdateGymSetCommand(id, User.GetRequiredUserId(), exerciseEntryId, setId, request));
+        return NoContent();
+    }
+
+    [HttpPut("gym/{id:guid}/exercises/{exerciseEntryId:guid}/sets/{setId:guid}/completion")]
+    public async Task<IActionResult> SetGymSetCompletion(Guid id, Guid exerciseEntryId, Guid setId, [FromBody] SetCompletionRequest request)
+    {
+        await _mediator.Send(new SetGymSetCompletionCommand(id, User.GetRequiredUserId(), exerciseEntryId, setId, request.IsCompleted));
+        return NoContent();
+    }
+
+    [HttpDelete("gym/{id:guid}/exercises/{exerciseEntryId:guid}/sets/{setId:guid}")]
+    public async Task<IActionResult> RemoveGymSet(Guid id, Guid exerciseEntryId, Guid setId)
+    {
+        await _mediator.Send(new RemoveGymSetCommand(id, User.GetRequiredUserId(), exerciseEntryId, setId));
+        return NoContent();
+    }
+
+    [HttpPut("gym/{id:guid}/exercises/{exerciseEntryId:guid}/sets/order")]
+    public async Task<IActionResult> ReorderGymSets(Guid id, Guid exerciseEntryId, [FromBody] ReorderGymItemsRequest request,
+        [FromServices] IValidator<ReorderGymItemsRequest> validator)
+    {
+        await validator.ValidateAndThrowAsync(request);
+        await _mediator.Send(new ReorderGymSetsCommand(id, User.GetRequiredUserId(), exerciseEntryId, request));
         return NoContent();
     }
 

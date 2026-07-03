@@ -14,6 +14,9 @@ public static class WorkoutModuleExtensions
         services.AddScoped<IWorkoutRepository, WorkoutRepository>();
         services.AddScoped<IPersonalRecordRecalculationService, PersonalRecordRecalculationService>();
         services.AddScoped<IWorkoutDerivedDataService, WorkoutDerivedDataService>();
+        services.AddScoped<IWorkoutOccurrenceTimeService, WorkoutOccurrenceTimeService>();
+        services.AddScoped<IWorkoutSessionGuard, WorkoutSessionGuard>();
+        services.AddScoped<IGymWorkoutMutationService, GymWorkoutMutationService>();
         services.AddScoped<IValidator<CreateGymWorkoutRequest>, CreateGymWorkoutValidator>();
         services.AddScoped<IValidator<CreateRunningWorkoutRequest>, CreateRunningWorkoutValidator>();
         services.AddScoped<IValidator<CreateCyclingWorkoutRequest>, CreateCyclingWorkoutValidator>();
@@ -25,6 +28,11 @@ public static class WorkoutModuleExtensions
         services.AddScoped<IValidator<SaveRoutineRequest>, SaveRoutineValidator>();
         services.AddScoped<IValidator<CreateFromRoutineRequest>, CreateFromRoutineValidator>();
         services.AddScoped<IValidator<UpdateRoutineRequest>, UpdateRoutineValidator>();
+        services.AddScoped<IValidator<GymSetInputRequest>, GymSetInputValidator>();
+        services.AddScoped<IValidator<AddGymExerciseRequest>, AddGymExerciseRequestValidator>();
+        services.AddScoped<IValidator<UpdateGymExerciseRequest>, UpdateGymExerciseRequestValidator>();
+        services.AddScoped<IValidator<ReorderGymItemsRequest>, ReorderGymItemsRequestValidator>();
+        services.AddScoped<IValidator<UpdateGymSetRequest>, UpdateGymSetRequestValidator>();
 
         return services;
     }

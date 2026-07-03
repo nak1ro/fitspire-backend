@@ -18,7 +18,10 @@ public class WorkoutMappingProfile : Profile
             .ForCtorParam(nameof(GymWorkoutResponse.Exercises), opt => opt.MapFrom(s => s.Exercises.OrderBy(e => e.OrderIndex)));
 
         CreateMap<GymWorkoutExercise, GymExerciseResponse>()
-            .ForMember(d => d.ExerciseName, opt => opt.MapFrom(s => s.Exercise.Name));
+            .ForCtorParam(nameof(GymExerciseResponse.ExerciseName), opt => opt.MapFrom(s => s.Exercise.Name))
+            .ForCtorParam(nameof(GymExerciseResponse.Sets), opt => opt.MapFrom(s => s.WorkoutSets.OrderBy(set => set.OrderIndex)));
+
+        CreateMap<GymWorkoutSet, GymSetResponse>();
 
         CreateMap<ExerciseCategory, ExerciseCategoryResponse>()
             .ForCtorParam(nameof(ExerciseCategoryResponse.ExercisesCount), opt => opt.MapFrom(s => s.Exercises.Count));
@@ -26,9 +29,9 @@ public class WorkoutMappingProfile : Profile
         CreateMap<Exercise, ExerciseResponse>()
             .ForCtorParam(nameof(ExerciseResponse.CategoryName), opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : null));
 
-        CreateMap<WorkoutRoutine, WorkoutRoutineResponse>();
-
         CreateMap<PersonalRecord, PersonalRecordResponse>()
+            .ForCtorParam(nameof(PersonalRecordResponse.Unit), opt => opt.MapFrom(s => backend.Modules.Workout.Services.PersonalRecordMetricCatalogue.Units.TryGetValue(s.Metric, out var unit) ? unit : "count"))
+            .ForCtorParam(nameof(PersonalRecordResponse.ExerciseName), opt => opt.MapFrom(s => s.Exercise != null ? s.Exercise.Name : null))
             .ForCtorParam(nameof(PersonalRecordResponse.AchievedAt), opt => opt.MapFrom(s => s.UpdatedAt ?? s.CreatedAt));
             
         // Running

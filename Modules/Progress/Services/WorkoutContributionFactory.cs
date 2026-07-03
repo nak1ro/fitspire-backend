@@ -42,8 +42,9 @@ public static class WorkoutContributionFactory
             AddIfPositive(contributions, workout, MetricCatalogue.GymExerciseCount, gym.GetExerciseCount());
             foreach (var exercise in gym.Exercises)
             {
-                AddIfPositive(contributions, workout, MetricCatalogue.LegacyGymMaxWeightKg, exercise.Weight, exercise.ExerciseId);
-                AddIfPositive(contributions, workout, MetricCatalogue.ExerciseMaxWeightKg, exercise.Weight, exercise.ExerciseId);
+                var maximumWeight = exercise.GetMaximumCompletedWeight();
+                AddIfPositive(contributions, workout, MetricCatalogue.LegacyGymMaxWeightKg, maximumWeight, exercise.ExerciseId);
+                AddIfPositive(contributions, workout, MetricCatalogue.ExerciseMaxWeightKg, maximumWeight, exercise.ExerciseId);
             }
         }
 

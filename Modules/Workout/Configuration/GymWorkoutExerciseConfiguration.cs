@@ -21,5 +21,11 @@ public class GymWorkoutExerciseConfiguration : IEntityTypeConfiguration<GymWorko
         builder.Property(e => e.Weight);
         builder.Property(e => e.DurationMinutes);
         builder.Property(e => e.OrderIndex);
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        builder.HasMany(e => e.WorkoutSets)
+            .WithOne(set => set.GymWorkoutExercise)
+            .HasForeignKey(set => set.GymWorkoutExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

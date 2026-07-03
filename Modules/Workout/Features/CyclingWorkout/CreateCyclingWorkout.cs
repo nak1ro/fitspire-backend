@@ -24,20 +24,29 @@ public class CreateCyclingWorkoutHandler : IRequestHandler<CreateCyclingWorkoutC
     private readonly IWorkoutRepository _workoutRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWorkoutDerivedDataService _derivedData;
+    private readonly IWorkoutOccurrenceTimeService _occurrenceTimeService;
+    private readonly IWorkoutSessionGuard _sessionGuard;
 
-    public CreateCyclingWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork, IWorkoutDerivedDataService derivedData)
+    public CreateCyclingWorkoutHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork,
+        IWorkoutDerivedDataService derivedData, IWorkoutOccurrenceTimeService occurrenceTimeService,
+        IWorkoutSessionGuard sessionGuard)
     {
         _workoutRepository = workoutRepository;
         _unitOfWork = unitOfWork;
         _derivedData = derivedData;
+        _occurrenceTimeService = occurrenceTimeService;
+        _sessionGuard = sessionGuard;
     }
 
     public async Task<Guid> Handle(CreateCyclingWorkoutCommand request, CancellationToken cancellationToken)
     {
+        if (!request.DurationMinutes.HasValue)
+            await _sessionGuard.EnsureCanStartAsync(request.UserId, cancellationToken);
+        var occurredAtUtc = await _occurrenceTimeService.ResolveUtcAsync(request.UserId, request.Date, cancellationToken);
         var workout = new CyclingUserWorkoutDetails(
             Guid.NewGuid(),
             request.UserId,
-            request.Date,
+            occurredAtUtc,
             request.DistanceKm,
             null,
             request.IsIndoor

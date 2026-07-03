@@ -4,6 +4,7 @@ using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
+using backend.Modules.Workout.Services;
 using MediatR;
 
 namespace backend.Modules.Workout.Features.Common;
@@ -18,11 +19,19 @@ public class CreateWorkoutFromRoutineHandler : IRequestHandler<CreateWorkoutFrom
 {
     private readonly IWorkoutRepository _workoutRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IWorkoutOccurrenceTimeService _occurrenceTimeService;
+    private readonly IWorkoutSessionGuard _sessionGuard;
 
-    public CreateWorkoutFromRoutineHandler(IWorkoutRepository workoutRepository, IUnitOfWork unitOfWork)
+    public CreateWorkoutFromRoutineHandler(
+        IWorkoutRepository workoutRepository,
+        IUnitOfWork unitOfWork,
+        IWorkoutOccurrenceTimeService occurrenceTimeService,
+        IWorkoutSessionGuard sessionGuard)
     {
         _workoutRepository = workoutRepository;
         _unitOfWork = unitOfWork;
+        _occurrenceTimeService = occurrenceTimeService;
+        _sessionGuard = sessionGuard;
     }
 
     public async Task<Guid> Handle(CreateWorkoutFromRoutineCommand request, CancellationToken cancellationToken)
@@ -34,7 +43,10 @@ public class CreateWorkoutFromRoutineHandler : IRequestHandler<CreateWorkoutFrom
         if (routine.UserId != request.CurrentUserId)
             throw new UnauthorizedAccessException("Cannot use another user's routine.");
 
-        var newWorkout = CreateWorkoutFromRoutineData(routine, request.CurrentUserId, request.Date);
+        await _sessionGuard.EnsureCanStartAsync(request.CurrentUserId, cancellationToken);
+        var occurredAtUtc = await _occurrenceTimeService.ResolveUtcAsync(
+            request.CurrentUserId, request.Date, cancellationToken);
+        var newWorkout = CreateWorkoutFromRoutineData(routine, request.CurrentUserId, occurredAtUtc);
         newWorkout.SetCreatedFromRoutine(routine.Id);
 
         await _workoutRepository.AddAsync(newWorkout, cancellationToken);
@@ -78,11 +90,27 @@ public class CreateWorkoutFromRoutineHandler : IRequestHandler<CreateWorkoutFrom
         {
             foreach (var exercise in exercises.EnumerateArray())
             {
-                workout.AddExercise(
-                    GetRequiredGuid(exercise, "ExerciseId"),
-                    GetRequiredInt(exercise, "Sets"),
-                    GetRequiredInt(exercise, "Reps"),
-                    GetRequiredDouble(exercise, "Weight"));
+                var entry = workout.AddExercise(GetRequiredGuid(exercise, "ExerciseId"), GetString(exercise, "Notes"));
+                if (exercise.TryGetProperty("Sets", out var sets) && sets.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var set in sets.EnumerateArray())
+                    {
+                        entry.AddSet(
+                            GetInt(set, "Reps"),
+                            GetDouble(set, "WeightKg"),
+                            GetInt(set, "DurationSeconds"),
+                            GetDouble(set, "DistanceMeters"),
+                            GetBool(set, "IsWarmup") ?? false,
+                            GetDouble(set, "Rpe"),
+                            GetString(set, "Notes"),
+                            false);
+                    }
+                }
+                else
+                {
+                    entry.AddSet(GetRequiredInt(exercise, "Reps"), GetRequiredDouble(exercise, "Weight"),
+                        null, null, false, null, null, false);
+                }
             }
         }
 
