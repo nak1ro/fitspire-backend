@@ -1,54 +1,38 @@
 using AutoMapper;
-using backend.Modules.Shared.Constants;
-using backend.Modules.Shared.Service;
+using backend.Data;
+using backend.Modules.Media.Domain;
+using backend.Modules.Media.Contracts;
 using backend.Modules.User.Domain;
 using backend.Modules.User.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Modules.User.Services;
 
 public class UserService : IUserService
 {
+    private readonly FitspireDbContext _context;
     private readonly UserManager<AppUser> _userManager;
-    private readonly IBlobService _blobService;
     private readonly IMapper _mapper;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public UserService(UserManager<AppUser> userManager, IBlobService blobService, IMapper mapper)
+    public UserService(
+        FitspireDbContext context,
+        UserManager<AppUser> userManager,
+        IMapper mapper,
+        IMediaResponseFactory mediaResponseFactory)
     {
+        _context = context;
         _userManager = userManager;
-        _blobService = blobService;
         _mapper = mapper;
-    }
-
-    private async Task<AppUser> GetUserOrThrowAsync(Guid userId)
-    {
-        var user = await _userManager.Users
-            .Include(u => u.AppUserPreference)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-            throw new UnauthorizedAccessException("User not found.");
-        return user;
-    }
-
-    private static void ValidateProfilePicture(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("File is required.");
-        if (file.Length > FileUploadConstants.MaxProfilePictureSize)
-            throw new ArgumentException("File is too large. Maximum size is 5 MB.");
-        if (!FileUploadConstants.AllowedProfilePictureTypes.Contains(file.ContentType.ToLower()))
-            throw new ArgumentException("Unsupported file type. Only JPEG, PNG, or WebP images are allowed.");
-
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!FileUploadConstants.AllowedProfilePictureExtensions.Contains(extension))
-            throw new ArgumentException("Unsupported file extension. Only .jpg, .jpeg, .png, .webp are allowed.");
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<UserProfileDto> GetProfileAsync(Guid userId)
     {
         var user = await GetUserOrThrowAsync(userId);
-        return _mapper.Map<UserProfileDto>(user);
+        return await MapProfileAsync(user);
     }
 
     public async Task<UserPreferencesDto> GetPreferencesAsync(Guid userId)
@@ -72,41 +56,49 @@ public class UserService : IUserService
         user.UpdatedAt = DateTime.UtcNow;
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
 
-        return _mapper.Map<UserProfileDto>(user);
+        return await MapProfileAsync(user);
     }
 
-    public async Task<UserProfileDto> UpdateProfilePictureAsync(Guid userId, IFormFile file)
+    public async Task<UserProfileDto> AttachProfilePictureAsync(Guid userId, Guid mediaAssetId)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         var user = await GetUserOrThrowAsync(userId);
-        ValidateProfilePicture(file);
+        var asset = await GetOwnedProfileMediaOrThrowAsync(userId, mediaAssetId);
 
-        var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-        await using var stream = file.OpenReadStream();
-
-        string url;
-        try
+        if (user.ProfilePictureMediaId == asset.Id)
         {
-            url = await _blobService.UploadFileAsync(stream, fileName, file.ContentType);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("File upload failed, please try again.", ex);
+            await transaction.CommitAsync();
+            return await MapProfileAsync(user);
         }
 
-        user.ProfilePictureUrl = url;
-        user.UpdatedAt = DateTime.UtcNow;
-        await _userManager.UpdateAsync(user);
+        await EnsureMediaIsUnattachedAsync(asset.Id, userId);
+        asset.Attach(DateTime.UtcNow);
+        var previousMediaId = user.SetProfilePictureMedia(asset.Id);
+        await RetirePreviousProfileMediaAsync(previousMediaId, asset.Id);
 
-        return _mapper.Map<UserProfileDto>(user);
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return await GetProfileAsync(userId);
+    }
+
+    public async Task<UserProfileDto> RemoveProfilePictureAsync(Guid userId)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        var user = await GetUserOrThrowAsync(userId);
+        var previousMediaId = user.RemoveProfilePictureMedia();
+
+        await RetirePreviousProfileMediaAsync(previousMediaId, null);
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return await GetProfileAsync(userId);
     }
 
     public async Task<UserPreferencesDto> UpdatePreferencesAsync(Guid userId, UpdateUserPreferencesDto dto)
     {
         var user = await GetUserOrThrowAsync(userId);
-
-        var prefs = user.AppUserPreference ?? new AppUserPreference
+        var preferences = user.AppUserPreference ?? new AppUserPreference
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
@@ -114,22 +106,74 @@ public class UserService : IUserService
         };
 
         if (dto.PreferredLanguage != null)
-            prefs.PreferredLanguage = dto.PreferredLanguage;
+            preferences.PreferredLanguage = dto.PreferredLanguage;
         if (dto.IsDarkModeEnabled.HasValue)
-            prefs.IsDarkModeEnabled = dto.IsDarkModeEnabled.Value;
+            preferences.IsDarkModeEnabled = dto.IsDarkModeEnabled.Value;
         if (dto.ReceiveEmailNotifications.HasValue)
-            prefs.ReceiveEmailNotifications = dto.ReceiveEmailNotifications.Value;
+            preferences.ReceiveEmailNotifications = dto.ReceiveEmailNotifications.Value;
         if (dto.UnitSystem != null)
-            prefs.UnitSystem = dto.UnitSystem;
+            preferences.UnitSystem = dto.UnitSystem;
         if (dto.TimeZoneId != null)
-            prefs.TimeZoneId = dto.TimeZoneId;
+            preferences.TimeZoneId = dto.TimeZoneId;
 
-        prefs.UpdatedAt = DateTime.UtcNow;
-        user.AppUserPreference = prefs;
+        preferences.UpdatedAt = DateTime.UtcNow;
+        user.AppUserPreference = preferences;
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
 
-        return _mapper.Map<UserPreferencesDto>(prefs);
+        return _mapper.Map<UserPreferencesDto>(preferences);
+    }
+
+    private async Task<AppUser> GetUserOrThrowAsync(Guid userId)
+    {
+        var user = await _context.Users
+            .Include(user => user.AppUserPreference)
+            .Include(user => user.ProfilePictureMedia)
+                .ThenInclude(media => media!.Variants)
+            .FirstOrDefaultAsync(user => user.Id == userId);
+        if (user is null)
+            throw new UnauthorizedAccessException("User not found.");
+
+        return user;
+    }
+
+    private async Task<MediaAsset> GetOwnedProfileMediaOrThrowAsync(Guid userId, Guid mediaAssetId)
+    {
+        var asset = await _context.MediaAssets
+            .FirstOrDefaultAsync(asset => asset.Id == mediaAssetId && asset.OwnerUserId == userId)
+            ?? throw new InvalidOperationException("Profile picture upload was not found.");
+
+        if (asset.Purpose != MediaPurpose.ProfilePicture || asset.Status != MediaStatus.Ready)
+            throw new InvalidOperationException("Profile picture media must be a ready profile-picture upload.");
+
+        return asset;
+    }
+
+    private async Task EnsureMediaIsUnattachedAsync(Guid mediaAssetId, Guid userId)
+    {
+        var usedByAnotherProfile = await _context.Users.AnyAsync(user =>
+            user.Id != userId && user.ProfilePictureMediaId == mediaAssetId);
+        var usedByPost = await _context.PostMedia.AnyAsync(media => media.MediaAssetId == mediaAssetId);
+
+        if (usedByAnotherProfile || usedByPost)
+            throw new InvalidOperationException("Media is already attached to another resource.");
+    }
+
+    private async Task RetirePreviousProfileMediaAsync(Guid? previousMediaId, Guid? replacementMediaId)
+    {
+        if (!previousMediaId.HasValue || previousMediaId == replacementMediaId)
+            return;
+
+        var previous = await _context.MediaAssets.FirstOrDefaultAsync(asset => asset.Id == previousMediaId.Value);
+        previous?.Retire(DateTime.UtcNow);
+    }
+
+    private async Task<UserProfileDto> MapProfileAsync(AppUser user)
+    {
+        var profile = _mapper.Map<UserProfileDto>(user);
+        profile.ProfilePicture = await _mediaResponseFactory.CreateAsync(user.ProfilePictureMedia, CancellationToken.None);
+        profile.ProfilePictureUrl = profile.ProfilePicture?.Thumbnail?.Url;
+        return profile;
     }
 }

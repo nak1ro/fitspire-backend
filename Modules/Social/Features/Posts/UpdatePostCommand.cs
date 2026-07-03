@@ -1,38 +1,100 @@
-using backend.Modules.Shared;
+using backend.Data;
+using backend.Modules.Media.Domain;
 using backend.Modules.Shared.Domain;
-using backend.Modules.Social.Infrastructure;
+using backend.Modules.Social.Domain;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Modules.Social.Features.Posts;
 
-public record UpdatePostCommand(Guid UserId, Guid PostId, string Content, string? ImageUrl = null) : IRequest;
+public record UpdatePostCommand(Guid UserId, Guid PostId, string? Content = null, IReadOnlyList<Guid>? MediaAssetIds = null) : IRequest;
 
 public class UpdatePostHandler : IRequestHandler<UpdatePostCommand>
 {
-    private readonly ISocialRepository _socialRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly FitspireDbContext _context;
 
-    public UpdatePostHandler(ISocialRepository socialRepository, IUnitOfWork unitOfWork)
+    public UpdatePostHandler(FitspireDbContext context)
     {
-        _socialRepository = socialRepository;
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task Handle(UpdatePostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _socialRepository.GetPostByIdAsync(request.PostId, cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var post = await LoadOwnedPostAsync(request.PostId, request.UserId, cancellationToken);
+        var removedMediaIds = request.MediaAssetIds is null
+            ? []
+            : post.Media.Select(media => media.MediaAssetId).Except(request.MediaAssetIds).ToList();
 
-        if (post == null)
-        {
-            throw new NotFoundException($"Post {request.PostId} not found.");
-        }
+        if (request.MediaAssetIds is not null)
+            await ValidateNewMediaAsync(post, request.UserId, request.MediaAssetIds, cancellationToken);
 
-        if (post.UserId != request.UserId)
-        {
+        post.UpdateTextPost(request.Content, request.MediaAssetIds);
+        await AttachNewMediaAsync(post, request.UserId, request.MediaAssetIds, cancellationToken);
+        await RetireMediaAsync(removedMediaIds, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task<Post> LoadOwnedPostAsync(Guid postId, Guid userId, CancellationToken cancellationToken)
+    {
+        var post = await _context.Posts
+            .Include(post => post.Media)
+            .FirstOrDefaultAsync(post => post.Id == postId, cancellationToken)
+            ?? throw new NotFoundException($"Post {postId} not found.");
+
+        if (post.UserId != userId)
             throw new UnauthorizedAccessException("Post does not belong to the current user.");
-        }
 
-        post.UpdateTextPost(request.Content, request.ImageUrl);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return post;
+    }
+
+    private async Task ValidateNewMediaAsync(
+        Post post,
+        Guid userId,
+        IReadOnlyList<Guid> requestedMediaIds,
+        CancellationToken cancellationToken)
+    {
+        var existingMediaIds = post.Media.Select(media => media.MediaAssetId).ToHashSet();
+        var newMediaIds = requestedMediaIds.Where(id => !existingMediaIds.Contains(id)).ToList();
+        if (newMediaIds.Count == 0)
+            return;
+
+        var assets = await _context.MediaAssets
+            .Where(asset => asset.OwnerUserId == userId && newMediaIds.Contains(asset.Id))
+            .ToListAsync(cancellationToken);
+
+        if (assets.Count != newMediaIds.Count
+            || assets.Any(asset => asset.Purpose != MediaPurpose.PostImage || asset.Status != MediaStatus.Ready))
+            throw new DomainException("New post images must be owned, ready post-image uploads.");
+    }
+
+    private async Task AttachNewMediaAsync(
+        Post post,
+        Guid userId,
+        IReadOnlyList<Guid>? requestedMediaIds,
+        CancellationToken cancellationToken)
+    {
+        if (requestedMediaIds is null)
+            return;
+
+        var assets = await _context.MediaAssets
+            .Where(asset => asset.OwnerUserId == userId && requestedMediaIds.Contains(asset.Id) && asset.Status == MediaStatus.Ready)
+            .ToListAsync(cancellationToken);
+
+        foreach (var asset in assets)
+            asset.Attach(DateTime.UtcNow);
+    }
+
+    private async Task RetireMediaAsync(IReadOnlyCollection<Guid> mediaAssetIds, CancellationToken cancellationToken)
+    {
+        if (mediaAssetIds.Count == 0)
+            return;
+
+        var assets = await _context.MediaAssets.Where(asset => mediaAssetIds.Contains(asset.Id)).ToListAsync(cancellationToken);
+        foreach (var asset in assets)
+            asset.Retire(DateTime.UtcNow);
     }
 }

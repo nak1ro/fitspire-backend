@@ -1,4 +1,5 @@
 using backend.Modules.Challenge.Domain.Constants;
+using backend.Modules.Media.Contracts;
 using FluentValidation;
 
 namespace backend.Modules.Challenge.Contracts;
@@ -26,9 +27,9 @@ public record ChallengeDetailResponse(
     string Visibility, DateTime StartDate, DateTime EndDate, string JoinClosing, int ParticipantLimit, string Status,
     ChallengeCreatorResponse Creator, int ParticipantsCount, ChallengeViewerState Viewer);
 
-public record ChallengeCreatorResponse(Guid UserId, string UserName, string DisplayName, string? ProfilePictureUrl);
+public record ChallengeCreatorResponse(Guid UserId, string UserName, string DisplayName, string? ProfilePictureUrl, MediaResponse? ProfilePicture);
 public record ChallengeViewerState(bool IsCreator, string? MembershipStatus, double? Score, double? ProgressPercent, bool CanJoin, bool CanManage);
-public record ChallengeLeaderboardEntry(Guid UserId, string DisplayName, string? ProfilePictureUrl, double Score, int Rank, double? ProgressPercent);
+public record ChallengeLeaderboardEntry(Guid UserId, string DisplayName, string? ProfilePictureUrl, MediaResponse? ProfilePicture, double Score, int Rank, double? ProgressPercent);
 public record ChallengePageResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 public record ChallengeInvitationResponse(Guid Id, Guid ChallengeId, string ChallengeTitle, Guid InvitedByUserId, string InvitedByDisplayName, DateTime StartDate, DateTime EndDate, string Status, DateTime CreatedAt);
 

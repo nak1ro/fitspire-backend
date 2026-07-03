@@ -1,7 +1,10 @@
 using backend.Modules.Shared.Domain;
+using backend.Modules.Media.Contracts;
 using backend.Modules.Social.Contracts.Comments;
+using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Social.Services;
+using backend.Modules.User.Domain;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Posts;
@@ -12,11 +15,13 @@ public class GetPostCommentsHandler : IRequestHandler<GetPostCommentsQuery, List
 {
     private readonly ISocialRepository _repository;
     private readonly ISocialAccessService _accessService;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetPostCommentsHandler(ISocialRepository repository, ISocialAccessService accessService)
+    public GetPostCommentsHandler(ISocialRepository repository, ISocialAccessService accessService, IMediaResponseFactory mediaResponseFactory)
     {
         _repository = repository;
         _accessService = accessService;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<List<CommentResponse>> Handle(GetPostCommentsQuery request, CancellationToken cancellationToken)
@@ -32,13 +37,22 @@ public class GetPostCommentsHandler : IRequestHandler<GetPostCommentsQuery, List
             request.PostId,
             comments.Select(comment => comment.Id),
             cancellationToken);
+        var avatars = await SocialUserResponseMapper.GetProfilePicturesAsync(
+            comments.Select(comment => comment.User), _mediaResponseFactory, cancellationToken);
         return comments.Select(comment => new CommentResponse(
-            comment.Id, comment.UserId, comment.User.UserName ?? "Unknown", comment.User.ProfilePictureUrl,
+            comment.Id, comment.UserId, comment.User.UserName ?? "Unknown",
+            GetAvatarUrl(comment.User, avatars), GetAvatar(comment.User, avatars),
             comment.Content, comment.RootCommentId, comment.ReplyToCommentId, comment.Likes.Count,
             comment.Likes.Any(like => like.UserId == request.ViewerUserId),
             replyCounts.GetValueOrDefault(comment.Id),
             comment.CreatedAt, comment.UpdatedAt)).ToList();
     }
+
+    private static MediaResponse? GetAvatar(AppUser user, IReadOnlyDictionary<Guid, MediaResponse> avatars) =>
+        user.ProfilePictureMedia is null ? null : avatars.GetValueOrDefault(user.ProfilePictureMedia.Id);
+
+    private static string? GetAvatarUrl(AppUser user, IReadOnlyDictionary<Guid, MediaResponse> avatars) =>
+        GetAvatar(user, avatars)?.Thumbnail?.Url;
 
     private static void ValidatePagination(int page, int pageSize)
     {

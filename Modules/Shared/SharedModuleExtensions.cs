@@ -1,4 +1,3 @@
-using backend.Modules.Shared.Service;
 using Resend;
 
 namespace backend.Modules.Shared;
@@ -11,8 +10,6 @@ public static class SharedModuleExtensions
         services.AddHttpContextAccessor();
         services.Configure<ResendClientOptions>(configuration.GetSection("Resend"));
         services.AddScoped<ResendClient>();
-        services.AddScoped<IBlobService, BlobService>();
-        
         // UnitOfWork for all modules
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         

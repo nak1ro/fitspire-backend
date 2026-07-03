@@ -47,6 +47,7 @@ public class ErrorHandlingMiddleware
         ValidationException => HttpStatusCode.BadRequest,
         DomainException => HttpStatusCode.BadRequest,
         InvalidOperationException => HttpStatusCode.BadRequest,
+        StorageUnavailableException => HttpStatusCode.ServiceUnavailable,
         NotFoundException => HttpStatusCode.NotFound,
         UnauthorizedAccessException => HttpStatusCode.Forbidden,
         _ => HttpStatusCode.InternalServerError
@@ -57,6 +58,7 @@ public class ErrorHandlingMiddleware
         ValidationException => "Validation failed",
         DomainException => "Domain rule violation",
         InvalidOperationException => "Invalid operation",
+        StorageUnavailableException => "Storage service unavailable",
         NotFoundException => "Resource not found",
         UnauthorizedAccessException => "Forbidden",
         _ => "Server error"

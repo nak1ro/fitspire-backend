@@ -1,6 +1,7 @@
-using AutoMapper;
+using backend.Modules.Media.Contracts;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Contracts.Profiles;
+using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Social.Services;
 using MediatR;
@@ -14,13 +15,13 @@ public class GetSocialConnectionsHandler : IRequestHandler<GetSocialConnectionsQ
 {
     private readonly ISocialRepository _repository;
     private readonly ISocialAccessService _accessService;
-    private readonly IMapper _mapper;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetSocialConnectionsHandler(ISocialRepository repository, ISocialAccessService accessService, IMapper mapper)
+    public GetSocialConnectionsHandler(ISocialRepository repository, ISocialAccessService accessService, IMediaResponseFactory mediaResponseFactory)
     {
         _repository = repository;
         _accessService = accessService;
-        _mapper = mapper;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<List<SocialUserSummaryResponse>> Handle(GetSocialConnectionsQuery request, CancellationToken cancellationToken)
@@ -36,10 +37,11 @@ public class GetSocialConnectionsHandler : IRequestHandler<GetSocialConnectionsQ
             ? await _repository.GetFollowersAsync(request.TargetUserId, request.Page, request.PageSize, cancellationToken)
             : await _repository.GetFollowingAsync(request.TargetUserId, request.Page, request.PageSize, cancellationToken);
 
-        var users = request.GetFollowers
+        var users = (request.GetFollowers
             ? connections.Select(connection => connection.FollowerUser)
-            : connections.Select(connection => connection.FollowedUser);
-        return _mapper.Map<List<SocialUserSummaryResponse>>(users);
+            : connections.Select(connection => connection.FollowedUser)).ToList();
+        var pictures = await SocialUserResponseMapper.GetProfilePicturesAsync(users, _mediaResponseFactory, cancellationToken);
+        return users.Select(user => SocialUserResponseMapper.MapSummary(user, pictures)).ToList();
     }
 
     private static void ValidatePagination(int page, int pageSize)

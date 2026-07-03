@@ -9,12 +9,18 @@ public class CreatePostRequestValidator : AbstractValidator<CreatePostRequest>
     public CreatePostRequestValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty()
-            .MaximumLength(2000);
+            .MaximumLength(2000)
+            .When(x => x.Content is not null);
 
-        RuleFor(x => x.ImageUrl)
-            .MaximumLength(2048)
-            .When(x => x.ImageUrl is not null);
+        RuleFor(x => x.MediaAssetIds)
+            .Must(ids => ids is null || ids.Count <= 10)
+            .WithMessage("A post can contain at most ten images.")
+            .Must(ids => ids is null || ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
+            .WithMessage("Post media IDs must be unique and non-empty.");
+
+        RuleFor(x => x)
+            .Must(x => !string.IsNullOrWhiteSpace(x.Content) || x.MediaAssetIds is { Count: > 0 })
+            .WithMessage("A post needs text or at least one image.");
     }
 }
 
@@ -23,12 +29,18 @@ public class UpdatePostRequestValidator : AbstractValidator<UpdatePostRequest>
     public UpdatePostRequestValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty()
-            .MaximumLength(2000);
+            .MaximumLength(2000)
+            .When(x => x.Content is not null);
 
-        RuleFor(x => x.ImageUrl)
-            .MaximumLength(2048)
-            .When(x => x.ImageUrl is not null);
+        RuleFor(x => x.MediaAssetIds)
+            .Must(ids => ids is null || ids.Count <= 10)
+            .WithMessage("A post can contain at most ten images.")
+            .Must(ids => ids is null || ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
+            .WithMessage("Post media IDs must be unique and non-empty.");
+
+        RuleFor(x => x)
+            .Must(x => x.Content is not null || x.MediaAssetIds is not null)
+            .WithMessage("At least one post field must be provided.");
     }
 }
 

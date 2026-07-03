@@ -11,6 +11,7 @@ public static class UserModuleExtensions
     {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IValidator<UpdateProfileDto>, UpdateProfileDtoValidator>();
+        services.AddScoped<IValidator<AttachProfilePictureDto>, AttachProfilePictureDtoValidator>();
         services.AddScoped<IValidator<UpdateUserPreferencesDto>, UpdateUserPreferencesDtoValidator>();
         return services;
     }

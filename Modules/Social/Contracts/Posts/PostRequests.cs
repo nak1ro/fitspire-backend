@@ -1,7 +1,7 @@
 namespace backend.Modules.Social.Contracts.Posts;
 
-public record CreatePostRequest(string Content, string? ImageUrl = null);
-public record UpdatePostRequest(string Content, string? ImageUrl = null);
+public record CreatePostRequest(string? Content, IReadOnlyList<Guid>? MediaAssetIds = null);
+public record UpdatePostRequest(string? Content = null, IReadOnlyList<Guid>? MediaAssetIds = null);
 public record ShareWorkoutRequest(Guid WorkoutId, string? Caption = null);
 public record CommentRequest(string Content, Guid? ReplyToCommentId = null);
 public record LikeResponse(bool IsLiked);

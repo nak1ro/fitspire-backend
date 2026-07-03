@@ -4,6 +4,7 @@ using backend.Modules.Friendship.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
+using backend.Modules.Media.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Progress.Domain;
@@ -25,11 +26,14 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
 
     public new DbSet<AppUser> Users { get; set; }
     public DbSet<AppUserPreference> UserPreferences { get; set; }
+    public DbSet<MediaAsset> MediaAssets { get; set; }
+    public DbSet<MediaVariant> MediaVariants { get; set; }
 
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<PostLike> PostLikes { get; set; }
     public DbSet<CommentLike> CommentLikes { get; set; }
+    public DbSet<PostMedia> PostMedia { get; set; }
     public DbSet<Follower> Followers { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<SavedPost> SavedPosts { get; set; }

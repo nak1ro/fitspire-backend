@@ -3,6 +3,7 @@ using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Infrastructure;
 using backend.Modules.Social.Services;
+using backend.Modules.Media.Contracts;
 using MediatR;
 
 namespace backend.Modules.Social.Features.Posts;
@@ -14,15 +15,18 @@ public class GetUserPostsHandler : IRequestHandler<GetUserPostsQuery, List<FeedI
     private readonly ISocialRepository _socialRepository;
     private readonly IWorkoutRepository _workoutRepository;
     private readonly ISocialAccessService _socialAccessService;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
     public GetUserPostsHandler(
         ISocialRepository socialRepository,
         IWorkoutRepository workoutRepository,
-        ISocialAccessService socialAccessService)
+        ISocialAccessService socialAccessService,
+        IMediaResponseFactory mediaResponseFactory)
     {
         _socialRepository = socialRepository;
         _workoutRepository = workoutRepository;
         _socialAccessService = socialAccessService;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<List<FeedItemResponse>> Handle(GetUserPostsQuery request, CancellationToken cancellationToken)
@@ -42,6 +46,6 @@ public class GetUserPostsHandler : IRequestHandler<GetUserPostsQuery, List<FeedI
             request.PageSize,
             cancellationToken);
 
-        return await PostResponseMapper.MapAsync(posts, request.ViewerUserId, _workoutRepository, cancellationToken);
+        return await PostResponseMapper.MapAsync(posts, request.ViewerUserId, _workoutRepository, _mediaResponseFactory, cancellationToken);
     }
 }

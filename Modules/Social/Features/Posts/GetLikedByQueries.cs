@@ -1,6 +1,7 @@
-using AutoMapper;
+using backend.Modules.Media.Contracts;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Contracts.Profiles;
+using backend.Modules.Social.Features.Common;
 using backend.Modules.Social.Infrastructure;
 using backend.Modules.Social.Services;
 using MediatR;
@@ -17,13 +18,13 @@ public class GetPostLikedByHandler : IRequestHandler<GetPostLikedByQuery, List<S
 {
     private readonly ISocialRepository _repository;
     private readonly ISocialAccessService _accessService;
-    private readonly IMapper _mapper;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetPostLikedByHandler(ISocialRepository repository, ISocialAccessService accessService, IMapper mapper)
+    public GetPostLikedByHandler(ISocialRepository repository, ISocialAccessService accessService, IMediaResponseFactory mediaResponseFactory)
     {
         _repository = repository;
         _accessService = accessService;
-        _mapper = mapper;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<List<SocialUserSummaryResponse>> Handle(GetPostLikedByQuery request, CancellationToken cancellationToken)
@@ -36,7 +37,8 @@ public class GetPostLikedByHandler : IRequestHandler<GetPostLikedByQuery, List<S
             throw new NotFoundException($"Post {request.PostId} not found.");
 
         var users = await _repository.GetPostLikersAsync(request.PostId, request.Page, request.PageSize, cancellationToken);
-        return _mapper.Map<List<SocialUserSummaryResponse>>(users);
+        var pictures = await SocialUserResponseMapper.GetProfilePicturesAsync(users, _mediaResponseFactory, cancellationToken);
+        return users.Select(user => SocialUserResponseMapper.MapSummary(user, pictures)).ToList();
     }
 
     private static void ValidatePagination(int page, int pageSize)
@@ -50,13 +52,13 @@ public class GetCommentLikedByHandler : IRequestHandler<GetCommentLikedByQuery, 
 {
     private readonly ISocialRepository _repository;
     private readonly ISocialAccessService _accessService;
-    private readonly IMapper _mapper;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetCommentLikedByHandler(ISocialRepository repository, ISocialAccessService accessService, IMapper mapper)
+    public GetCommentLikedByHandler(ISocialRepository repository, ISocialAccessService accessService, IMediaResponseFactory mediaResponseFactory)
     {
         _repository = repository;
         _accessService = accessService;
-        _mapper = mapper;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<List<SocialUserSummaryResponse>> Handle(GetCommentLikedByQuery request, CancellationToken cancellationToken)
@@ -69,7 +71,8 @@ public class GetCommentLikedByHandler : IRequestHandler<GetCommentLikedByQuery, 
             throw new NotFoundException($"Comment {request.CommentId} not found.");
 
         var users = await _repository.GetCommentLikersAsync(request.CommentId, request.Page, request.PageSize, cancellationToken);
-        return _mapper.Map<List<SocialUserSummaryResponse>>(users);
+        var pictures = await SocialUserResponseMapper.GetProfilePicturesAsync(users, _mediaResponseFactory, cancellationToken);
+        return users.Select(user => SocialUserResponseMapper.MapSummary(user, pictures)).ToList();
     }
 
     private static void ValidatePagination(int page, int pageSize)

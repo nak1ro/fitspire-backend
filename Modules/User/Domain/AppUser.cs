@@ -5,6 +5,7 @@ using backend.Modules.Friendship.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
+using backend.Modules.Media.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Social.Domain;
@@ -17,13 +18,34 @@ public class AppUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = null!;
     public string? Bio { get; set; }
-    public string? ProfilePictureUrl { get; set; }
+    public Guid? ProfilePictureMediaId { get; private set; }
+    public MediaAsset? ProfilePictureMedia { get; private set; }
     public bool IsPrivate { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Preferences
     public AppUserPreference? AppUserPreference { get; set; }
+    public ICollection<MediaAsset> MediaAssets { get; set; } = new List<MediaAsset>();
+
+    public Guid? SetProfilePictureMedia(Guid mediaAssetId)
+    {
+        if (mediaAssetId == Guid.Empty)
+            throw new ArgumentException("Profile picture media is required.", nameof(mediaAssetId));
+
+        var previousMediaId = ProfilePictureMediaId;
+        ProfilePictureMediaId = mediaAssetId;
+        UpdatedAt = DateTime.UtcNow;
+        return previousMediaId;
+    }
+
+    public Guid? RemoveProfilePictureMedia()
+    {
+        var previousMediaId = ProfilePictureMediaId;
+        ProfilePictureMediaId = null;
+        UpdatedAt = DateTime.UtcNow;
+        return previousMediaId;
+    }
 
     // Workouts
     public ICollection<UserWorkout> Workouts { get; set; } = new List<UserWorkout>();

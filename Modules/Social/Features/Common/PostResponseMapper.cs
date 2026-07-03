@@ -1,5 +1,6 @@
 using backend.Modules.Social.Domain;
 using backend.Modules.Social.Domain.Enums;
+using backend.Modules.Media.Contracts;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Infrastructure;
 
@@ -10,10 +11,12 @@ public record FeedItemResponse(
     Guid UserId,
     string UserName,
     string? UserAvatarUrl,
+    MediaResponse? UserAvatar,
     string Type,
     string? Content,
     Guid? ReferenceEntityId,
     WorkoutSummaryResponse? WorkoutSummary,
+    IReadOnlyList<MediaResponse> Media,
     int LikesCount,
     bool IsLikedByCurrentUser,
     int CommentsCount,
@@ -26,6 +29,7 @@ public record CommentPreviewResponse(
     Guid UserId,
     string UserName,
     string? UserAvatarUrl,
+    MediaResponse? UserAvatar,
     string Content,
     DateTime CreatedAt
 );
@@ -48,23 +52,27 @@ public static class PostResponseMapper
         List<Post> posts,
         Guid currentUserId,
         IWorkoutRepository workoutRepository,
+        IMediaResponseFactory mediaResponseFactory,
         CancellationToken cancellationToken)
     {
         var workoutSummaries = await GetWorkoutSummariesAsync(posts, workoutRepository, cancellationToken);
+        var mediaResponses = await GetMediaResponsesAsync(posts, mediaResponseFactory, cancellationToken);
 
         return posts.Select(p => new FeedItemResponse(
             p.Id,
             p.UserId,
             p.User?.UserName ?? "Unknown",
-            p.User?.ProfilePictureUrl,
+            GetAvatarUrl(p.User?.ProfilePictureMedia, mediaResponses),
+            GetMediaResponse(p.User?.ProfilePictureMedia, mediaResponses),
             p.Type.ToString(),
             p.Content,
             p.ReferenceEntityId,
             GetWorkoutSummary(p, workoutSummaries),
+            GetPostMedia(p, mediaResponses),
             p.Likes.Count,
             IsLikedByCurrentUser(p, currentUserId),
             p.Comments.Count,
-            GetRecentComments(p),
+            GetRecentComments(p, mediaResponses),
             p.CreatedAt
         )).ToList();
     }
@@ -137,7 +145,9 @@ public static class PostResponseMapper
         return post.Likes.Any(l => l.UserId == userId);
     }
 
-    private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(Post post)
+    private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(
+        Post post,
+        IReadOnlyDictionary<Guid, MediaResponse> responses)
     {
         return post.Comments
             .OrderByDescending(c => c.CreatedAt)
@@ -146,9 +156,46 @@ public static class PostResponseMapper
                 c.Id,
                 c.UserId,
                 c.User?.UserName ?? "Unknown",
-                c.User?.ProfilePictureUrl,
+                GetAvatarUrl(c.User?.ProfilePictureMedia, responses),
+                GetMediaResponse(c.User?.ProfilePictureMedia, responses),
                 c.Content,
                 c.CreatedAt))
             .ToList();
     }
+
+    private static async Task<IReadOnlyDictionary<Guid, MediaResponse>> GetMediaResponsesAsync(
+        IEnumerable<Post> posts,
+        IMediaResponseFactory mediaResponseFactory,
+        CancellationToken cancellationToken)
+    {
+        var assets = posts.SelectMany(post => post.Media.Select(media => media.MediaAsset))
+            .Concat(posts.Select(post => post.User?.ProfilePictureMedia).OfType<backend.Modules.Media.Domain.MediaAsset>())
+            .Concat(posts.SelectMany(post => post.Comments)
+                .Select(comment => comment.User?.ProfilePictureMedia)
+                .OfType<backend.Modules.Media.Domain.MediaAsset>())
+            .ToList();
+        return await mediaResponseFactory.CreateManyAsync(assets, cancellationToken);
+    }
+
+    private static IReadOnlyList<MediaResponse> GetPostMedia(
+        Post post,
+        IReadOnlyDictionary<Guid, MediaResponse> responses)
+    {
+        return post.Media
+            .OrderBy(media => media.Order)
+            .Select(media => responses.GetValueOrDefault(media.MediaAssetId))
+            .Where(response => response is not null)
+            .Cast<MediaResponse>()
+            .ToList();
+    }
+
+    private static MediaResponse? GetMediaResponse(
+        backend.Modules.Media.Domain.MediaAsset? asset,
+        IReadOnlyDictionary<Guid, MediaResponse> responses) =>
+        asset is null ? null : responses.GetValueOrDefault(asset.Id);
+
+    private static string? GetAvatarUrl(
+        backend.Modules.Media.Domain.MediaAsset? asset,
+        IReadOnlyDictionary<Guid, MediaResponse> responses) =>
+        GetMediaResponse(asset, responses)?.Thumbnail?.Url;
 }

@@ -8,5 +8,6 @@ public interface IUserService
     Task<UserPreferencesDto> GetPreferencesAsync(Guid userId);
     Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
     Task<UserPreferencesDto> UpdatePreferencesAsync(Guid userId, UpdateUserPreferencesDto dto);
-    Task<UserProfileDto> UpdateProfilePictureAsync(Guid userId, IFormFile file);
+    Task<UserProfileDto> AttachProfilePictureAsync(Guid userId, Guid mediaAssetId);
+    Task<UserProfileDto> RemoveProfilePictureAsync(Guid userId);
 }

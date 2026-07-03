@@ -17,6 +17,7 @@ using backend.Modules.Progress.Data;
 using backend.Modules.Challenge;
 using backend.Modules.Badge.Data;
 using backend.Modules.Badge;
+using backend.Modules.Media;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 
@@ -39,6 +40,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddDataModule(builder.Configuration);
 builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddSharedModule(builder.Configuration);
+builder.Services.AddMediaModule(builder.Configuration);
 builder.Services.AddUserModule();
 builder.Services.AddWorkoutModule();
 builder.Services.AddProgressModule();

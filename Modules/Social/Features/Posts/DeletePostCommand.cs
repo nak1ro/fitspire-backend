@@ -1,7 +1,9 @@
-using backend.Modules.Shared;
+using backend.Data;
 using backend.Modules.Shared.Domain;
-using backend.Modules.Social.Infrastructure;
+using backend.Modules.Social.Domain;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Modules.Social.Features.Posts;
 
@@ -9,30 +11,38 @@ public record DeletePostCommand(Guid UserId, Guid PostId) : IRequest;
 
 public class DeletePostHandler : IRequestHandler<DeletePostCommand>
 {
-    private readonly ISocialRepository _socialRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly FitspireDbContext _context;
 
-    public DeletePostHandler(ISocialRepository socialRepository, IUnitOfWork unitOfWork)
+    public DeletePostHandler(FitspireDbContext context)
     {
-        _socialRepository = socialRepository;
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task Handle(DeletePostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _socialRepository.GetPostByIdAsync(request.PostId, cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var post = await LoadOwnedPostAsync(request.PostId, request.UserId, cancellationToken);
+        var mediaIds = post.Media.Select(media => media.MediaAssetId).ToList();
 
-        if (post == null)
-        {
-            throw new NotFoundException($"Post {request.PostId} not found.");
-        }
+        var assets = await _context.MediaAssets.Where(asset => mediaIds.Contains(asset.Id)).ToListAsync(cancellationToken);
+        foreach (var asset in assets)
+            asset.Retire(DateTime.UtcNow);
 
-        if (post.UserId != request.UserId)
-        {
+        _context.Posts.Remove(post);
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task<Post> LoadOwnedPostAsync(Guid postId, Guid userId, CancellationToken cancellationToken)
+    {
+        var post = await _context.Posts
+            .Include(post => post.Media)
+            .FirstOrDefaultAsync(post => post.Id == postId, cancellationToken)
+            ?? throw new NotFoundException($"Post {postId} not found.");
+
+        if (post.UserId != userId)
             throw new UnauthorizedAccessException("Post does not belong to the current user.");
-        }
 
-        await _socialRepository.DeletePostAsync(post, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return post;
     }
 }

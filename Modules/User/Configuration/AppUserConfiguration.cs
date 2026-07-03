@@ -12,7 +12,7 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 
         builder.HasKey(u => u.Id);
 
-        builder.Property(u => u.ProfilePictureUrl);
+        builder.Property(u => u.ProfilePictureMediaId);
         builder.Property(u => u.IsPrivate).HasDefaultValue(false);
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
@@ -113,6 +113,11 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .WithOne(l => l.User)
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(u => u.ProfilePictureMedia)
+            .WithOne()
+            .HasForeignKey<AppUser>(u => u.ProfilePictureMediaId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // ❤️ Comment likes
         builder.HasMany(u => u.CommentLikes)

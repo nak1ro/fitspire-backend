@@ -1,10 +1,13 @@
+using backend.Modules.Media.Contracts;
+
 namespace backend.Modules.Social.Contracts.Profiles;
 
 public record SocialUserSummaryResponse(
     Guid Id,
     string UserName,
     string DisplayName,
-    string? ProfilePictureUrl);
+    string? ProfilePictureUrl,
+    MediaResponse? ProfilePicture);
 
 public record SocialProfileResponse(
     Guid Id,
@@ -12,6 +15,7 @@ public record SocialProfileResponse(
     string DisplayName,
     string? Bio,
     string? ProfilePictureUrl,
+    MediaResponse? ProfilePicture,
     bool IsPrivate,
     int FollowersCount,
     int FollowingCount,

@@ -1,3 +1,5 @@
+using backend.Modules.Media.Contracts;
+
 namespace backend.Modules.Social.Contracts.Comments;
 
 public record CommentResponse(
@@ -5,6 +7,7 @@ public record CommentResponse(
     Guid UserId,
     string UserName,
     string? UserAvatarUrl,
+    MediaResponse? UserAvatar,
     string Content,
     Guid? RootCommentId,
     Guid? ReplyToCommentId,

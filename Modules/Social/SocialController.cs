@@ -128,7 +128,7 @@ public class SocialController : ControllerBase
         await _createPostValidator.ValidateAndThrowAsync(request);
 
         var userId = User.GetRequiredUserId();
-        var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.ImageUrl));
+        var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.MediaAssetIds));
         return CreatedAtAction(nameof(GetFeed), new { id = postId }, postId);
     }
 
@@ -141,7 +141,7 @@ public class SocialController : ControllerBase
         await _updatePostValidator.ValidateAndThrowAsync(request);
 
         var userId = User.GetRequiredUserId();
-        await _mediator.Send(new UpdatePostCommand(userId, postId, request.Content, request.ImageUrl));
+        await _mediator.Send(new UpdatePostCommand(userId, postId, request.Content, request.MediaAssetIds));
         return NoContent();
     }
 

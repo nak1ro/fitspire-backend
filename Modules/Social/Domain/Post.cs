@@ -1,4 +1,5 @@
 using backend.Modules.Shared.Domain;
+using backend.Modules.Media.Domain;
 using backend.Modules.Social.Domain.Enums;
 using backend.Modules.User.Domain;
 
@@ -12,7 +13,6 @@ public class Post : Entity<Guid>
     public Guid UserId { get; private set; }
     public PostType Type { get; private set; }
     public string? Content { get; private set; }
-    public string? ImageUrl { get; private set; }
     
     /// <summary>
     /// Reference to WorkoutId or GoalId when Type is WorkoutShare or GoalAchieved.
@@ -25,28 +25,25 @@ public class Post : Entity<Guid>
     public WorkoutShareSnapshot? WorkoutShareSnapshot { get; private set; }
     public ICollection<PostLike> Likes { get; private set; } = new List<PostLike>();
     public ICollection<SavedPost> SavedByUsers { get; private set; } = new List<SavedPost>();
+    public ICollection<PostMedia> Media { get; private set; } = new List<PostMedia>();
 
     private Post() { }
 
     /// <summary>
     /// Create a text post.
     /// </summary>
-    public static Post CreateTextPost(Guid userId, string content, string? imageUrl = null)
+    public static Post CreateTextPost(Guid userId, string? content, IReadOnlyList<Guid>? mediaAssetIds = null)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            throw new DomainException("Post content is required.");
-        }
-
-        return new Post
+        var post = new Post
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             Type = PostType.Text,
-            Content = content.Trim(),
-            ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl,
             CreatedAt = DateTime.UtcNow
         };
+
+        post.UpdateTextPost(content, mediaAssetIds);
+        return post;
     }
 
     /// <summary>
@@ -91,20 +88,62 @@ public class Post : Entity<Guid>
         return post;
     }
 
-    public void UpdateTextPost(string content, string? imageUrl = null)
+    public void UpdateTextPost(string? content, IReadOnlyList<Guid>? mediaAssetIds)
     {
         if (Type != PostType.Text)
         {
             throw new DomainException("Only text posts can be edited.");
         }
 
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            throw new DomainException("Post content is required.");
-        }
+        if (content is not null)
+            Content = NormalizeContent(content);
 
-        Content = content.Trim();
-        ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl;
+        if (mediaAssetIds is not null)
+            ApplyMediaSet(mediaAssetIds);
+
+        EnsurePublishable();
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    private void ApplyMediaSet(IReadOnlyList<Guid> mediaAssetIds)
+    {
+        if (mediaAssetIds.Count > MediaPolicies.MaximumPostImages)
+            throw new DomainException("A post can contain at most ten images.");
+
+        if (mediaAssetIds.Any(id => id == Guid.Empty) || mediaAssetIds.Distinct().Count() != mediaAssetIds.Count)
+            throw new DomainException("Post media IDs must be unique and non-empty.");
+
+        var currentMedia = Media.ToDictionary(media => media.MediaAssetId);
+        var requestedMedia = mediaAssetIds.ToHashSet();
+
+        foreach (var media in Media.Where(media => !requestedMedia.Contains(media.MediaAssetId)).ToList())
+            Media.Remove(media);
+
+        for (var order = 0; order < mediaAssetIds.Count; order++)
+        {
+            var mediaAssetId = mediaAssetIds[order];
+            if (currentMedia.TryGetValue(mediaAssetId, out var existing))
+            {
+                existing.MoveTo(order);
+                continue;
+            }
+
+            Media.Add(PostMedia.Create(Id, mediaAssetId, order));
+        }
+    }
+
+    private void EnsurePublishable()
+    {
+        if (string.IsNullOrWhiteSpace(Content) && Media.Count == 0)
+            throw new DomainException("A post needs text or at least one image.");
+    }
+
+    private static string? NormalizeContent(string content)
+    {
+        var normalized = content.Trim();
+        if (normalized.Length > 2000)
+            throw new DomainException("Post content must be at most 2000 characters.");
+
+        return string.IsNullOrEmpty(normalized) ? null : normalized;
     }
 }

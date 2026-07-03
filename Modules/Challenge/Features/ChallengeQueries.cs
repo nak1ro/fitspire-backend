@@ -1,10 +1,11 @@
-using AutoMapper;
 using backend.Data;
 using backend.Modules.Challenge.Contracts;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Challenge.Domain.Constants;
 using backend.Modules.Challenge.Services;
+using backend.Modules.Media.Contracts;
 using backend.Modules.Shared.Domain;
+using backend.Modules.User.Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,18 +23,22 @@ public class GetChallengeHandler : IRequestHandler<GetChallengeQuery, ChallengeD
 {
     private readonly FitspireDbContext _context;
     private readonly IChallengeAccessService _access;
-    private readonly IMapper _mapper;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetChallengeHandler(FitspireDbContext context, IChallengeAccessService access, IMapper mapper)
+    public GetChallengeHandler(FitspireDbContext context, IChallengeAccessService access, IMediaResponseFactory mediaResponseFactory)
     {
         _context = context;
         _access = access;
-        _mapper = mapper;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<ChallengeDetailResponse> Handle(GetChallengeQuery request, CancellationToken cancellationToken)
     {
-        var challenge = await _context.Challenges.Include(item => item.CreatedByUser).Include(item => item.Participants)
+        var challenge = await _context.Challenges
+            .Include(item => item.CreatedByUser)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Include(item => item.Participants)
             .FirstOrDefaultAsync(item => item.Id == request.ChallengeId, cancellationToken) ?? throw new NotFoundException("Challenge not found.");
         await _access.EnsureCanViewAsync(challenge, request.UserId, cancellationToken);
         var participant = challenge.Participants.SingleOrDefault(item => item.UserId == request.UserId);
@@ -44,7 +49,7 @@ public class GetChallengeHandler : IRequestHandler<GetChallengeQuery, ChallengeD
         return new ChallengeDetailResponse(challenge.Id, challenge.Title, challenge.Description, challenge.MetricCode,
             challenge.WorkoutType, challenge.Mode, challenge.TargetValue, challenge.Visibility, challenge.StartDate,
             challenge.EndDate, challenge.JoinClosing, challenge.ParticipantLimit, challenge.Status,
-            _mapper.Map<ChallengeCreatorResponse>(challenge.CreatedByUser),
+            await ChallengeAvatarResponseFactory.CreateCreatorAsync(challenge.CreatedByUser, _mediaResponseFactory, cancellationToken),
             challenge.Participants.Count(item => item.Status == ChallengeParticipantStatuses.Active), viewer);
     }
 }
@@ -98,34 +103,42 @@ public class GetChallengeLeaderboardHandler : IRequestHandler<GetChallengeLeader
 {
     private readonly FitspireDbContext _context;
     private readonly IChallengeAccessService _access;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetChallengeLeaderboardHandler(FitspireDbContext context, IChallengeAccessService access)
+    public GetChallengeLeaderboardHandler(FitspireDbContext context, IChallengeAccessService access, IMediaResponseFactory mediaResponseFactory)
     {
         _context = context;
         _access = access;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<ChallengePageResponse<ChallengeLeaderboardEntry>> Handle(GetChallengeLeaderboardQuery request, CancellationToken cancellationToken)
     {
         var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
         await _access.EnsureCanViewAsync(challenge, request.UserId, cancellationToken);
-        var participants = _context.ChallengeParticipants.Include(item => item.User).Where(item => item.ChallengeId == challenge.Id && item.Status == ChallengeParticipantStatuses.Active)
+        var participants = _context.ChallengeParticipants
+            .Include(item => item.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Where(item => item.ChallengeId == challenge.Id && item.Status == ChallengeParticipantStatuses.Active)
             .OrderByDescending(item => item.Score).ThenBy(item => item.JoinedAt);
-        return await CreateLeaderboardPageAsync(participants, challenge, request.Page, request.PageSize, cancellationToken);
+        return await CreateLeaderboardPageAsync(participants, challenge, request.Page, request.PageSize, _mediaResponseFactory, cancellationToken);
     }
 
     internal static async Task<ChallengePageResponse<ChallengeLeaderboardEntry>> CreateLeaderboardPageAsync(IQueryable<ChallengeParticipant> participants,
-        UserChallenge challenge, int page, int pageSize, CancellationToken cancellationToken)
+        UserChallenge challenge, int page, int pageSize, IMediaResponseFactory mediaResponseFactory, CancellationToken cancellationToken)
     {
         var totalCount = await participants.CountAsync(cancellationToken);
         var ranked = await participants.ToListAsync(cancellationToken);
+        var avatars = await ChallengeAvatarResponseFactory.CreateManyAsync(ranked.Select(participant => participant.User), mediaResponseFactory, cancellationToken);
         var rank = 0;
         var previousScore = float.NaN;
         var rows = ranked.Select((participant, index) =>
         {
             if (participant.Score != previousScore) rank = index + 1;
             previousScore = participant.Score;
-            return new ChallengeLeaderboardEntry(participant.UserId, participant.User.DisplayName, participant.User.ProfilePictureUrl,
+            var avatar = ChallengeAvatarResponseFactory.Get(participant.User, avatars);
+            return new ChallengeLeaderboardEntry(participant.UserId, participant.User.DisplayName, avatar?.Thumbnail?.Url, avatar,
                 participant.Score, rank, ChallengeResponseFactory.ProgressPercent(challenge, participant.Score));
         }).Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return new ChallengePageResponse<ChallengeLeaderboardEntry>(rows, page, pageSize, totalCount);
@@ -136,25 +149,63 @@ public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQue
 {
     private readonly FitspireDbContext _context;
     private readonly IChallengeAccessService _access;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
 
-    public GetChallengeResultsHandler(FitspireDbContext context, IChallengeAccessService access)
+    public GetChallengeResultsHandler(FitspireDbContext context, IChallengeAccessService access, IMediaResponseFactory mediaResponseFactory)
     {
         _context = context;
         _access = access;
+        _mediaResponseFactory = mediaResponseFactory;
     }
 
     public async Task<ChallengePageResponse<ChallengeLeaderboardEntry>> Handle(GetChallengeResultsQuery request, CancellationToken cancellationToken)
     {
         var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
         await _access.EnsureCanViewAsync(challenge, request.UserId, cancellationToken);
-        var query = _context.ChallengeResults.Include(item => item.User).Where(item => item.ChallengeId == challenge.Id).OrderBy(item => item.Rank);
+        var query = _context.ChallengeResults
+            .Include(item => item.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Where(item => item.ChallengeId == challenge.Id).OrderBy(item => item.Rank);
         var totalCount = await query.CountAsync(cancellationToken);
-        var rows = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize)
-            .Select(item => new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, item.User.ProfilePictureUrl, item.Score, item.Rank,
-                challenge.Mode == ChallengeModes.Target && challenge.TargetValue.HasValue ? Math.Min(100, item.Score / challenge.TargetValue.Value * 100) : null))
-            .ToListAsync(cancellationToken);
+        var results = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(cancellationToken);
+        var avatars = await ChallengeAvatarResponseFactory.CreateManyAsync(results.Select(result => result.User), _mediaResponseFactory, cancellationToken);
+        var rows = results.Select(item =>
+        {
+            var avatar = ChallengeAvatarResponseFactory.Get(item.User, avatars);
+            var progress = challenge.Mode == ChallengeModes.Target && challenge.TargetValue.HasValue
+                ? Math.Min(100, item.Score / challenge.TargetValue.Value * 100)
+                : null;
+            return new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, avatar?.Thumbnail?.Url, avatar,
+                item.Score, item.Rank, progress);
+        }).ToList();
         return new ChallengePageResponse<ChallengeLeaderboardEntry>(rows, request.Page, request.PageSize, totalCount);
     }
+}
+
+internal static class ChallengeAvatarResponseFactory
+{
+    public static async Task<ChallengeCreatorResponse> CreateCreatorAsync(
+        AppUser user,
+        IMediaResponseFactory mediaResponseFactory,
+        CancellationToken cancellationToken)
+    {
+        var avatars = await CreateManyAsync([user], mediaResponseFactory, cancellationToken);
+        var avatar = Get(user, avatars);
+        return new ChallengeCreatorResponse(user.Id, user.UserName ?? string.Empty, user.DisplayName, avatar?.Thumbnail?.Url, avatar);
+    }
+
+    public static async Task<IReadOnlyDictionary<Guid, MediaResponse>> CreateManyAsync(
+        IEnumerable<AppUser> users,
+        IMediaResponseFactory mediaResponseFactory,
+        CancellationToken cancellationToken)
+    {
+        return await mediaResponseFactory.CreateManyAsync(
+            users.Select(user => user.ProfilePictureMedia).OfType<backend.Modules.Media.Domain.MediaAsset>(), cancellationToken);
+    }
+
+    public static MediaResponse? Get(AppUser user, IReadOnlyDictionary<Guid, MediaResponse> avatars) =>
+        user.ProfilePictureMedia is null ? null : avatars.GetValueOrDefault(user.ProfilePictureMedia.Id);
 }
 
 public class GetIncomingChallengeInvitationsHandler : IRequestHandler<GetIncomingChallengeInvitationsQuery, ChallengePageResponse<ChallengeInvitationResponse>>

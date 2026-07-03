@@ -32,12 +32,17 @@ public class SocialRepository : ISocialRepository
 
     public Task<AppUser?> GetSocialUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return _context.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
+        return _context.Users.AsNoTracking()
+            .Include(user => user.ProfilePictureMedia)
+                .ThenInclude(media => media!.Variants)
+            .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
     }
 
     public Task<List<AppUser>> SearchSocialUsersAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return _context.Users.AsNoTracking()
+            .Include(user => user.ProfilePictureMedia)
+                .ThenInclude(media => media!.Variants)
             .Where(user => user.UserName!.Contains(query) || user.DisplayName.Contains(query))
             .OrderBy(user => user.UserName)
             .Skip((page - 1) * pageSize)
@@ -99,6 +104,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.FollowRequests.AsNoTracking()
             .Include(request => request.Requester)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(request => request.AddresseeId == userId && request.Status == FollowRequestStatus.Pending)
             .OrderByDescending(request => request.RequestedAt)
             .Skip((page - 1) * pageSize)
@@ -110,6 +117,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.FollowRequests.AsNoTracking()
             .Include(request => request.Addressee)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(request => request.RequesterId == userId && request.Status == FollowRequestStatus.Pending)
             .OrderByDescending(request => request.RequestedAt)
             .Skip((page - 1) * pageSize)
@@ -121,6 +130,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.Followers.AsNoTracking()
             .Include(follow => follow.FollowerUser)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(follow => follow.FollowedId == userId)
             .OrderByDescending(follow => follow.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -132,6 +143,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.Followers.AsNoTracking()
             .Include(follow => follow.FollowedUser)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(follow => follow.FollowerId == userId)
             .OrderByDescending(follow => follow.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -144,9 +157,16 @@ public class SocialRepository : ISocialRepository
     {
         return await _context.Posts
             .Include(p => p.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Include(p => p.Media)
+                .ThenInclude(media => media.MediaAsset)
+                    .ThenInclude(asset => asset.Variants)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
                 .ThenInclude(comment => comment.User)
+                    .ThenInclude(user => user.ProfilePictureMedia)
+                        .ThenInclude(media => media!.Variants)
             .Include(p => p.Comments)
                 .ThenInclude(comment => comment.Likes)
             .FirstOrDefaultAsync(p => p.Id == postId, cancellationToken);
@@ -170,9 +190,16 @@ public class SocialRepository : ISocialRepository
 
         return await _context.Posts
             .Include(p => p.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Include(p => p.Media)
+                .ThenInclude(media => media.MediaAsset)
+                    .ThenInclude(asset => asset.Variants)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
                 .ThenInclude(c => c.User)
+                    .ThenInclude(user => user.ProfilePictureMedia)
+                        .ThenInclude(media => media!.Variants)
             .Where(p => followedUserIds.Contains(p.UserId))
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -184,9 +211,16 @@ public class SocialRepository : ISocialRepository
     {
         return await _context.Posts
             .Include(p => p.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Include(p => p.Media)
+                .ThenInclude(media => media.MediaAsset)
+                    .ThenInclude(asset => asset.Variants)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
                 .ThenInclude(c => c.User)
+                    .ThenInclude(user => user.ProfilePictureMedia)
+                        .ThenInclude(media => media!.Variants)
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -229,6 +263,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.PostLikes.AsNoTracking()
             .Include(like => like.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(like => like.PostId == postId)
             .OrderByDescending(like => like.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -257,6 +293,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.CommentLikes.AsNoTracking()
             .Include(like => like.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Where(like => like.CommentId == commentId)
             .OrderByDescending(like => like.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -317,6 +355,8 @@ public class SocialRepository : ISocialRepository
     {
         return _context.Comments.AsNoTracking()
             .Include(comment => comment.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
             .Include(comment => comment.Likes)
             .Where(comment => comment.PostId == postId);
     }
@@ -325,9 +365,16 @@ public class SocialRepository : ISocialRepository
     {
         return _context.Posts
             .Include(post => post.User)
+                .ThenInclude(user => user.ProfilePictureMedia)
+                    .ThenInclude(media => media!.Variants)
+            .Include(post => post.Media)
+                .ThenInclude(media => media.MediaAsset)
+                    .ThenInclude(asset => asset.Variants)
             .Include(post => post.Likes)
             .Include(post => post.Comments)
                 .ThenInclude(comment => comment.User)
+                    .ThenInclude(user => user.ProfilePictureMedia)
+                        .ThenInclude(media => media!.Variants)
             .Where(post => !post.User.IsPrivate)
             .OrderByDescending(post => post.CreatedAt)
             .Skip((page - 1) * pageSize)

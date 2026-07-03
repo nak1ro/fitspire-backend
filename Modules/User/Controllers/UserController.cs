@@ -14,15 +14,18 @@ public class UserController : ControllerBase
     private readonly IUserService _userService;
     private readonly IValidator<UpdateProfileDto> _updateProfileValidator;
     private readonly IValidator<UpdateUserPreferencesDto> _updatePreferencesValidator;
+    private readonly IValidator<AttachProfilePictureDto> _attachProfilePictureValidator;
 
     public UserController(
         IUserService userService,
         IValidator<UpdateProfileDto> updateProfileValidator,
-        IValidator<UpdateUserPreferencesDto> updatePreferencesValidator)
+        IValidator<UpdateUserPreferencesDto> updatePreferencesValidator,
+        IValidator<AttachProfilePictureDto> attachProfilePictureValidator)
     {
         _userService = userService;
         _updateProfileValidator = updateProfileValidator;
         _updatePreferencesValidator = updatePreferencesValidator;
+        _attachProfilePictureValidator = attachProfilePictureValidator;
     }
 
     [Authorize]
@@ -43,10 +46,19 @@ public class UserController : ControllerBase
     }
     
     [Authorize]
-    [HttpPatch("profile/photo")]
-    public async Task<ActionResult<UserProfileDto>> UpdateProfilePicture([FromForm] IFormFile file)
+    [HttpPut("profile/photo")]
+    public async Task<ActionResult<UserProfileDto>> AttachProfilePicture([FromBody] AttachProfilePictureDto dto)
     {
-        var updated = await _userService.UpdateProfilePictureAsync(User.GetRequiredUserId(), file);
+        await _attachProfilePictureValidator.ValidateAndThrowAsync(dto);
+        var updated = await _userService.AttachProfilePictureAsync(User.GetRequiredUserId(), dto.MediaAssetId);
+        return Ok(updated);
+    }
+
+    [Authorize]
+    [HttpDelete("profile/photo")]
+    public async Task<ActionResult<UserProfileDto>> RemoveProfilePicture()
+    {
+        var updated = await _userService.RemoveProfilePictureAsync(User.GetRequiredUserId());
         return Ok(updated);
     }
 
