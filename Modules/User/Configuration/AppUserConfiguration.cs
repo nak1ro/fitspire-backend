@@ -70,18 +70,6 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasForeignKey(gm => gm.UserId)
             .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
 
-        // 👫 FriendshipSentRequests
-        builder.HasMany(u => u.FriendshipSentRequests)
-            .WithOne(r => r.Requester)
-            .HasForeignKey(r => r.RequesterId)
-            .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
-
-        // 👫 FriendshipReceivedRequests
-        builder.HasMany(u => u.FriendshipReceivedRequests)
-            .WithOne(r => r.Addressee)
-            .HasForeignKey(r => r.AddresseeId)
-            .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
-
         // 🏆 ChallengeParticipants
         builder.HasMany(u => u.ChallengeParticipants)
             .WithOne(cp => cp.User)
@@ -159,12 +147,6 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.HasMany(u => u.ReportsReceived)
             .WithOne(r => r.ReportedUser)
             .HasForeignKey(r => r.ReportedUserId)
-            .OnDelete(DeleteBehavior.NoAction); // ❌ NO CASCADE
-
-        // 👥 Friends
-        builder.HasMany(u => u.Friends)
-            .WithOne(f => f.User1)
-            .HasForeignKey(f => f.User1Id)
             .OnDelete(DeleteBehavior.NoAction); // ❌ NO CASCADE
 
         // 👥 GroupsCreated

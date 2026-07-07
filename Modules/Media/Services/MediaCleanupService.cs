@@ -2,6 +2,7 @@ using backend.Data;
 using backend.Modules.Media.Configuration;
 using backend.Modules.Media.Contracts;
 using backend.Modules.Media.Domain;
+using backend.Modules.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 

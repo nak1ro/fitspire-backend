@@ -1,6 +1,5 @@
 using backend.Modules.Badge.Domain;
 using backend.Modules.Challenge.Domain;
-using backend.Modules.Friendship.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
@@ -37,9 +36,6 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<Follower> Followers { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<SavedPost> SavedPosts { get; set; }
-
-    public DbSet<FriendshipConnection> Friendships { get; set; }
-    public DbSet<FriendshipRequest> FriendshipRequests { get; set; }
 
     public DbSet<UserChallenge> Challenges { get; set; }
     public DbSet<ChallengeParticipant> ChallengeParticipants { get; set; }

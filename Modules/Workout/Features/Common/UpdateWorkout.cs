@@ -75,7 +75,7 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
                         throw new DomainException("One or more exercises do not exist.");
                     var existingExercises = gym.Exercises.ToList();
                     _context.GymWorkoutExercises.RemoveRange(existingExercises);
-                    gym.ReplaceExercises([]);
+                    gym.ClearExercises();
                     foreach (var exercise in request.Exercises)
                     {
                         var entry = gym.AddExercise(exercise.ExerciseId, exercise.Notes);

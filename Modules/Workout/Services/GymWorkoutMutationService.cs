@@ -4,7 +4,6 @@ using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 
 namespace backend.Modules.Workout.Services;
 
@@ -53,7 +52,7 @@ public class GymWorkoutMutationService : IGymWorkoutMutationService
     {
         var ownsTransaction = _context.Database.CurrentTransaction is null;
         await using var transaction = ownsTransaction
-            ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            ? await _context.Database.BeginTransactionAsync(cancellationToken)
             : null;
         stageTemporaryOrder();
         await _unitOfWork.SaveChangesAsync(cancellationToken);

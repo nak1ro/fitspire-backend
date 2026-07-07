@@ -174,7 +174,7 @@ public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQue
         {
             var avatar = ChallengeAvatarResponseFactory.Get(item.User, avatars);
             var progress = challenge.Mode == ChallengeModes.Target && challenge.TargetValue.HasValue
-                ? Math.Min(100, item.Score / challenge.TargetValue.Value * 100)
+                ? (double?)Math.Min(100, item.Score / challenge.TargetValue.Value * 100)
                 : null;
             return new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, avatar?.Thumbnail?.Url, avatar,
                 item.Score, item.Rank, progress);

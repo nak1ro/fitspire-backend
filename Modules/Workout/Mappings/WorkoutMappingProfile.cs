@@ -30,7 +30,7 @@ public class WorkoutMappingProfile : Profile
             .ForCtorParam(nameof(ExerciseResponse.CategoryName), opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : null));
 
         CreateMap<PersonalRecord, PersonalRecordResponse>()
-            .ForCtorParam(nameof(PersonalRecordResponse.Unit), opt => opt.MapFrom(s => backend.Modules.Workout.Services.PersonalRecordMetricCatalogue.Units.TryGetValue(s.Metric, out var unit) ? unit : "count"))
+            .ForCtorParam(nameof(PersonalRecordResponse.Unit), opt => opt.MapFrom(s => ResolvePersonalRecordUnit(s.Metric)))
             .ForCtorParam(nameof(PersonalRecordResponse.ExerciseName), opt => opt.MapFrom(s => s.Exercise != null ? s.Exercise.Name : null))
             .ForCtorParam(nameof(PersonalRecordResponse.AchievedAt), opt => opt.MapFrom(s => s.UpdatedAt ?? s.CreatedAt));
             
@@ -60,4 +60,9 @@ public class WorkoutMappingProfile : Profile
             .ForCtorParam(nameof(WorkoutResponse.IsRoutine), opt => opt.MapFrom(_ => false))
             .ForCtorParam(nameof(WorkoutResponse.RoutineName), opt => opt.MapFrom(_ => (string?)null));
     }
+
+    private static string ResolvePersonalRecordUnit(string metric) =>
+        backend.Modules.Workout.Services.PersonalRecordMetricCatalogue.Units.TryGetValue(metric, out var unit)
+            ? unit
+            : "count";
 }

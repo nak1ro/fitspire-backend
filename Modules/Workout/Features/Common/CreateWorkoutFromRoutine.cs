@@ -108,8 +108,10 @@ public class CreateWorkoutFromRoutineHandler : IRequestHandler<CreateWorkoutFrom
                 }
                 else
                 {
-                    entry.AddSet(GetRequiredInt(exercise, "Reps"), GetRequiredDouble(exercise, "Weight"),
-                        null, null, false, null, null, false);
+                    var setCount = GetInt(exercise, "Sets") ?? 1;
+                    for (var index = 0; index < Math.Max(1, setCount); index++)
+                        entry.AddSet(GetRequiredInt(exercise, "Reps"), GetRequiredDouble(exercise, "Weight"),
+                            null, null, false, null, null, false);
                 }
             }
         }

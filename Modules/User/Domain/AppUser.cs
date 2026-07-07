@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using backend.Modules.Badge.Domain;
 using backend.Modules.Challenge.Domain;
-using backend.Modules.Friendship.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
 using backend.Modules.Moderation.Domain;
@@ -61,10 +60,6 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
     public ICollection<Follower> Followers { get; set; } = new List<Follower>(); // Who follows me
     public ICollection<Follower> Following { get; set; } = new List<Follower>(); // Who I follow
-    public ICollection<FriendshipConnection> Friends { get; set; } = new List<FriendshipConnection>();
-    public ICollection<FriendshipRequest> FriendshipSentRequests { get; set; } = new List<FriendshipRequest>();
-    public ICollection<FriendshipRequest> FriendshipReceivedRequests { get; set; } = new List<FriendshipRequest>();
-
     // Reports and Bans
     public ICollection<Report> ReportsMade { get; set; } = new List<Report>();
     public ICollection<Report> ReportsReceived { get; set; } = new List<Report>();

@@ -55,7 +55,7 @@ public class PersonalRecordRecalculationService : IPersonalRecordRecalculationSe
 
     private static void AddGymCandidates(IDictionary<RecordKey, Candidate> candidates, GymUserWorkoutDetails gym)
     {
-        Add(candidates, gym, PersonalRecordMetricCatalogue.TotalVolume, gym.CalculateTotalVolume());
+        Add(candidates, gym, PersonalRecordMetricCatalogue.TotalVolume, gym.GetTotalVolume());
         Add(candidates, gym, PersonalRecordMetricCatalogue.MaximumWeight, gym.GetMaxWeight());
         foreach (var exercise in gym.Exercises)
         {

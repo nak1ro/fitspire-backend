@@ -5,7 +5,6 @@ using backend.Modules.Goal.Services;
 using backend.Modules.Progress.Services;
 using backend.Modules.Shared;
 using backend.Modules.Workout.Domain.Entities;
-using System.Data;
 
 namespace backend.Modules.Workout.Services;
 
@@ -36,7 +35,7 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
     {
         var ownsTransaction = _context.Database.CurrentTransaction is null;
         await using var transaction = ownsTransaction
-            ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            ? await _context.Database.BeginTransactionAsync(cancellationToken)
             : null;
         await _contributions.ReconcileWorkoutAsync(workout, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -54,7 +53,7 @@ public class WorkoutDerivedDataService : IWorkoutDerivedDataService
     {
         var ownsTransaction = _context.Database.CurrentTransaction is null;
         await using var transaction = ownsTransaction
-            ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            ? await _context.Database.BeginTransactionAsync(cancellationToken)
             : null;
         await _contributions.DeactivateWorkoutAsync(workoutId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
