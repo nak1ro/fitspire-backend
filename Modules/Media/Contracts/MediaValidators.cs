@@ -28,6 +28,7 @@ public class InitiateMediaUploadRequestValidator : AbstractValidator<InitiateMed
     {
         MediaPurpose.ProfilePicture => settings.ProfilePictureMaxBytes,
         MediaPurpose.PostImage => settings.PostImageMaxBytes,
+        MediaPurpose.BodyProgressPhoto => settings.BodyProgressPhotoMaxBytes,
         _ => 0
     };
 }

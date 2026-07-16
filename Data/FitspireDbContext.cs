@@ -1,4 +1,5 @@
 using backend.Modules.Badge.Domain;
+using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Group.Domain;
@@ -27,6 +28,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<AppUserPreference> UserPreferences { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
     public DbSet<MediaVariant> MediaVariants { get; set; }
+    public DbSet<BodyCheckIn> BodyCheckIns { get; set; }
 
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }

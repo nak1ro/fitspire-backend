@@ -26,6 +26,7 @@ public class MediaStorageOptionsValidator : IValidateOptions<MediaStorageOptions
         ValidatePositive(options.MaxPendingUploadsPerUser, nameof(options.MaxPendingUploadsPerUser), errors);
         ValidatePositive(options.ProfilePictureMaxBytes, nameof(options.ProfilePictureMaxBytes), errors);
         ValidatePositive(options.PostImageMaxBytes, nameof(options.PostImageMaxBytes), errors);
+        ValidatePositive(options.BodyProgressPhotoMaxBytes, nameof(options.BodyProgressPhotoMaxBytes), errors);
         ValidatePositive(options.MaxDecodedPixels, nameof(options.MaxDecodedPixels), errors);
 
         if (options.PostImageLimit is < 1 or > 10)

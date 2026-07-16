@@ -282,6 +282,7 @@ public class MediaUploadService : IMediaUploadService
     {
         MediaPurpose.ProfilePicture => _options.ProfilePictureMaxBytes,
         MediaPurpose.PostImage => _options.PostImageMaxBytes,
+        MediaPurpose.BodyProgressPhoto => _options.BodyProgressPhotoMaxBytes,
         _ => throw new DomainException("Unsupported media purpose.")
     };
 

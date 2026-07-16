@@ -17,6 +17,7 @@ public class MediaStorageOptions
     public int MaxPendingUploadsPerUser { get; set; } = 20;
     public long ProfilePictureMaxBytes { get; set; } = 15 * 1024 * 1024;
     public long PostImageMaxBytes { get; set; } = 30 * 1024 * 1024;
+    public long BodyProgressPhotoMaxBytes { get; set; } = 30 * 1024 * 1024;
     public long MaxDecodedPixels { get; set; } = 40_000_000;
     public int PostImageLimit { get; set; } = 10;
 

@@ -67,6 +67,7 @@ public class ImageSharpImageProcessor : IImageProcessor
     {
         MediaPurpose.ProfilePicture => (ProfilePrimaryMaxEdge, ProfileThumbnailMaxEdge),
         MediaPurpose.PostImage => (PostPrimaryMaxEdge, PostThumbnailMaxEdge),
+        MediaPurpose.BodyProgressPhoto => (PostPrimaryMaxEdge, PostThumbnailMaxEdge),
         _ => throw new DomainException("Unsupported media purpose.")
     };
 

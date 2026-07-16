@@ -6,5 +6,6 @@ namespace backend.Modules.Media.Domain;
 public enum MediaPurpose
 {
     ProfilePicture = 1,
-    PostImage = 2
+    PostImage = 2,
+    BodyProgressPhoto = 3
 }
