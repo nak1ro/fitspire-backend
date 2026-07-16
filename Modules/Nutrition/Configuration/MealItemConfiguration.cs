@@ -12,14 +12,25 @@ public class MealItemConfiguration : IEntityTypeConfiguration<MealItem>
 
         builder.HasKey(mi => mi.Id);
 
-        builder.Property(mi => mi.Name)
-            .IsRequired();
+        builder.Property(mi => mi.Name).HasMaxLength(200).IsRequired();
+        builder.Property(mi => mi.Quantity).HasPrecision(12, 3).IsRequired();
+        builder.Property(mi => mi.QuantityUnit).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(mi => mi.CustomUnitName).HasMaxLength(50);
+        builder.Property(mi => mi.CaloriesKcal).HasPrecision(12, 2);
+        builder.Property(mi => mi.ProteinGrams).HasPrecision(12, 2);
+        builder.Property(mi => mi.CarbsGrams).HasPrecision(12, 2);
+        builder.Property(mi => mi.FatGrams).HasPrecision(12, 2);
+        builder.Property(mi => mi.SnapshotKey).HasMaxLength(1_500).IsRequired();
+        builder.Property(mi => mi.CreatedAt).HasDefaultValueSql("NOW()");
 
-        builder.Property(mi => mi.Calories);
-        builder.Property(mi => mi.Protein);
-        builder.Property(mi => mi.Carbs);
-        builder.Property(mi => mi.Fat);
-        builder.Property(mi => mi.Quantity);
-        builder.Property(mi => mi.Unit);
+        builder.HasIndex(mi => new { mi.MealId, mi.OrderIndex })
+            .IsUnique()
+            .HasDatabaseName("UX_MealItem_ActiveMealOrder")
+            .HasFilter("\"DeletedAt\" IS NULL");
+
+        builder.HasOne<FavouriteFood>()
+            .WithMany()
+            .HasForeignKey(mi => mi.FavouriteFoodId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

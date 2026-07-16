@@ -12,13 +12,14 @@ public class MealConfiguration : IEntityTypeConfiguration<Meal>
 
         builder.HasKey(m => m.Id);
 
-        builder.Property(m => m.Date)
-            .IsRequired();
+        builder.Property(m => m.MealDate).IsRequired();
+        builder.Property(m => m.MealType).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(m => m.Name).HasMaxLength(100);
+        builder.Property(m => m.Notes).HasMaxLength(1_000);
+        builder.Property(m => m.CreatedAt).HasDefaultValueSql("NOW()");
 
-        builder.Property(m => m.TotalCalories);
-
-        builder.Property(m => m.CreatedAt)
-            .HasDefaultValueSql("NOW()");
+        builder.HasIndex(m => new { m.UserId, m.MealDate })
+            .HasDatabaseName("IX_Meal_UserId_MealDate");
 
         builder.HasOne(m => m.User)
             .WithMany(u => u.Meals)
@@ -29,5 +30,7 @@ public class MealConfiguration : IEntityTypeConfiguration<Meal>
             .WithOne(i => i.Meal)
             .HasForeignKey(i => i.MealId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(m => m.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

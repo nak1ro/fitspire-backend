@@ -77,6 +77,8 @@ public class AppUser : IdentityUser<Guid>
 
     // Nutrition
     public ICollection<Meal> Meals { get; set; } = new List<Meal>();
+    public NutritionTarget? NutritionTarget { get; set; }
+    public ICollection<FavouriteFood> FavouriteFoods { get; set; } = new List<FavouriteFood>();
 
     // Groups
     public ICollection<UserGroup> GroupsCreated { get; set; } = new List<UserGroup>();

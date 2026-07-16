@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(FitspireDbContext))]
-    partial class FitspireDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260829200101_AddBodyTracking")]
+    partial class AddBodyTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1173,121 +1176,29 @@ namespace backend.Migrations
                     b.ToTable("Notification", (string)null);
                 });
 
-            modelBuilder.Entity("backend.Modules.Nutrition.Domain.FavouriteFood", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("CaloriesKcal")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal?>("CarbsGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("CustomUnitName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("DefinitionKey")
-                        .IsRequired()
-                        .HasMaxLength(1500)
-                        .HasColumnType("character varying(1500)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("FatGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<decimal?>("ProteinGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(12, 3)
-                        .HasColumnType("numeric(12,3)");
-
-                    b.Property<string>("QuantityUnit")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "DefinitionKey")
-                        .IsUnique()
-                        .HasDatabaseName("UX_FavouriteFood_ActiveUserDefinition")
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.HasIndex("UserId", "Name")
-                        .HasDatabaseName("IX_FavouriteFood_UserId_Name");
-
-                    b.ToTable("FavouriteFood", (string)null);
-                });
-
             modelBuilder.Entity("backend.Modules.Nutrition.Domain.Meal", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<TimeOnly?>("ConsumedAtLocalTime")
-                        .HasColumnType("time without time zone");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly>("MealDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("MealType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<float?>("TotalCalories")
+                        .HasColumnType("real");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "MealDate")
-                        .HasDatabaseName("IX_Meal_UserId_MealDate");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Meal", (string)null);
                 });
@@ -1298,117 +1209,36 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("CaloriesKcal")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                    b.Property<float?>("Calories")
+                        .HasColumnType("real");
 
-                    b.Property<decimal?>("CarbsGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                    b.Property<float?>("Carbs")
+                        .HasColumnType("real");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("CustomUnitName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("FatGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<Guid?>("FavouriteFoodId")
-                        .HasColumnType("uuid");
+                    b.Property<float?>("Fat")
+                        .HasColumnType("real");
 
                     b.Property<Guid>("MealId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("integer");
+                    b.Property<float?>("Protein")
+                        .HasColumnType("real");
 
-                    b.Property<decimal?>("ProteinGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
+                    b.Property<float?>("Quantity")
+                        .HasColumnType("real");
 
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(12, 3)
-                        .HasColumnType("numeric(12,3)");
-
-                    b.Property<string>("QuantityUnit")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("SnapshotKey")
-                        .IsRequired()
-                        .HasMaxLength(1500)
-                        .HasColumnType("character varying(1500)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("Unit")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FavouriteFoodId");
-
-                    b.HasIndex("MealId", "OrderIndex")
-                        .IsUnique()
-                        .HasDatabaseName("UX_MealItem_ActiveMealOrder")
-                        .HasFilter("\"DeletedAt\" IS NULL");
+                    b.HasIndex("MealId");
 
                     b.ToTable("MealItem", (string)null);
-                });
-
-            modelBuilder.Entity("backend.Modules.Nutrition.Domain.NutritionTarget", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("CaloriesKcal")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal?>("CarbsGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<decimal?>("FatGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal?>("ProteinGrams")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_NutritionTarget_UserId");
-
-                    b.ToTable("NutritionTarget", (string)null);
                 });
 
             modelBuilder.Entity("backend.Modules.Progress.Domain.ActivityContribution", b =>
@@ -2666,17 +2496,6 @@ namespace backend.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("backend.Modules.Nutrition.Domain.FavouriteFood", b =>
-                {
-                    b.HasOne("backend.Modules.User.Domain.AppUser", "User")
-                        .WithMany("FavouriteFoods")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("backend.Modules.Nutrition.Domain.Meal", b =>
                 {
                     b.HasOne("backend.Modules.User.Domain.AppUser", "User")
@@ -2690,11 +2509,6 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Modules.Nutrition.Domain.MealItem", b =>
                 {
-                    b.HasOne("backend.Modules.Nutrition.Domain.FavouriteFood", null)
-                        .WithMany()
-                        .HasForeignKey("FavouriteFoodId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("backend.Modules.Nutrition.Domain.Meal", "Meal")
                         .WithMany("Items")
                         .HasForeignKey("MealId")
@@ -2702,17 +2516,6 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Meal");
-                });
-
-            modelBuilder.Entity("backend.Modules.Nutrition.Domain.NutritionTarget", b =>
-                {
-                    b.HasOne("backend.Modules.User.Domain.AppUser", "User")
-                        .WithOne("NutritionTarget")
-                        .HasForeignKey("backend.Modules.Nutrition.Domain.NutritionTarget", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("backend.Modules.Social.Domain.Comment", b =>
@@ -3179,8 +2982,6 @@ namespace backend.Migrations
 
                     b.Navigation("Comments");
 
-                    b.Navigation("FavouriteFoods");
-
                     b.Navigation("Followers");
 
                     b.Navigation("Following");
@@ -3196,8 +2997,6 @@ namespace backend.Migrations
                     b.Navigation("MediaAssets");
 
                     b.Navigation("Notifications");
-
-                    b.Navigation("NutritionTarget");
 
                     b.Navigation("PersonalRecords");
 

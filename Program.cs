@@ -19,6 +19,7 @@ using backend.Modules.Badge.Data;
 using backend.Modules.Badge;
 using backend.Modules.BodyTracking;
 using backend.Modules.Media;
+using backend.Modules.Nutrition;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 
@@ -46,6 +47,7 @@ builder.Services.AddUserModule();
 builder.Services.AddWorkoutModule();
 builder.Services.AddProgressModule();
 builder.Services.AddBodyTrackingModule();
+builder.Services.AddNutritionModule();
 builder.Services.AddGoalModule();
 builder.Services.AddChallengeModule();
 builder.Services.AddBadgeModule();
