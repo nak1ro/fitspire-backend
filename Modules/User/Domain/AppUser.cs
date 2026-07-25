@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using backend.Modules.Badge.Domain;
+using backend.Modules.AiCoaching.Domain;
 using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
@@ -69,6 +70,7 @@ public class AppUser : IdentityUser<Guid>
     // Goals and Progress
     public ICollection<UserGoal> Goals { get; set; } = new List<UserGoal>();
     public ICollection<BodyCheckIn> BodyCheckIns { get; set; } = new List<BodyCheckIn>();
+    public ICollection<WeeklyCoachReport> WeeklyCoachReports { get; set; } = new List<WeeklyCoachReport>();
 
     // Badges and Records
     public ICollection<UserBadge> Badges { get; set; } = new List<UserBadge>();

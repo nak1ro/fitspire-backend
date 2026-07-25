@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using backend.Modules.Shared.Domain;
+using backend.Modules.AiCoaching.Contracts;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -50,6 +51,9 @@ public class ErrorHandlingMiddleware
         DomainException => HttpStatusCode.BadRequest,
         InvalidOperationException => HttpStatusCode.BadRequest,
         StorageUnavailableException => HttpStatusCode.ServiceUnavailable,
+        AiServiceUnavailableException => HttpStatusCode.ServiceUnavailable,
+        AiProviderException { IsRetryable: true } => HttpStatusCode.ServiceUnavailable,
+        AiProviderException => HttpStatusCode.ServiceUnavailable,
         ConflictException => HttpStatusCode.Conflict,
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => HttpStatusCode.Conflict,
         NotFoundException => HttpStatusCode.NotFound,
@@ -63,6 +67,9 @@ public class ErrorHandlingMiddleware
         DomainException => "Domain rule violation",
         InvalidOperationException => "Invalid operation",
         StorageUnavailableException => "Storage service unavailable",
+        AiServiceUnavailableException => "AI coaching unavailable",
+        AiProviderException { IsRetryable: true } => "AI coaching temporarily unavailable",
+        AiProviderException => "AI coaching unavailable",
         ConflictException => "Conflict",
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => "Conflict",
         NotFoundException => "Resource not found",
