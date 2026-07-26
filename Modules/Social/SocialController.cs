@@ -129,7 +129,7 @@ public class SocialController : ControllerBase
 
         var userId = User.GetRequiredUserId();
         var postId = await _mediator.Send(new CreatePostCommand(userId, request.Content, request.MediaAssetIds));
-        return CreatedAtAction(nameof(GetFeed), new { id = postId }, postId);
+        return CreatedAtAction(nameof(GetPost), new { postId }, postId);
     }
 
     /// <summary>
@@ -169,6 +169,21 @@ public class SocialController : ControllerBase
     {
         var response = await _mediator.Send(new LikePostCommand(User.GetRequiredUserId(), postId, true));
         return Ok(response);
+    }
+
+    [HttpPost("posts/{postId:guid}/saved")]
+    public async Task<ActionResult<SavePostResponse>> SavePost(Guid postId) =>
+        Ok(await _mediator.Send(new SavePostCommand(User.GetRequiredUserId(), postId, true)));
+
+    [HttpDelete("posts/{postId:guid}/saved")]
+    public async Task<ActionResult<SavePostResponse>> UnsavePost(Guid postId) =>
+        Ok(await _mediator.Send(new SavePostCommand(User.GetRequiredUserId(), postId, false)));
+
+    [HttpGet("saved-posts")]
+    public async Task<ActionResult<List<FeedItemResponse>>> GetSavedPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        return Ok(await _mediator.Send(new GetSavedPostsQuery(User.GetRequiredUserId(), page, pageSize)));
     }
 
     [HttpDelete("posts/{postId:guid}/likes")]

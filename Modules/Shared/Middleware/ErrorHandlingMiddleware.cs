@@ -11,10 +11,12 @@ namespace backend.Modules.Shared.Middleware;
 public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-    public ErrorHandlingMiddleware(RequestDelegate next)
+    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -29,9 +31,12 @@ public class ErrorHandlingMiddleware
         }
     }
 
-    private static async Task WriteErrorResponseAsync(HttpContext context, Exception exception)
+    private async Task WriteErrorResponseAsync(HttpContext context, Exception exception)
     {
         var statusCode = GetStatusCode(exception);
+        if (statusCode == HttpStatusCode.InternalServerError)
+            _logger.LogError(exception, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+
         var response = new
         {
             status = (int)statusCode,
@@ -57,6 +62,7 @@ public class ErrorHandlingMiddleware
         ConflictException => HttpStatusCode.Conflict,
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => HttpStatusCode.Conflict,
         NotFoundException => HttpStatusCode.NotFound,
+        System.Security.Authentication.AuthenticationException => HttpStatusCode.Unauthorized,
         UnauthorizedAccessException => HttpStatusCode.Forbidden,
         _ => HttpStatusCode.InternalServerError
     };
@@ -73,6 +79,7 @@ public class ErrorHandlingMiddleware
         ConflictException => "Conflict",
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => "Conflict",
         NotFoundException => "Resource not found",
+        System.Security.Authentication.AuthenticationException => "Unauthorized",
         UnauthorizedAccessException => "Forbidden",
         _ => "Server error"
     };

@@ -156,7 +156,7 @@ public class ChallengeController : ControllerBase
     }
 
     [HttpGet("{challengeId:guid}/results")]
-    public async Task<ActionResult<ChallengePageResponse<ChallengeLeaderboardEntry>>> Results(Guid challengeId,
+    public async Task<ActionResult<ChallengePageResponse<ChallengeResultEntry>>> Results(Guid challengeId,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         ValidatePagination(page, pageSize);

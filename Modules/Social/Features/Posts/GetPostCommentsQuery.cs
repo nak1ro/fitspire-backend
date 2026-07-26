@@ -38,14 +38,17 @@ public class GetPostCommentsHandler : IRequestHandler<GetPostCommentsQuery, List
             comments.Select(comment => comment.Id),
             cancellationToken);
         var avatars = await SocialUserResponseMapper.GetProfilePicturesAsync(
-            comments.Select(comment => comment.User), _mediaResponseFactory, cancellationToken);
+            comments.Select(comment => comment.User)
+                .Concat(comments.Select(comment => comment.ReplyToComment?.User).OfType<AppUser>()),
+            _mediaResponseFactory, cancellationToken);
         return comments.Select(comment => new CommentResponse(
             comment.Id, comment.UserId, comment.User.UserName ?? "Unknown",
             GetAvatarUrl(comment.User, avatars), GetAvatar(comment.User, avatars),
             comment.Content, comment.RootCommentId, comment.ReplyToCommentId, comment.Likes.Count,
             comment.Likes.Any(like => like.UserId == request.ViewerUserId),
             replyCounts.GetValueOrDefault(comment.Id),
-            comment.CreatedAt, comment.UpdatedAt)).ToList();
+            comment.CreatedAt, comment.UpdatedAt,
+            comment.ReplyToComment is null ? null : SocialUserResponseMapper.MapSummary(comment.ReplyToComment.User, avatars))).ToList();
     }
 
     private static MediaResponse? GetAvatar(AppUser user, IReadOnlyDictionary<Guid, MediaResponse> avatars) =>

@@ -1,4 +1,5 @@
 using backend.Modules.Shared;
+using backend.Modules.Shared.Domain;
 using backend.Modules.Workout.Domain.Entities;
 using backend.Modules.Workout.Domain.Enums;
 using backend.Modules.Workout.Infrastructure;
@@ -53,6 +54,7 @@ public class CreateGymWorkoutHandler : IRequestHandler<CreateGymWorkoutCommand, 
     public async Task<Guid> Handle(CreateGymWorkoutCommand request, CancellationToken cancellationToken)
     {
         await _sessionGuard.EnsureCanStartAsync(request.UserId, cancellationToken);
+        await EnsureExercisesExistAsync(request.Exercises, cancellationToken);
         var occurredAtUtc = await _occurrenceTimeService.ResolveUtcAsync(request.UserId, request.Date, cancellationToken);
         var workout = new GymUserWorkoutDetails(
             Guid.NewGuid(),
@@ -76,5 +78,16 @@ public class CreateGymWorkoutHandler : IRequestHandler<CreateGymWorkoutCommand, 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return workout.Id;
+    }
+
+    private async Task EnsureExercisesExistAsync(IReadOnlyCollection<ExerciseInput> exercises, CancellationToken cancellationToken)
+    {
+        var requestedIds = exercises.Select(exercise => exercise.ExerciseId).Distinct().ToHashSet();
+        var existingIds = (await _workoutRepository.GetExercisesAsync(null, null, cancellationToken))
+            .Select(exercise => exercise.Id)
+            .ToHashSet();
+
+        if (!requestedIds.IsSubsetOf(existingIds))
+            throw new DomainException("One or more exercises do not exist.");
     }
 }

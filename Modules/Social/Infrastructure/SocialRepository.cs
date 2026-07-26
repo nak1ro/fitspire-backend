@@ -43,6 +43,7 @@ public class SocialRepository : ISocialRepository
         return _context.Users.AsNoTracking()
             .Include(user => user.ProfilePictureMedia)
                 .ThenInclude(media => media!.Variants)
+            .Where(user => !user.IsPrivate)
             .Where(user => user.UserName!.Contains(query) || user.DisplayName.Contains(query))
             .OrderBy(user => user.UserName)
             .Skip((page - 1) * pageSize)
@@ -358,6 +359,10 @@ public class SocialRepository : ISocialRepository
                 .ThenInclude(user => user.ProfilePictureMedia)
                     .ThenInclude(media => media!.Variants)
             .Include(comment => comment.Likes)
+            .Include(comment => comment.ReplyToComment)
+                .ThenInclude(replyTarget => replyTarget!.User)
+                    .ThenInclude(user => user.ProfilePictureMedia)
+                        .ThenInclude(media => media!.Variants)
             .Where(comment => comment.PostId == postId);
     }
 

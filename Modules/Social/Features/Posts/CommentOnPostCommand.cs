@@ -73,9 +73,6 @@ public class CommentOnPostHandler : IRequestHandler<CommentOnPostCommand, Guid>
         CommentOnPostCommand request,
         CancellationToken cancellationToken)
     {
-        if (postOwnerId == request.UserId && replyTargetUserId != request.UserId)
-            return;
-
         var actorName = await _socialRepository.GetUserDisplayNameAsync(request.UserId, cancellationToken);
         if (postOwnerId != request.UserId && postOwnerId != replyTargetUserId)
         {

@@ -171,15 +171,21 @@ public abstract class UserWorkout : AggregateRoot<Guid>
         UpdatedAt = nowUtc;
     }
 
-    public void Restore()
+    public void Restore(DateTime nowUtc)
     {
         if (Status != WorkoutStatus.Archived || DeletedAt is null)
             throw new DomainException("Only an archived workout can be restored.");
 
         DeletedAt = null;
         Status = CompletedAt.HasValue ? WorkoutStatus.Completed : WorkoutStatus.InProgress;
-        StartedAt ??= DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        if (!CompletedAt.HasValue)
+        {
+            StartedAt = nowUtc;
+            PausedAt = null;
+            AccumulatedPausedSeconds = 0;
+        }
+
+        UpdatedAt = nowUtc;
     }
 
     public void Abandon()

@@ -316,8 +316,8 @@ namespace backend.Migrations
                     NULLIF(legacy."Reps", 0),
                     NULLIF(legacy."Weight", 0),
                     FALSE,
-                    workout."Status" = 'Completed' AND legacy."Reps" > 0,
-                    CASE WHEN workout."Status" = 'Completed' AND legacy."Reps" > 0
+                    workout."Status" = 1 AND legacy."Reps" > 0,
+                    CASE WHEN workout."Status" = 1 AND legacy."Reps" > 0
                         THEN COALESCE(workout."CompletedAt", legacy."UpdatedAt", legacy."CreatedAt")
                     END,
                     legacy."CreatedAt",
@@ -342,6 +342,16 @@ namespace backend.Migrations
             migrationBuilder.DropColumn(
                 name: "Weight",
                 table: "GymWorkoutExercise");
+
+            migrationBuilder.Sql("""
+                UPDATE "UserGoal" AS goal
+                SET "DefinitionKey" = goalType."Code" || '|' ||
+                    CASE WHEN goal."IsRecurring" THEN COALESCE(goal."RecurrencePattern", 'daily') ELSE 'one-off' END || '|' ||
+                    COALESCE(goal."SelectedWorkoutType", 'any') || '|' ||
+                    COALESCE(replace(goal."SelectedExerciseId"::text, '-', ''), 'none')
+                FROM "GoalType" AS goalType
+                WHERE goalType."Id" = goal."GoalTypeId" AND goal."DefinitionKey" = '';
+                """);
 
             migrationBuilder.CreateIndex(
                 name: "UX_UserGoal_ActiveDefinition",

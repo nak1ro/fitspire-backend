@@ -90,6 +90,17 @@ public class MediaUploadService : IMediaUploadService
             await _storage.DeleteIfExistsAsync(asset.StagingBlobKey, cancellationToken);
 
             asset.MarkReady(objectInfo.ETag, objectInfo.SizeBytes, variants, DateTime.UtcNow);
+
+            // MediaVariant has a client-generated Guid key and is only reachable here via
+            // asset.Variants.Add(...) inside MarkReady, on an already-loaded collection. EF's
+            // default ValueGeneratedOnAdd heuristic marks such entities Modified instead of
+            // Added (the key looks pre-existing), producing an UPDATE for a row that doesn't
+            // exist yet and a spurious DbUpdateConcurrencyException. Force the correct state
+            // after the fact rather than adding twice (once via a real Add() call, once via
+            // the navigation fixup MarkReady already performs).
+            foreach (var variant in variants)
+                _context.Entry(variant).State = EntityState.Added;
+
             await _context.SaveChangesAsync(cancellationToken);
             return MapStatus(asset);
         }

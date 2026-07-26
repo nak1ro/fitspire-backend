@@ -1,6 +1,7 @@
 using backend.Modules.Auth.DTOs;
 using backend.Modules.Auth.Services;
 using backend.Modules.Shared.Extensions;
+using backend.Modules.Shared.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,10 +36,10 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
     {
         var success = await _authService.ConfirmEmailAsync(dto);
-        if (success)
-            return Ok("Email confirmed.");
-        else
-            return BadRequest("Invalid token.");
+        if (!success)
+            throw new DomainException("Invalid email confirmation token.");
+
+        return Ok("Email confirmed.");
     }
     
     [HttpPost("external-login")]

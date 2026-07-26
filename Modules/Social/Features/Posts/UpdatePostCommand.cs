@@ -30,6 +30,7 @@ public class UpdatePostHandler : IRequestHandler<UpdatePostCommand>
         if (request.MediaAssetIds is not null)
             await ValidateNewMediaAsync(post, request.UserId, request.MediaAssetIds, cancellationToken);
 
+        await StageMediaReorderAsync(post, request.MediaAssetIds, cancellationToken);
         post.UpdateTextPost(request.Content, request.MediaAssetIds);
         await AttachNewMediaAsync(post, request.UserId, request.MediaAssetIds, cancellationToken);
         await RetireMediaAsync(removedMediaIds, cancellationToken);
@@ -37,6 +38,29 @@ public class UpdatePostHandler : IRequestHandler<UpdatePostCommand>
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
+
+    private async Task StageMediaReorderAsync(
+        Post post,
+        IReadOnlyList<Guid>? requestedMediaIds,
+        CancellationToken cancellationToken)
+    {
+        if (requestedMediaIds is null || !RequiresReorder(post, requestedMediaIds))
+            return;
+
+        foreach (var media in post.Media)
+            media.MoveTo(MediaPolicies.MaximumPostImages + media.Order);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool RequiresReorder(Post post, IReadOnlyList<Guid> requestedMediaIds) =>
+        post.Media.Any(media =>
+        {
+            var requestedOrder = requestedMediaIds
+                .Select((mediaAssetId, index) => new { mediaAssetId, index })
+                .FirstOrDefault(item => item.mediaAssetId == media.MediaAssetId)?.index ?? -1;
+            return requestedOrder >= 0 && requestedOrder != media.Order;
+        });
 
     private async Task<Post> LoadOwnedPostAsync(Guid postId, Guid userId, CancellationToken cancellationToken)
     {

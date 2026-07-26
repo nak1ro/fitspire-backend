@@ -103,11 +103,11 @@ public class AuthService : IAuthService
             .FirstOrDefaultAsync(u => u.UserName == dto.Login || u.Email == dto.Login);
 
         if (user == null)
-            throw new UnauthorizedAccessException("Invalid username or email");
+            throw new System.Security.Authentication.AuthenticationException("Invalid username or email");
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
         if (!result.Succeeded)
-            throw new UnauthorizedAccessException("Invalid credentials");
+            throw new System.Security.Authentication.AuthenticationException("Invalid credentials");
 
         return CreateNewUserDto(user, await _tokenService.CreateToken(user));
     }
@@ -144,6 +144,9 @@ public class AuthService : IAuthService
             {
                 UserName = payload.Email,
                 Email = payload.Email,
+                DisplayName = string.IsNullOrWhiteSpace(payload.Name)
+                    ? payload.Email.Split('@', 2)[0]
+                    : payload.Name,
                 EmailConfirmed = true, // Google verified
             };
             var result = await _userManager.CreateAsync(user);

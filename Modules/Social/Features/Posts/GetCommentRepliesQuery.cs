@@ -37,7 +37,9 @@ public class GetCommentRepliesHandler : IRequestHandler<GetCommentRepliesQuery, 
         var rootCommentId = comment.RootCommentId ?? comment.Id;
         var replies = await _repository.GetCommentRepliesAsync(request.PostId, rootCommentId, request.Page, request.PageSize, cancellationToken);
         var avatars = await SocialUserResponseMapper.GetProfilePicturesAsync(
-            replies.Select(reply => reply.User), _mediaResponseFactory, cancellationToken);
+            replies.Select(reply => reply.User)
+                .Concat(replies.Select(reply => reply.ReplyToComment?.User).OfType<AppUser>()),
+            _mediaResponseFactory, cancellationToken);
         return replies.Select(reply => MapResponse(reply, request.ViewerUserId, avatars)).ToList();
     }
 
@@ -47,7 +49,8 @@ public class GetCommentRepliesHandler : IRequestHandler<GetCommentRepliesQuery, 
         GetAvatar(comment.User, avatars),
         comment.Content, comment.RootCommentId, comment.ReplyToCommentId, comment.Likes.Count,
         comment.Likes.Any(like => like.UserId == viewerUserId), 0,
-        comment.CreatedAt, comment.UpdatedAt);
+        comment.CreatedAt, comment.UpdatedAt,
+        comment.ReplyToComment is null ? null : SocialUserResponseMapper.MapSummary(comment.ReplyToComment.User, avatars));
 
     private static MediaResponse? GetAvatar(AppUser user, IReadOnlyDictionary<Guid, MediaResponse> avatars) =>
         user.ProfilePictureMedia is null ? null : avatars.GetValueOrDefault(user.ProfilePictureMedia.Id);

@@ -53,7 +53,7 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
             .Select(preference => preference.TimeZoneId).FirstOrDefaultAsync(cancellationToken) ?? "Central European Standard Time";
         var (start, end) = GetInitialPeriod(rules, timeZoneId);
         var goal = new UserGoal(Guid.NewGuid(), request.UserId, goalType.Id, request.TargetValue, goalType.DefaultUnit,
-            start, rules.Deadline, rules.IsRecurring, rules.RecurrencePattern, request.IsPublic);
+            rules.StartDate, rules.Deadline, rules.IsRecurring, rules.RecurrencePattern, request.IsPublic);
         goal.SetTemplateParameters(timeZoneId, rules.SelectedWorkoutType, rules.SelectedExerciseId);
         goal.SetDefinitionKey(definitionKey);
 

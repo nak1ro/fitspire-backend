@@ -293,7 +293,7 @@ public class SaveRoutineValidator : AbstractValidator<SaveRoutineRequest>
     {
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(120);
+            .MaximumLength(100);
 
         RuleFor(x => x.Description)
             .MaximumLength(500)
@@ -316,7 +316,7 @@ public class UpdateRoutineValidator : AbstractValidator<UpdateRoutineRequest>
 {
     public UpdateRoutineValidator()
     {
-        RuleFor(request => request.Name).NotEmpty().MaximumLength(120);
+        RuleFor(request => request.Name).NotEmpty().MaximumLength(100);
         RuleFor(request => request.Description).MaximumLength(500).When(request => request.Description is not null);
         RuleFor(request => request.Definition.ValueKind).Equal(System.Text.Json.JsonValueKind.Object);
     }

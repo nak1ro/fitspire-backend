@@ -1,4 +1,5 @@
 using backend.Modules.Media.Contracts;
+using backend.Modules.Social.Contracts.Profiles;
 
 namespace backend.Modules.Social.Contracts.Comments;
 
@@ -15,6 +16,7 @@ public record CommentResponse(
     bool IsLikedByCurrentUser,
     int RepliesCount,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    SocialUserSummaryResponse? ReplyToUser = null);
 
 public record UpdateCommentRequest(string Content);

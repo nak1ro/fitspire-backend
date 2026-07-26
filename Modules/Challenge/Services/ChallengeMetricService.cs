@@ -33,8 +33,8 @@ public class ChallengeMetricService : IChallengeMetricService
             ?? throw new DomainException("Challenge metric is not supported.");
 
         if (RequiredWorkoutTypes.TryGetValue(metric.Id, out var requiredWorkoutType) &&
-            !string.IsNullOrWhiteSpace(workoutType) && !string.Equals(workoutType, requiredWorkoutType, StringComparison.OrdinalIgnoreCase))
-            throw new DomainException($"{metric.DisplayName} challenges can only use {requiredWorkoutType} workouts.");
+            !string.Equals(workoutType, requiredWorkoutType, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException($"{metric.DisplayName} challenges require {requiredWorkoutType} workouts.");
 
         if (!string.IsNullOrWhiteSpace(workoutType) && workoutType.Trim().ToLowerInvariant() is not ("gym" or "running" or "cycling" or "swimming" or "yoga"))
             throw new DomainException("Challenge workout type is not supported.");

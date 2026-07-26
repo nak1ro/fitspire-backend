@@ -8,6 +8,8 @@ using backend.Modules.Social.Infrastructure;
 using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Social.Features.Follow;
 
@@ -71,11 +73,28 @@ public class FollowUserHandler : IRequestHandler<FollowUserCommand, FollowRespon
             await transaction.CommitAsync(cancellationToken);
             return response;
         }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _context.ChangeTracker.Clear();
+            return await GetConcurrentResponseAsync(request, cancellationToken);
+        }
         catch
         {
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private async Task<FollowResponse> GetConcurrentResponseAsync(FollowUserCommand request, CancellationToken cancellationToken)
+    {
+        if (await _socialRepository.GetFollowAsync(request.FollowerId, request.FollowedId, cancellationToken) is not null)
+            return new FollowResponse(true);
+
+        if (await _socialRepository.GetPendingFollowRequestAsync(request.FollowerId, request.FollowedId, cancellationToken) is not null)
+            return new FollowResponse(false, true);
+
+        throw new ConflictException("The follow request conflicted with another update.");
     }
 
     private async Task<FollowResponse> RequestPrivateFollowAsync(FollowUserCommand request, CancellationToken cancellationToken)

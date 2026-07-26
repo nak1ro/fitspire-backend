@@ -33,6 +33,7 @@ public class GetGoalPeriodsHandler : IRequestHandler<GetGoalPeriodsQuery, GoalPa
 
     public async Task<GoalPageResponse<GoalPeriodResponse>> Handle(GetGoalPeriodsQuery request, CancellationToken cancellationToken)
     {
+        await GoalHistoryAccess.EnsureOwnedGoalAsync(_context, request.UserId, request.GoalId, cancellationToken);
         var query = _context.GoalPeriods.Where(period => period.GoalId == request.GoalId && period.Goal.UserId == request.UserId);
         var totalCount = await query.CountAsync(cancellationToken);
         var periods = await query.OrderByDescending(period => period.StartAt).Skip((request.Pagination.Page - 1) * request.Pagination.PageSize)
@@ -55,6 +56,7 @@ public class GetGoalProgressHandler : IRequestHandler<GetGoalProgressQuery, Goal
 
     public async Task<GoalPageResponse<GoalProgressEntryResponse>> Handle(GetGoalProgressQuery request, CancellationToken cancellationToken)
     {
+        await GoalHistoryAccess.EnsureOwnedGoalAsync(_context, request.UserId, request.GoalId, cancellationToken);
         var query = _context.GoalProgressEntries.Where(entry => entry.GoalId == request.GoalId && entry.Goal.UserId == request.UserId);
         var totalCount = await query.CountAsync(cancellationToken);
         var entries = await query.OrderByDescending(entry => entry.RecordedAt).Skip((request.Pagination.Page - 1) * request.Pagination.PageSize)
@@ -139,6 +141,7 @@ public class GetGoalTargetChangesHandler : IRequestHandler<GetGoalTargetChangesQ
     public async Task<GoalPageResponse<GoalTargetChangeResponse>> Handle(GetGoalTargetChangesQuery request,
         CancellationToken cancellationToken)
     {
+        await GoalHistoryAccess.EnsureOwnedGoalAsync(_context, request.UserId, request.GoalId, cancellationToken);
         var query = _context.GoalTargetChanges.Where(change => change.GoalId == request.GoalId && change.Goal.UserId == request.UserId);
         var totalCount = await query.CountAsync(cancellationToken);
         var changes = await query.OrderByDescending(change => change.ChangedAt).ThenByDescending(change => change.Id)
@@ -146,6 +149,16 @@ public class GetGoalTargetChangesHandler : IRequestHandler<GetGoalTargetChangesQ
             .ToListAsync(cancellationToken);
         return new GoalPageResponse<GoalTargetChangeResponse>(_mapper.Map<List<GoalTargetChangeResponse>>(changes),
             request.Pagination.Page, request.Pagination.PageSize, totalCount);
+    }
+}
+
+internal static class GoalHistoryAccess
+{
+    public static async Task EnsureOwnedGoalAsync(FitspireDbContext context, Guid userId, Guid goalId,
+        CancellationToken cancellationToken)
+    {
+        if (!await context.Goals.AnyAsync(goal => goal.Id == goalId && goal.UserId == userId, cancellationToken))
+            throw new NotFoundException("Goal not found.");
     }
 }
 

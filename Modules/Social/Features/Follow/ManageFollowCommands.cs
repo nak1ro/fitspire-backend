@@ -6,6 +6,8 @@ using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Infrastructure;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace backend.Modules.Social.Features.Follow;
 
@@ -115,8 +117,18 @@ public class DecideFollowRequestHandler : IRequestHandler<DecideFollowRequestCom
         else
             followRequest.Reject();
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } && request.Accept)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _context.ChangeTracker.Clear();
+            if (await _repository.GetFollowAsync(followRequest.RequesterId, followRequest.AddresseeId, cancellationToken) is null)
+                throw;
+        }
     }
 
     private async Task AcceptAsync(Domain.FollowRequest followRequest, CancellationToken cancellationToken)

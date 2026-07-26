@@ -15,10 +15,6 @@ public class UpdateUserPreferencesDtoValidator : AbstractValidator<UpdateUserPre
             .Must(unit => unit is null or "metric" or "imperial")
             .WithMessage("UnitSystem must be 'metric' or 'imperial'.");
         
-        RuleFor(x => x.UnitSystem)
-            .Must(x => x is null or "metric" or "imperial")
-            .WithMessage("Unit system must be 'metric' or 'imperial'.");
-
         RuleFor(x => x.TimeZoneId)
             .Must(BeKnownTimeZone)
             .When(x => !string.IsNullOrWhiteSpace(x.TimeZoneId))

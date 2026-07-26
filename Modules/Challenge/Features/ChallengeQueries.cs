@@ -16,7 +16,7 @@ public record DiscoverChallengesQuery(Guid UserId, int Page, int PageSize) : IRe
 public record GetAvailableChallengesQuery(Guid UserId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeResponse>>;
 public record GetMyChallengesQuery(Guid UserId, ChallengeListFilter Filter) : IRequest<ChallengePageResponse<ChallengeResponse>>;
 public record GetChallengeLeaderboardQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeLeaderboardEntry>>;
-public record GetChallengeResultsQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeLeaderboardEntry>>;
+public record GetChallengeResultsQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeResultEntry>>;
 public record GetIncomingChallengeInvitationsQuery(Guid UserId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeInvitationResponse>>;
 
 public class GetChallengeHandler : IRequestHandler<GetChallengeQuery, ChallengeDetailResponse>
@@ -145,7 +145,7 @@ public class GetChallengeLeaderboardHandler : IRequestHandler<GetChallengeLeader
     }
 }
 
-public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQuery, ChallengePageResponse<ChallengeLeaderboardEntry>>
+public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQuery, ChallengePageResponse<ChallengeResultEntry>>
 {
     private readonly FitspireDbContext _context;
     private readonly IChallengeAccessService _access;
@@ -158,7 +158,7 @@ public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQue
         _mediaResponseFactory = mediaResponseFactory;
     }
 
-    public async Task<ChallengePageResponse<ChallengeLeaderboardEntry>> Handle(GetChallengeResultsQuery request, CancellationToken cancellationToken)
+    public async Task<ChallengePageResponse<ChallengeResultEntry>> Handle(GetChallengeResultsQuery request, CancellationToken cancellationToken)
     {
         var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
         await _access.EnsureCanViewAsync(challenge, request.UserId, cancellationToken);
@@ -176,10 +176,10 @@ public class GetChallengeResultsHandler : IRequestHandler<GetChallengeResultsQue
             var progress = challenge.Mode == ChallengeModes.Target && challenge.TargetValue.HasValue
                 ? (double?)Math.Min(100, item.Score / challenge.TargetValue.Value * 100)
                 : null;
-            return new ChallengeLeaderboardEntry(item.UserId, item.User.DisplayName, avatar?.Thumbnail?.Url, avatar,
-                item.Score, item.Rank, progress);
+            return new ChallengeResultEntry(item.UserId, item.User.DisplayName, avatar?.Thumbnail?.Url, avatar,
+                item.Score, item.Rank, progress, item.IsFinisher, item.IsWinner);
         }).ToList();
-        return new ChallengePageResponse<ChallengeLeaderboardEntry>(rows, request.Page, request.PageSize, totalCount);
+        return new ChallengePageResponse<ChallengeResultEntry>(rows, request.Page, request.PageSize, totalCount);
     }
 }
 

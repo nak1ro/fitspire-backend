@@ -30,6 +30,8 @@ public record ChallengeDetailResponse(
 public record ChallengeCreatorResponse(Guid UserId, string UserName, string DisplayName, string? ProfilePictureUrl, MediaResponse? ProfilePicture);
 public record ChallengeViewerState(bool IsCreator, string? MembershipStatus, double? Score, double? ProgressPercent, bool CanJoin, bool CanManage);
 public record ChallengeLeaderboardEntry(Guid UserId, string DisplayName, string? ProfilePictureUrl, MediaResponse? ProfilePicture, double Score, int Rank, double? ProgressPercent);
+public record ChallengeResultEntry(Guid UserId, string DisplayName, string? ProfilePictureUrl, MediaResponse? ProfilePicture,
+    double Score, int Rank, double? ProgressPercent, bool IsFinisher, bool IsWinner);
 public record ChallengePageResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 public record ChallengeInvitationResponse(Guid Id, Guid ChallengeId, string ChallengeTitle, Guid InvitedByUserId, string InvitedByDisplayName, DateTime StartDate, DateTime EndDate, string Status, DateTime CreatedAt);
 

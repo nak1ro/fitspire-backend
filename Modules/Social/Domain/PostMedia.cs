@@ -36,8 +36,8 @@ public class PostMedia : Entity<Guid>
 
     internal void MoveTo(int order)
     {
-        if (order is < 0 or >= MediaPolicies.MaximumPostImages)
-            throw new DomainException("Post media order is outside the supported range.");
+        if (order < 0)
+            throw new DomainException("Post media order cannot be negative.");
 
         Order = order;
         UpdatedAt = DateTime.UtcNow;

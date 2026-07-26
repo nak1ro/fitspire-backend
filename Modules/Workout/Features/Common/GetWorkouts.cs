@@ -24,7 +24,7 @@ public class GetWorkoutsHandler : IRequestHandler<GetWorkoutsQuery, List<Workout
             request.UserId,
             request.Filter.From,
             request.Filter.To,
-            request.Filter.Types,
+            request.Filter.Types?.Select(type => type.Trim().ToLowerInvariant()).ToList(),
             cancellationToken
         );
 

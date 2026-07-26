@@ -98,7 +98,7 @@ public class RestoreWorkoutHandler : IRequestHandler<RestoreWorkoutCommand>
         if (workout.CompletedAt is null && await _repository.GetActiveSessionByUserIdAsync(request.UserId, cancellationToken) is not null)
             throw new DomainException("Finish or abandon the current active session before restoring another session.");
 
-        workout.Restore();
+        workout.Restore(DateTime.UtcNow);
         if (workout.Status == Domain.Enums.WorkoutStatus.Completed)
             await _derivedData.ReconcileCompletedWorkoutAsync(workout, cancellationToken);
         else
