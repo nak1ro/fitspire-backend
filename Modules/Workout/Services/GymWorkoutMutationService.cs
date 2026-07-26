@@ -13,6 +13,7 @@ public interface IGymWorkoutMutationService
     Task EnsureExerciseExistsAsync(Guid exerciseId, CancellationToken cancellationToken);
     Task SaveAsync(CancellationToken cancellationToken);
     Task ReorderAsync(Action stageTemporaryOrder, Action applyFinalOrder, CancellationToken cancellationToken);
+    void MarkAdded(object entity);
 }
 
 public class GymWorkoutMutationService : IGymWorkoutMutationService
@@ -47,6 +48,14 @@ public class GymWorkoutMutationService : IGymWorkoutMutationService
     }
 
     public Task SaveAsync(CancellationToken cancellationToken) => _unitOfWork.SaveChangesAsync(cancellationToken);
+
+    // GymWorkoutExercise/GymWorkoutSet have client-generated Guid keys and are only reachable here
+    // via the aggregate's own _exercises.Add(...)/WorkoutSets.Add(...), a navigation fixup onto the
+    // already-loaded collections (loaded via GetGymWorkoutByIdAsync's Include). EF's default
+    // ValueGeneratedOnAdd heuristic then marks a brand-new entity Modified instead of Added (the key
+    // looks pre-existing), producing an UPDATE for a row that doesn't exist yet and a spurious
+    // DbUpdateConcurrencyException. Callers must mark each newly created child explicitly.
+    public void MarkAdded(object entity) => _context.Entry(entity).State = EntityState.Added;
 
     public async Task ReorderAsync(Action stageTemporaryOrder, Action applyFinalOrder, CancellationToken cancellationToken)
     {

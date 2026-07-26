@@ -23,6 +23,7 @@ public class UpdatePostHandler : IRequestHandler<UpdatePostCommand>
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var post = await LoadOwnedPostAsync(request.PostId, request.UserId, cancellationToken);
+        var existingMediaAssetIds = post.Media.Select(media => media.MediaAssetId).ToHashSet();
         var removedMediaIds = request.MediaAssetIds is null
             ? []
             : post.Media.Select(media => media.MediaAssetId).Except(request.MediaAssetIds).ToList();
@@ -32,6 +33,17 @@ public class UpdatePostHandler : IRequestHandler<UpdatePostCommand>
 
         await StageMediaReorderAsync(post, request.MediaAssetIds, cancellationToken);
         post.UpdateTextPost(request.Content, request.MediaAssetIds);
+
+        // PostMedia has a client-generated Guid key and new rows are only reachable here via
+        // Post.ApplyMediaSet's Media.Add(...), a navigation fixup onto the already-loaded Media
+        // collection (loaded above via Include). EF's default ValueGeneratedOnAdd heuristic then
+        // marks a brand-new entry Modified instead of Added, producing an UPDATE for a row that
+        // doesn't exist yet — the same class of bug fixed in MediaUploadService, MealWriteService,
+        // and the gym workout mutation handlers.
+        if (request.MediaAssetIds is not null)
+            foreach (var media in post.Media.Where(media => !existingMediaAssetIds.Contains(media.MediaAssetId)))
+                _context.Entry(media).State = EntityState.Added;
+
         await AttachNewMediaAsync(post, request.UserId, request.MediaAssetIds, cancellationToken);
         await RetireMediaAsync(removedMediaIds, cancellationToken);
 

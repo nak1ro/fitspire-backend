@@ -66,6 +66,15 @@ public class MealWriteService : IMealWriteService
         await using var transaction = await BeginTransactionIfNeededAsync(cancellationToken);
         var meal = await LoadOwnedActiveMealAsync(userId, mealId, cancellationToken);
         var item = meal.AddItem(await ResolveItemDraftAsync(userId, request, cancellationToken));
+
+        // MealItem has a client-generated Guid key and is only reachable here via meal.AddItem's
+        // internal _items.Add(...), a navigation fixup onto the already-loaded Items collection
+        // (loaded above via Include). EF's default ValueGeneratedOnAdd heuristic then marks it
+        // Modified instead of Added (the key looks pre-existing), producing an UPDATE for a row
+        // that doesn't exist yet and a spurious DbUpdateConcurrencyException — the same class of
+        // bug fixed in MediaUploadService.CompleteAsync for MediaVariant.
+        _context.Entry(item).State = EntityState.Added;
+
         await SaveAndCommitAsync(transaction, cancellationToken);
         return item.Id;
     }

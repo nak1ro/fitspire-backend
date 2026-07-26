@@ -79,9 +79,16 @@ public class UpdateWorkoutHandler : IRequestHandler<UpdateWorkoutCommand>
                     foreach (var exercise in request.Exercises)
                     {
                         var entry = gym.AddExercise(exercise.ExerciseId, exercise.Notes);
+                        // Same client-generated-key/navigation-fixup issue as GymWorkoutMutationService —
+                        // gym.Exercises was just loaded via Include, so a plain domain-method Add() gets
+                        // misdetected as Modified instead of Added. Mark explicitly.
+                        _context.Entry(entry).State = EntityState.Added;
                         foreach (var set in exercise.Sets)
-                            entry.AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters,
+                        {
+                            var newSet = entry.AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters,
                                 set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+                            _context.Entry(newSet).State = EntityState.Added;
+                        }
                     }
                 }
                 break;

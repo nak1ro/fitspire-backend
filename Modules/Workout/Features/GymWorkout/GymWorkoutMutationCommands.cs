@@ -23,8 +23,12 @@ public class AddGymExerciseHandler : IRequestHandler<AddGymExerciseCommand>
         var workout = await _service.GetLiveWorkoutAsync(command.WorkoutId, command.UserId, cancellationToken);
         await _service.EnsureExerciseExistsAsync(command.Request.ExerciseId, cancellationToken);
         var exercise = workout.AddExercise(command.Request.ExerciseId, command.Request.Notes);
+        _service.MarkAdded(exercise);
         foreach (var set in command.Request.Sets ?? [])
-            exercise.AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters, set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+        {
+            var newSet = exercise.AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters, set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+            _service.MarkAdded(newSet);
+        }
         await _service.SaveAsync(cancellationToken);
     }
 }
@@ -74,7 +78,8 @@ public class AddGymSetHandler : IRequestHandler<AddGymSetCommand>
     {
         var workout = await _service.GetLiveWorkoutAsync(command.WorkoutId, command.UserId, cancellationToken);
         var set = command.Request;
-        workout.FindExercise(command.ExerciseEntryId).AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters, set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+        var newSet = workout.FindExercise(command.ExerciseEntryId).AddSet(set.Reps, set.WeightKg, set.DurationSeconds, set.DistanceMeters, set.IsWarmup, set.Rpe, set.Notes, set.IsCompleted);
+        _service.MarkAdded(newSet);
         await _service.SaveAsync(cancellationToken);
     }
 }
