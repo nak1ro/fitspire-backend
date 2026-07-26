@@ -10,6 +10,7 @@ public class FitspireDbContextFactory : IDesignTimeDbContextFactory<FitspireDbCo
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false)
+            .AddUserSecrets<FitspireDbContextFactory>(optional: true)
             .AddEnvironmentVariables()
             .Build();
         var connectionString = configuration.GetConnectionString("DefaultConnection")

@@ -1,4 +1,6 @@
 using backend.Data;
+using backend.Infrastructure.Hosting;
+using backend.Infrastructure.Startup;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using backend.Modules.Auth;
@@ -21,7 +23,6 @@ using backend.Modules.BodyTracking;
 using backend.Modules.Media;
 using backend.Modules.Nutrition;
 using backend.Modules.AiCoaching;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,10 +35,8 @@ Directory.CreateDirectory(webRootPath);
 builder.Environment.WebRootPath = webRootPath;
 builder.Environment.WebRootFileProvider = new PhysicalFileProvider(webRootPath);
 
-var dataProtectionKeysPath = Path.Combine(Path.GetTempPath(), "fitspire-data-protection-keys");
-Directory.CreateDirectory(dataProtectionKeysPath);
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+builder.Services.AddFitspireDataProtection(builder.Configuration, builder.Environment);
+builder.Services.AddStartupInitialization(builder.Configuration);
 
 // Modules
 builder.Services.AddDataModule(builder.Configuration);
@@ -59,10 +58,8 @@ builder.Services.AddNotificationModule();
 // MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
-builder.Services.AddEndpointsApiExplorer();
-
-
 builder.Services.AddControllers();
+builder.Services.AddOperationalHealthChecks();
 
 var corsPolicy = "FrontendPolicy";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -82,6 +79,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseProductionForwardedHeaders(app.Environment);
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseStaticFiles();
 
@@ -89,20 +87,9 @@ app.UseHttpsRedirection();
 app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapOperationalHealthChecks();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var serviceProvider = scope.ServiceProvider;
-
-    var context = serviceProvider.GetRequiredService<FitspireDbContext>();
-    context.Database.Migrate();
-
-    await RoleSeeder.SeedAsync(serviceProvider);
-    await backend.Modules.Workout.Data.Seeding.ExerciseSeeder.SeedAsync(serviceProvider);
-    await MetricDefinitionSeeder.SeedAsync(context);
-    await BadgeSeeder.SeedAsync(context);
-    await new GoalTypeSeeder(context).SeedAsync();
-}
+await app.InitializeStartupAsync();
 
 app.Run();

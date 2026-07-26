@@ -13,7 +13,7 @@ public static class SharedModuleExtensions
         // UnitOfWork for all modules
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
-        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+        services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 
         return services;
     }

@@ -4,8 +4,6 @@ using backend.Modules.AiCoaching.Domain;
 using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
-using backend.Modules.Group.Domain;
-using backend.Modules.Moderation.Domain;
 using backend.Modules.Media.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
@@ -62,11 +60,6 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
     public ICollection<Follower> Followers { get; set; } = new List<Follower>(); // Who follows me
     public ICollection<Follower> Following { get; set; } = new List<Follower>(); // Who I follow
-    // Reports and Bans
-    public ICollection<Report> ReportsMade { get; set; } = new List<Report>();
-    public ICollection<Report> ReportsReceived { get; set; } = new List<Report>();
-    public ICollection<Ban> Bans { get; set; } = new List<Ban>();
-
     // Goals and Progress
     public ICollection<UserGoal> Goals { get; set; } = new List<UserGoal>();
     public ICollection<BodyCheckIn> BodyCheckIns { get; set; } = new List<BodyCheckIn>();
@@ -81,10 +74,6 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<Meal> Meals { get; set; } = new List<Meal>();
     public NutritionTarget? NutritionTarget { get; set; }
     public ICollection<FavouriteFood> FavouriteFoods { get; set; } = new List<FavouriteFood>();
-
-    // Groups
-    public ICollection<UserGroup> GroupsCreated { get; set; } = new List<UserGroup>();
-    public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>();
 
     // Challenges
     public ICollection<UserChallenge> ChallengesCreated { get; set; } = new List<UserChallenge>();

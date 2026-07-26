@@ -164,17 +164,6 @@ public class SocialController : ControllerBase
         return CreatedAtAction(nameof(GetPost), new { postId }, postId);
     }
 
-    /// <summary>
-    /// Like or unlike a post (toggle).
-    /// </summary>
-    [HttpPost("posts/{postId:guid}/like")]
-    public async Task<ActionResult<LikeResponse>> LikePost(Guid postId)
-    {
-        var userId = User.GetRequiredUserId();
-        var response = await _mediator.Send(new LikePostCommand(userId, postId));
-        return Ok(response);
-    }
-
     [HttpPost("posts/{postId:guid}/likes")]
     public async Task<ActionResult<LikeResponse>> AddPostLike(Guid postId)
     {
@@ -244,13 +233,6 @@ public class SocialController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("posts/{postId:guid}/comments/{commentId:guid}/like")]
-    public async Task<ActionResult<LikeResponse>> LikeComment(Guid postId, Guid commentId)
-    {
-        var response = await _mediator.Send(new LikeCommentCommand(User.GetRequiredUserId(), postId, commentId));
-        return Ok(response);
-    }
-
     [HttpPost("posts/{postId:guid}/comments/{commentId:guid}/likes")]
     public async Task<ActionResult<LikeResponse>> AddCommentLike(Guid postId, Guid commentId)
     {
@@ -286,17 +268,6 @@ public class SocialController : ControllerBase
         var userId = User.GetRequiredUserId();
         await _mediator.Send(new DeleteCommentCommand(userId, postId, commentId));
         return NoContent();
-    }
-
-    /// <summary>
-    /// Follow a user or request to follow a private user.
-    /// </summary>
-    [HttpPost("follow/{targetUserId:guid}")]
-    public async Task<ActionResult<FollowResponse>> FollowUser(Guid targetUserId)
-    {
-        var userId = User.GetRequiredUserId();
-        var response = await _mediator.Send(new FollowUserCommand(userId, targetUserId));
-        return Ok(response);
     }
 
     private static void ValidatePagination(int page, int pageSize)

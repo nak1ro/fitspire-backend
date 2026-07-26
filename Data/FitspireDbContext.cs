@@ -3,8 +3,6 @@ using backend.Modules.AiCoaching.Domain;
 using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
-using backend.Modules.Group.Domain;
-using backend.Modules.Moderation.Domain;
 using backend.Modules.Media.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
@@ -47,13 +45,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<ChallengeScoreContribution> ChallengeScoreContributions { get; set; }
     public DbSet<ChallengeResult> ChallengeResults { get; set; }
 
-    public DbSet<UserGroup> Groups { get; set; }
-    public DbSet<GroupMember> GroupMembers { get; set; }
-
     public DbSet<AppNotification> Notifications { get; set; }
-
-    public DbSet<Report> Reports { get; set; }
-    public DbSet<Ban> Bans { get; set; }
 
     // --- Nutrition ---
     public DbSet<Meal> Meals { get; set; }

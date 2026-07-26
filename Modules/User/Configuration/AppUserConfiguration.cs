@@ -64,22 +64,10 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasForeignKey(m => m.UserId)
             .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
 
-        // 👥 GroupMemberships
-        builder.HasMany(u => u.GroupMemberships)
-            .WithOne(gm => gm.User)
-            .HasForeignKey(gm => gm.UserId)
-            .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
-
         // 🏆 ChallengeParticipants
         builder.HasMany(u => u.ChallengeParticipants)
             .WithOne(cp => cp.User)
             .HasForeignKey(cp => cp.UserId)
-            .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
-
-        // 🚫 Bans
-        builder.HasMany(u => u.Bans)
-            .WithOne(b => b.User)
-            .HasForeignKey(b => b.UserId)
             .OnDelete(DeleteBehavior.Cascade); // ✔️ CASCADE
 
         // 🏅 PersonalRecords
@@ -137,22 +125,5 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasForeignKey(c => c.CreatedBy)
             .OnDelete(DeleteBehavior.SetNull); // ✔️ SET NULL (challenge keeps existing, owner is null)
 
-        // 🚩 ReportsMade
-        builder.HasMany(u => u.ReportsMade)
-            .WithOne(r => r.ReportedBy)
-            .HasForeignKey(r => r.ReportedById)
-            .OnDelete(DeleteBehavior.NoAction); // ❌ NO CASCADE
-
-        // 🚩 ReportsReceived
-        builder.HasMany(u => u.ReportsReceived)
-            .WithOne(r => r.ReportedUser)
-            .HasForeignKey(r => r.ReportedUserId)
-            .OnDelete(DeleteBehavior.NoAction); // ❌ NO CASCADE
-
-        // 👥 GroupsCreated
-        builder.HasMany(u => u.GroupsCreated)
-            .WithOne(g => g.CreatedBy)
-            .HasForeignKey(g => g.CreatedById)
-            .OnDelete(DeleteBehavior.SetNull);
     }
 }

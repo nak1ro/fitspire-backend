@@ -236,16 +236,6 @@ public class WorkoutController : ControllerBase
         };
     }
 
-    [HttpPost("{id:guid}/complete")]
-    public async Task<ActionResult> CompleteWorkout(Guid id, [FromBody] CompleteWorkoutRequest request)
-    {
-        await _completeWorkoutValidator.ValidateAndThrowAsync(request);
-
-        var userId = User.GetRequiredUserId();
-        await _mediator.Send(new CompleteWorkoutCommand(id, userId, request.DurationMinutes, request.Notes, request.IsPrivate));
-        return Ok(new { success = true });
-    }
-
     [HttpPost("{id:guid}/finish")]
     public async Task<ActionResult> FinishWorkout(Guid id, [FromBody] CompleteWorkoutRequest request)
     {

@@ -4,10 +4,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>c0b5bb6f-231c-4657-9250-c89f1875cc10</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="AutoMapper" Version="15.1.3" />
+    <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.13.2" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.24.1" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
@@ -16,32 +18,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Resend" Version="0.1.4" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Modules\Auth\Mappings\" />
-    <Folder Include="Modules\Auth\Model\" />
-    <Folder Include="Modules\Badge\Controllers\" />
-    <Folder Include="Modules\Badge\DTOs\" />
-    <Folder Include="Modules\Badge\Mappings\" />
-    <Folder Include="Modules\Badge\Repositories\" />
-    <Folder Include="Modules\Badge\Services\" />
-    <Folder Include="Modules\Badge\Validators\" />
-    <Folder Include="Modules\Challenge\Validators\" />
-    <Folder Include="Modules\Moderation\Validators\" />
-    <Folder Include="Modules\Notification\Validators\" />
-    <Folder Include="Tests\" />
   </ItemGroup>
 
 </Project>
