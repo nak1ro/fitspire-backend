@@ -4,7 +4,7 @@ targetScope = 'resourceGroup'
 param location string = 'polandcentral'
 
 @minLength(5)
-@maxLength(30)
+@maxLength(19)
 @description('Lowercase letters and digits only. It must make the ACR and storage-account names globally unique.')
 param resourcePrefix string
 
@@ -268,9 +268,9 @@ resource backendAppSettings 'Microsoft.Web/sites/config@2024-04-01' = {
     Email__UseMockEmail: 'true'
     OpenAI__Enabled: 'false'
     MediaStorage__ContainerName: mediaContainer.name
-    MediaStorage__ServiceUrl: 'https://${storageAccount.name}.blob.core.windows.net'
+    MediaStorage__ServiceUrl: 'https://${storageAccount.name}.${environment().suffixes.storage}'
     DataProtection__ContainerName: dataProtectionContainer.name
-    DataProtection__ServiceUri: 'https://${storageAccount.name}.blob.core.windows.net'
+    DataProtection__ServiceUri: 'https://${storageAccount.name}.${environment().suffixes.storage}'
     Startup__ApplyMigrationsOnStartup: 'true'
   }
 }
@@ -335,17 +335,6 @@ resource frontendKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04
     roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
   }
 }
-
-var appServiceOutboundIps = union(split(backendApp.properties.outboundIpAddresses, ','), split(frontendApp.properties.outboundIpAddresses, ','))
-
-resource appServiceFirewallRules 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = [for (ip, index) in appServiceOutboundIps: {
-  parent: postgres
-  name: 'app-service-${index}'
-  properties: {
-    startIpAddress: ip
-    endIpAddress: ip
-  }
-}]
 
 output backendDefaultHostname string = backendApp.properties.defaultHostName
 output frontendDefaultHostname string = frontendApp.properties.defaultHostName
