@@ -3,16 +3,10 @@ targetScope = 'resourceGroup'
 @description('Poland Central is the selected production region.')
 param location string = 'polandcentral'
 
-@minLength(5)
-@maxLength(19)
-@description('Lowercase letters and digits only. It must make the ACR and storage-account names globally unique.')
-param resourcePrefix string
-
-@description('Globally unique App Service name for the API.')
-param backendWebAppName string
-
-@description('Globally unique App Service name for the frontend.')
-param frontendWebAppName string
+@minLength(3)
+@maxLength(12)
+@description('Lowercase application identifier used in every resource name.')
+param applicationName string = 'fitspire'
 
 @description('PostgreSQL administrator login name.')
 param postgresAdministratorLogin string
@@ -34,13 +28,20 @@ param nextAuthSecret string
 param frontendHostname string = 'app.fitspire.life'
 param apiHostname string = 'api.fitspire.life'
 
-var planName = '${resourcePrefix}-plan'
-var registryName = '${resourcePrefix}acr'
-var storageName = '${resourcePrefix}store'
-var keyVaultName = '${resourcePrefix}-kv'
-var postgresName = '${resourcePrefix}-pg'
+var environmentName = 'prod'
+var planName = 'asp-${applicationName}-${environmentName}'
+var registryName = 'acr${applicationName}${environmentName}'
+var storageName = 'st${applicationName}${environmentName}'
+var keyVaultName = 'kv-${applicationName}-${environmentName}'
+var postgresName = 'pg-${applicationName}-${environmentName}'
+var backendWebAppName = 'app-${applicationName}-api-${environmentName}'
+var frontendWebAppName = 'app-${applicationName}-web-${environmentName}'
 var databaseName = 'fitspire'
 var appServicePlanSku = 'B1'
+var productionTags = {
+  app: applicationName
+  env: environmentName
+}
 
 var acrPullRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 var storageBlobDataContributorRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
@@ -50,6 +51,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: planName
   location: location
   kind: 'linux'
+  tags: productionTags
   sku: {
     name: appServicePlanSku
     tier: 'Basic'
@@ -62,6 +64,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
 resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   name: registryName
   location: location
+  tags: productionTags
   sku: {
     name: 'Basic'
   }
@@ -74,6 +77,7 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageName
   location: location
+  tags: productionTags
   sku: {
     name: 'Standard_LRS'
   }
@@ -141,6 +145,7 @@ resource dataProtectionContainer 'Microsoft.Storage/storageAccounts/blobServices
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
+  tags: productionTags
   properties: {
     enableRbacAuthorization: true
     enablePurgeProtection: true
@@ -156,6 +161,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: postgresName
   location: location
+  tags: productionTags
   sku: {
     name: 'Standard_B1ms'
     tier: 'Burstable'
@@ -192,6 +198,7 @@ resource backendApp 'Microsoft.Web/sites@2024-04-01' = {
   name: backendWebAppName
   location: location
   kind: 'app,linux,container'
+  tags: productionTags
   identity: {
     type: 'SystemAssigned'
   }
@@ -214,6 +221,7 @@ resource frontendApp 'Microsoft.Web/sites@2024-04-01' = {
   name: frontendWebAppName
   location: location
   kind: 'app,linux,container'
+  tags: productionTags
   identity: {
     type: 'SystemAssigned'
   }
