@@ -19,6 +19,7 @@ public record FeedItemResponse(
     IReadOnlyList<MediaResponse> Media,
     int LikesCount,
     bool IsLikedByCurrentUser,
+    bool IsSavedByCurrentUser,
     int CommentsCount,
     IReadOnlyList<CommentPreviewResponse> RecentComments,
     DateTime CreatedAt
@@ -71,6 +72,7 @@ public static class PostResponseMapper
             GetPostMedia(p, mediaResponses),
             p.Likes.Count,
             IsLikedByCurrentUser(p, currentUserId),
+            IsSavedByCurrentUser(p, currentUserId),
             p.Comments.Count,
             GetRecentComments(p, mediaResponses),
             p.CreatedAt
@@ -143,6 +145,11 @@ public static class PostResponseMapper
     private static bool IsLikedByCurrentUser(Post post, Guid userId)
     {
         return post.Likes.Any(l => l.UserId == userId);
+    }
+
+    private static bool IsSavedByCurrentUser(Post post, Guid userId)
+    {
+        return post.SavedByUsers.Any(saved => saved.UserId == userId);
     }
 
     private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(

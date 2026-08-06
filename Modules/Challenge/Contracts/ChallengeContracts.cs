@@ -34,6 +34,7 @@ public record ChallengeResultEntry(Guid UserId, string DisplayName, string? Prof
     double Score, int Rank, double? ProgressPercent, bool IsFinisher, bool IsWinner);
 public record ChallengePageResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 public record ChallengeInvitationResponse(Guid Id, Guid ChallengeId, string ChallengeTitle, Guid InvitedByUserId, string InvitedByDisplayName, DateTime StartDate, DateTime EndDate, string Status, DateTime CreatedAt);
+public record SentChallengeInvitationResponse(Guid Id, Guid InvitedUserId, string InvitedUserDisplayName, string? InvitedUserAvatarUrl, MediaResponse? InvitedUserAvatar, string Status, DateTime CreatedAt);
 
 public class CreateChallengeRequestValidator : AbstractValidator<CreateChallengeRequest>
 {

@@ -18,6 +18,7 @@ public record GetMyChallengesQuery(Guid UserId, ChallengeListFilter Filter) : IR
 public record GetChallengeLeaderboardQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeLeaderboardEntry>>;
 public record GetChallengeResultsQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeResultEntry>>;
 public record GetIncomingChallengeInvitationsQuery(Guid UserId, int Page, int PageSize) : IRequest<ChallengePageResponse<ChallengeInvitationResponse>>;
+public record GetSentChallengeInvitationsQuery(Guid UserId, Guid ChallengeId, int Page, int PageSize) : IRequest<ChallengePageResponse<SentChallengeInvitationResponse>>;
 
 public class GetChallengeHandler : IRequestHandler<GetChallengeQuery, ChallengeDetailResponse>
 {
@@ -223,6 +224,38 @@ public class GetIncomingChallengeInvitationsHandler : IRequestHandler<GetIncomin
             item.Id, item.ChallengeId, item.Challenge.Title, item.InvitedByUserId, item.Challenge.CreatedByUser.DisplayName,
             item.Challenge.StartDate, item.Challenge.EndDate, item.Status, item.CreatedAt)).ToListAsync(cancellationToken);
         return new ChallengePageResponse<ChallengeInvitationResponse>(rows, request.Page, request.PageSize, totalCount);
+    }
+}
+
+public class GetSentChallengeInvitationsHandler : IRequestHandler<GetSentChallengeInvitationsQuery, ChallengePageResponse<SentChallengeInvitationResponse>>
+{
+    private readonly FitspireDbContext _context;
+    private readonly IMediaResponseFactory _mediaResponseFactory;
+
+    public GetSentChallengeInvitationsHandler(FitspireDbContext context, IMediaResponseFactory mediaResponseFactory)
+    {
+        _context = context;
+        _mediaResponseFactory = mediaResponseFactory;
+    }
+
+    public async Task<ChallengePageResponse<SentChallengeInvitationResponse>> Handle(GetSentChallengeInvitationsQuery request, CancellationToken cancellationToken)
+    {
+        var challenge = await _context.Challenges.FindAsync([request.ChallengeId], cancellationToken) ?? throw new NotFoundException("Challenge not found.");
+        if (challenge.CreatedBy != request.UserId) throw new UnauthorizedAccessException("Only the creator can view sent invitations.");
+
+        var query = _context.ChallengeInvitations
+            .Include(item => item.InvitedUser).ThenInclude(user => user.ProfilePictureMedia).ThenInclude(media => media!.Variants)
+            .Where(item => item.ChallengeId == request.ChallengeId && item.Status == ChallengeInvitationStatuses.Pending)
+            .OrderByDescending(item => item.CreatedAt);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var invitations = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(cancellationToken);
+        var avatars = await ChallengeAvatarResponseFactory.CreateManyAsync(invitations.Select(item => item.InvitedUser), _mediaResponseFactory, cancellationToken);
+        var rows = invitations.Select(item =>
+        {
+            var avatar = ChallengeAvatarResponseFactory.Get(item.InvitedUser, avatars);
+            return new SentChallengeInvitationResponse(item.Id, item.InvitedUserId, item.InvitedUser.DisplayName, avatar?.Thumbnail?.Url, avatar, item.Status, item.CreatedAt);
+        }).ToList();
+        return new ChallengePageResponse<SentChallengeInvitationResponse>(rows, request.Page, request.PageSize, totalCount);
     }
 }
 

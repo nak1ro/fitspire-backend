@@ -126,6 +126,14 @@ public class ChallengeController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{challengeId:guid}/invitations")]
+    public async Task<ActionResult<ChallengePageResponse<SentChallengeInvitationResponse>>> SentInvitations(Guid challengeId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        ValidatePagination(page, pageSize);
+        return Ok(await _mediator.Send(new GetSentChallengeInvitationsQuery(User.GetRequiredUserId(), challengeId, page, pageSize)));
+    }
+
     [HttpDelete("invitations/{invitationId:guid}")]
     public async Task<IActionResult> CancelInvitation(Guid invitationId)
     {
