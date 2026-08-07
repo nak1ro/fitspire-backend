@@ -25,7 +25,7 @@ param jwtSigningKey string
 @description('Random NextAuth secret, at least 32 bytes.')
 param nextAuthSecret string
 
-param frontendHostname string = 'app.fitspire.life'
+param frontendHostname string = 'fitspire.life'
 param apiHostname string = 'api.fitspire.life'
 
 var environmentName = 'prod'
@@ -274,7 +274,6 @@ resource backendAppSettings 'Microsoft.Web/sites/config@2024-04-01' = {
     Cors__AllowedOrigins__0: 'https://${frontendHostname}'
     Frontend__BaseUrl: 'https://${frontendHostname}'
     Email__UseMockEmail: 'true'
-    OpenAI__Enabled: 'false'
     MediaStorage__ContainerName: mediaContainer.name
     MediaStorage__ServiceUrl: 'https://${storageAccount.name}.${environment().suffixes.storage}'
     DataProtection__ContainerName: dataProtectionContainer.name
