@@ -58,6 +58,9 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
             cancellationToken);
         if (existingPost is not null)
         {
+            if (existingPost.IsModerationRemoved)
+                throw new ConflictException("The existing workout share is unavailable.");
+
             await _badges.EvaluateAsync(request.UserId, [BadgeTriggerContext.ForSocialPost(existingPost.Id)], cancellationToken);
             return existingPost.Id;
         }
@@ -93,6 +96,9 @@ public class ShareWorkoutHandler : IRequestHandler<ShareWorkoutCommand, Guid>
                 cancellationToken);
             if (concurrentPost is not null)
             {
+                if (concurrentPost.IsModerationRemoved)
+                    throw new ConflictException("The existing workout share is unavailable.");
+
                 await _badges.EvaluateAsync(request.UserId, [BadgeTriggerContext.ForSocialPost(concurrentPost.Id)], cancellationToken);
                 return concurrentPost.Id;
             }

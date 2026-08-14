@@ -28,7 +28,7 @@ public class SavePostHandler : IRequestHandler<SavePostCommand, SavePostResponse
     public async Task<SavePostResponse> Handle(SavePostCommand request, CancellationToken cancellationToken)
     {
         var post = await _context.Posts.Include(item => item.User)
-            .FirstOrDefaultAsync(item => item.Id == request.PostId, cancellationToken)
+            .FirstOrDefaultAsync(item => item.Id == request.PostId && item.ModerationRemovedAtUtc == null, cancellationToken)
             ?? throw new NotFoundException("Post not found.");
         if (!await _access.CanViewProtectedContentAsync(request.UserId, post.UserId, cancellationToken))
             throw new NotFoundException("Post not found.");
@@ -70,9 +70,10 @@ public class GetSavedPostsHandler : IRequestHandler<GetSavedPostsQuery, List<Fee
             .Include(post => post.User).ThenInclude(user => user.ProfilePictureMedia).ThenInclude(media => media!.Variants)
             .Include(post => post.Media).ThenInclude(media => media.MediaAsset).ThenInclude(asset => asset.Variants)
             .Include(post => post.Likes).Include(post => post.SavedByUsers).Include(post => post.Comments).ThenInclude(comment => comment.User)
-            .Where(post => orderedPostIds.Contains(post.Id)).ToListAsync(cancellationToken);
+            .Where(post => orderedPostIds.Contains(post.Id) && post.ModerationRemovedAtUtc == null).ToListAsync(cancellationToken);
 
-        var orderedPosts = orderedPostIds.Select(id => posts.First(post => post.Id == id)).ToList();
+        var orderedPosts = orderedPostIds.Where(id => posts.Any(post => post.Id == id))
+            .Select(id => posts.First(post => post.Id == id)).ToList();
         return await PostResponseMapper.MapAsync(orderedPosts, request.UserId, _workouts, _media, cancellationToken);
     }
 }

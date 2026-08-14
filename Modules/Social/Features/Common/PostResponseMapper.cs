@@ -73,7 +73,7 @@ public static class PostResponseMapper
             p.Likes.Count,
             IsLikedByCurrentUser(p, currentUserId),
             IsSavedByCurrentUser(p, currentUserId),
-            p.Comments.Count,
+            p.Comments.Count(comment => !comment.IsModerationRemoved),
             GetRecentComments(p, mediaResponses),
             p.CreatedAt
         )).ToList();
@@ -157,6 +157,7 @@ public static class PostResponseMapper
         IReadOnlyDictionary<Guid, MediaResponse> responses)
     {
         return post.Comments
+            .Where(comment => !comment.IsModerationRemoved)
             .OrderByDescending(c => c.CreatedAt)
             .Take(2)
             .Select(c => new CommentPreviewResponse(
@@ -177,7 +178,7 @@ public static class PostResponseMapper
     {
         var assets = posts.SelectMany(post => post.Media.Select(media => media.MediaAsset))
             .Concat(posts.Select(post => post.User?.ProfilePictureMedia).OfType<backend.Modules.Media.Domain.MediaAsset>())
-            .Concat(posts.SelectMany(post => post.Comments)
+            .Concat(posts.SelectMany(post => post.Comments.Where(comment => !comment.IsModerationRemoved))
                 .Select(comment => comment.User?.ProfilePictureMedia)
                 .OfType<backend.Modules.Media.Domain.MediaAsset>())
             .ToList();

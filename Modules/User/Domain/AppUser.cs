@@ -5,8 +5,10 @@ using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Media.Domain;
+using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
+using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Domain;
 using backend.Modules.Workout.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -20,6 +22,9 @@ public class AppUser : IdentityUser<Guid>
     public Guid? ProfilePictureMediaId { get; private set; }
     public MediaAsset? ProfilePictureMedia { get; private set; }
     public bool IsPrivate { get; set; } = false;
+    public DateTime? SuspendedAtUtc { get; private set; }
+    public DateTime? SuspendedUntilUtc { get; private set; }
+    public string? SuspensionReason { get; private set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -44,6 +49,37 @@ public class AppUser : IdentityUser<Guid>
         ProfilePictureMediaId = null;
         UpdatedAt = DateTime.UtcNow;
         return previousMediaId;
+    }
+
+    public bool IsSuspended(DateTime utcNow)
+    {
+        EnsureUtc(utcNow, nameof(utcNow));
+        return SuspendedUntilUtc is not null && SuspendedUntilUtc > utcNow;
+    }
+
+    public void Suspend(DateTime untilUtc, string? reason, DateTime utcNow)
+    {
+        EnsureUtc(untilUtc, nameof(untilUtc));
+        EnsureUtc(utcNow, nameof(utcNow));
+        if (untilUtc <= utcNow)
+            throw new DomainException("Suspension end time must be in the future.");
+
+        SuspendedAtUtc = utcNow;
+        SuspendedUntilUtc = untilUtc;
+        SuspensionReason = NormalizeSuspensionReason(reason);
+        UpdatedAt = utcNow;
+    }
+
+    public void Unsuspend(DateTime utcNow)
+    {
+        EnsureUtc(utcNow, nameof(utcNow));
+        if (SuspendedUntilUtc is null && SuspendedAtUtc is null && SuspensionReason is null)
+            return;
+
+        SuspendedAtUtc = null;
+        SuspendedUntilUtc = null;
+        SuspensionReason = null;
+        UpdatedAt = utcNow;
     }
 
     // Workouts
@@ -81,4 +117,26 @@ public class AppUser : IdentityUser<Guid>
     // Challenges
     public ICollection<UserChallenge> ChallengesCreated { get; set; } = new List<UserChallenge>();
     public ICollection<ChallengeParticipant> ChallengeParticipants { get; set; } = new List<ChallengeParticipant>();
+    public ICollection<ModerationReport> ReportsSubmitted { get; set; } = new List<ModerationReport>();
+    public ICollection<ModerationReport> ReportsReceived { get; set; } = new List<ModerationReport>();
+    public ICollection<ModerationReport> ReportsResolved { get; set; } = new List<ModerationReport>();
+    public ICollection<ModerationAction> ModerationActions { get; set; } = new List<ModerationAction>();
+
+    private static string? NormalizeSuspensionReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            return null;
+
+        var normalized = reason.Trim();
+        if (normalized.Length > ModerationLimits.MaximumSuspensionReasonLength)
+            throw new DomainException($"Suspension reason must be at most {ModerationLimits.MaximumSuspensionReasonLength} characters.");
+
+        return normalized;
+    }
+
+    private static void EnsureUtc(DateTime value, string name)
+    {
+        if (value.Kind != DateTimeKind.Utc)
+            throw new DomainException($"{name} must be in UTC.");
+    }
 }

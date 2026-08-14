@@ -7,4 +7,5 @@ public class NewUserDto
     public string Email { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public string? Token { get; set; }
+    public IReadOnlyList<string> Roles { get; set; } = [];
 }

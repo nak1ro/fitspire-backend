@@ -13,6 +13,8 @@ public class Comment : Entity<Guid>
     public string Content { get; private set; } = null!;
     public Guid? RootCommentId { get; private set; }
     public Guid? ReplyToCommentId { get; private set; }
+    public DateTime? ModerationRemovedAtUtc { get; private set; }
+    public bool IsModerationRemoved => ModerationRemovedAtUtc is not null;
 
     // Navigation
     public Post Post { get; private set; } = null!;
@@ -59,5 +61,27 @@ public class Comment : Entity<Guid>
 
         Content = content.Trim();
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RemoveByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation removal time must be in UTC.");
+        if (ModerationRemovedAtUtc is not null)
+            return;
+
+        ModerationRemovedAtUtc = utcNow;
+        UpdatedAt = utcNow;
+    }
+
+    public void RestoreByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation restoration time must be in UTC.");
+        if (ModerationRemovedAtUtc is null)
+            return;
+
+        ModerationRemovedAtUtc = null;
+        UpdatedAt = utcNow;
     }
 }

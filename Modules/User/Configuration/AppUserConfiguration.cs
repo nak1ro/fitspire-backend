@@ -1,4 +1,5 @@
 using backend.Modules.User.Domain;
+using backend.Modules.Moderation.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,6 +15,7 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 
         builder.Property(u => u.ProfilePictureMediaId);
         builder.Property(u => u.IsPrivate).HasDefaultValue(false);
+        builder.Property(u => u.SuspensionReason).HasMaxLength(ModerationLimits.MaximumSuspensionReasonLength);
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
 

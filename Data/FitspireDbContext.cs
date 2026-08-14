@@ -4,6 +4,7 @@ using backend.Modules.BodyTracking.Domain;
 using backend.Modules.Challenge.Domain;
 using backend.Modules.Goal.Domain.Entities;
 using backend.Modules.Media.Domain;
+using backend.Modules.Moderation.Domain;
 using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Progress.Domain;
@@ -32,6 +33,8 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<CoachThread> CoachThreads { get; set; }
     public DbSet<CoachMessage> CoachMessages { get; set; }
     public DbSet<DailyCoachBriefing> DailyCoachBriefings { get; set; }
+    public DbSet<ModerationReport> ModerationReports { get; set; }
+    public DbSet<ModerationAction> ModerationActions { get; set; }
 
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }

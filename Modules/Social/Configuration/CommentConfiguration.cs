@@ -14,6 +14,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.Property(c => c.CreatedAt)
             .HasDefaultValueSql("NOW()");
+        builder.Property(c => c.ModerationRemovedAtUtc);
 
         builder.HasOne(c => c.Post)
             .WithMany(p => p.Comments)

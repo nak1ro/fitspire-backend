@@ -20,6 +20,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasMaxLength(2000);
         
         builder.Property(p => p.ReferenceEntityId);
+        builder.Property(p => p.ModerationRemovedAtUtc);
 
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("NOW()");

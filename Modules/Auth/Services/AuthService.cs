@@ -1,4 +1,5 @@
 using backend.Modules.Auth.DTOs;
+using backend.Modules.Auth.Authorization;
 using FluentValidation;
 using backend.Modules.User.Domain;
 using Google.Apis.Auth;
@@ -74,7 +75,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException(errorMessages);
         }
 
-        await _userManager.AddToRoleAsync(user, "User");
+        await AddDefaultUserRoleAsync(user);
 
         // Generate email confirmation token
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -91,7 +92,7 @@ public class AuthService : IAuthService
         
         await SendAccountEmailAsync(RequireEmail(user), "Confirm your Fitspire account", emailHtml);
 
-        return CreateNewUserDto(user, null);
+        return await CreateNewUserDtoAsync(user, null);
     }
 
 
@@ -105,11 +106,13 @@ public class AuthService : IAuthService
         if (user == null)
             throw new System.Security.Authentication.AuthenticationException("Invalid username or email");
 
+        EnsureNotSuspended(user);
+
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
         if (!result.Succeeded)
             throw new System.Security.Authentication.AuthenticationException("Invalid credentials");
 
-        return CreateNewUserDto(user, await _tokenService.CreateToken(user));
+        return await CreateNewUserDtoAsync(user, await _tokenService.CreateToken(user));
     }
 
     public async Task<bool> ConfirmEmailAsync(ConfirmEmailDto dto)
@@ -152,11 +155,13 @@ public class AuthService : IAuthService
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)
                 throw new InvalidOperationException("User creation failed.");
-            await _userManager.AddToRoleAsync(user, "User");
+            await AddDefaultUserRoleAsync(user);
         }
 
+        EnsureNotSuspended(user);
+
         // Issue JWT
-        return CreateNewUserDto(user, await _tokenService.CreateToken(user));
+        return await CreateNewUserDtoAsync(user, await _tokenService.CreateToken(user));
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
@@ -236,7 +241,7 @@ public class AuthService : IAuthService
             : _emailService.SendEmailAsync(to, subject, htmlContent);
     }
 
-    private static NewUserDto CreateNewUserDto(AppUser user, string? token)
+    private async Task<NewUserDto> CreateNewUserDtoAsync(AppUser user, string? token)
     {
         return new NewUserDto
         {
@@ -244,8 +249,22 @@ public class AuthService : IAuthService
             UserName = RequireUserName(user),
             Email = RequireEmail(user),
             CreatedAt = user.CreatedAt,
-            Token = token
+            Token = token,
+            Roles = (await _userManager.GetRolesAsync(user)).ToArray()
         };
+    }
+
+    private static void EnsureNotSuspended(AppUser user)
+    {
+        if (user.IsSuspended(DateTime.UtcNow))
+            throw new System.Security.Authentication.AuthenticationException("Account is suspended.");
+    }
+
+    private async Task AddDefaultUserRoleAsync(AppUser user)
+    {
+        var result = await _userManager.AddToRoleAsync(user, AppRoles.User);
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"Unable to assign the default user role: {string.Join("; ", result.Errors.Select(error => error.Description))}");
     }
 
     private static string RequireUserName(AppUser user)

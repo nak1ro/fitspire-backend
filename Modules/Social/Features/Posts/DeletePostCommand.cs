@@ -37,7 +37,7 @@ public class DeletePostHandler : IRequestHandler<DeletePostCommand>
     {
         var post = await _context.Posts
             .Include(post => post.Media)
-            .FirstOrDefaultAsync(post => post.Id == postId, cancellationToken)
+            .FirstOrDefaultAsync(post => post.Id == postId && post.ModerationRemovedAtUtc == null, cancellationToken)
             ?? throw new NotFoundException($"Post {postId} not found.");
 
         if (post.UserId != userId)

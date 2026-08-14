@@ -18,6 +18,8 @@ public class Post : Entity<Guid>
     /// Reference to WorkoutId or GoalId when Type is WorkoutShare or GoalAchieved.
     /// </summary>
     public Guid? ReferenceEntityId { get; private set; }
+    public DateTime? ModerationRemovedAtUtc { get; private set; }
+    public bool IsModerationRemoved => ModerationRemovedAtUtc is not null;
 
     // Navigation
     public AppUser User { get; private set; } = null!;
@@ -103,6 +105,28 @@ public class Post : Entity<Guid>
 
         EnsurePublishable();
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RemoveByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation removal time must be in UTC.");
+        if (ModerationRemovedAtUtc is not null)
+            return;
+
+        ModerationRemovedAtUtc = utcNow;
+        UpdatedAt = utcNow;
+    }
+
+    public void RestoreByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation restoration time must be in UTC.");
+        if (ModerationRemovedAtUtc is null)
+            return;
+
+        ModerationRemovedAtUtc = null;
+        UpdatedAt = utcNow;
     }
 
     private void ApplyMediaSet(IReadOnlyList<Guid> mediaAssetIds)

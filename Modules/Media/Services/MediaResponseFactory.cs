@@ -18,7 +18,7 @@ public class MediaResponseFactory : IMediaResponseFactory
 
     public async Task<MediaResponse?> CreateAsync(MediaAsset? asset, CancellationToken cancellationToken)
     {
-        if (asset is null || asset.Status is not (MediaStatus.Ready or MediaStatus.Attached))
+        if (asset is null || asset.IsModerationRemoved || asset.Status is not (MediaStatus.Ready or MediaStatus.Attached))
             return null;
 
         var response = await CreateManyAsync([asset], cancellationToken);
@@ -30,7 +30,7 @@ public class MediaResponseFactory : IMediaResponseFactory
         CancellationToken cancellationToken)
     {
         var mediaAssets = assets
-            .Where(asset => asset.Status is MediaStatus.Ready or MediaStatus.Attached)
+            .Where(asset => !asset.IsModerationRemoved && asset.Status is (MediaStatus.Ready or MediaStatus.Attached))
             .DistinctBy(asset => asset.Id)
             .ToList();
         if (mediaAssets.Count == 0)

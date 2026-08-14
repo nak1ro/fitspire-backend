@@ -171,7 +171,7 @@ public class SocialRepository : ISocialRepository
                         .ThenInclude(media => media!.Variants)
             .Include(p => p.Comments)
                 .ThenInclude(comment => comment.Likes)
-            .FirstOrDefaultAsync(p => p.Id == postId, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == postId && p.ModerationRemovedAtUtc == null, cancellationToken);
     }
 
     public async Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default)
@@ -203,7 +203,7 @@ public class SocialRepository : ISocialRepository
                 .ThenInclude(c => c.User)
                     .ThenInclude(user => user.ProfilePictureMedia)
                         .ThenInclude(media => media!.Variants)
-            .Where(p => followedUserIds.Contains(p.UserId))
+            .Where(p => followedUserIds.Contains(p.UserId) && p.ModerationRemovedAtUtc == null)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -225,7 +225,7 @@ public class SocialRepository : ISocialRepository
                 .ThenInclude(c => c.User)
                     .ThenInclude(user => user.ProfilePictureMedia)
                         .ThenInclude(media => media!.Variants)
-            .Where(p => p.UserId == userId)
+            .Where(p => p.UserId == userId && p.ModerationRemovedAtUtc == null)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -317,13 +317,14 @@ public class SocialRepository : ISocialRepository
     {
         return await _context.Comments
             .Include(c => c.Post)
-            .FirstOrDefaultAsync(c => c.PostId == postId && c.Id == commentId, cancellationToken);
+            .FirstOrDefaultAsync(c => c.PostId == postId && c.Id == commentId && c.ModerationRemovedAtUtc == null &&
+                                      c.Post.ModerationRemovedAtUtc == null, cancellationToken);
     }
 
     public Task<List<Comment>> GetTopLevelCommentsAsync(Guid postId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return CommentDetailsQuery(postId)
-            .Where(comment => comment.RootCommentId == null)
+            .Where(comment => comment.RootCommentId == null && comment.ModerationRemovedAtUtc == null)
             .OrderByDescending(comment => comment.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -333,7 +334,7 @@ public class SocialRepository : ISocialRepository
     public Task<List<Comment>> GetCommentRepliesAsync(Guid postId, Guid rootCommentId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return CommentDetailsQuery(postId)
-            .Where(comment => comment.RootCommentId == rootCommentId)
+            .Where(comment => comment.RootCommentId == rootCommentId && comment.ModerationRemovedAtUtc == null)
             .OrderBy(comment => comment.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -347,7 +348,7 @@ public class SocialRepository : ISocialRepository
     {
         var ids = rootCommentIds.Distinct().ToList();
         return await _context.Comments.AsNoTracking()
-            .Where(comment => comment.PostId == postId
+            .Where(comment => comment.PostId == postId && comment.ModerationRemovedAtUtc == null
                               && comment.RootCommentId.HasValue
                               && ids.Contains(comment.RootCommentId.Value))
             .GroupBy(comment => comment.RootCommentId!.Value)
@@ -366,7 +367,7 @@ public class SocialRepository : ISocialRepository
                 .ThenInclude(replyTarget => replyTarget!.User)
                     .ThenInclude(user => user.ProfilePictureMedia)
                         .ThenInclude(media => media!.Variants)
-            .Where(comment => comment.PostId == postId);
+            .Where(comment => comment.PostId == postId && comment.ModerationRemovedAtUtc == null);
     }
 
     public Task<List<Post>> GetDiscoverFeedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
@@ -384,7 +385,7 @@ public class SocialRepository : ISocialRepository
                 .ThenInclude(comment => comment.User)
                     .ThenInclude(user => user.ProfilePictureMedia)
                         .ThenInclude(media => media!.Variants)
-            .Where(post => !post.User.IsPrivate)
+            .Where(post => !post.User.IsPrivate && post.ModerationRemovedAtUtc == null)
             .OrderByDescending(post => post.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

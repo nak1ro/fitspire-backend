@@ -24,6 +24,8 @@ public class MediaAsset : Entity<Guid>
     public DateTime? RetiredAtUtc { get; private set; }
     public int CleanupAttemptCount { get; private set; }
     public DateTime? NextCleanupAttemptAtUtc { get; private set; }
+    public DateTime? ModerationRemovedAtUtc { get; private set; }
+    public bool IsModerationRemoved => ModerationRemovedAtUtc is not null;
 
     public AppUser OwnerUser { get; private set; } = null!;
     public ICollection<MediaVariant> Variants { get; private set; } = new List<MediaVariant>();
@@ -163,6 +165,28 @@ public class MediaAsset : Entity<Guid>
         Status = MediaStatus.Retired;
         RetiredAtUtc = utcNow;
         NextCleanupAttemptAtUtc = utcNow;
+        UpdatedAt = utcNow;
+    }
+
+    public void RemoveByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation removal time must be in UTC.");
+        if (ModerationRemovedAtUtc is not null)
+            return;
+
+        ModerationRemovedAtUtc = utcNow;
+        UpdatedAt = utcNow;
+    }
+
+    public void RestoreByModeration(DateTime utcNow)
+    {
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new DomainException("Moderation restoration time must be in UTC.");
+        if (ModerationRemovedAtUtc is null)
+            return;
+
+        ModerationRemovedAtUtc = null;
         UpdatedAt = utcNow;
     }
 

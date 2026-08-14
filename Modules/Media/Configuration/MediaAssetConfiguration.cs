@@ -19,6 +19,7 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
         builder.Property(asset => asset.StagingBlobKey).HasMaxLength(500).IsRequired();
         builder.Property(asset => asset.UploadedETag).HasMaxLength(128);
         builder.Property(asset => asset.FailureReason).HasMaxLength(500);
+        builder.Property(asset => asset.ModerationRemovedAtUtc);
         builder.Property(asset => asset.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(asset => asset.UpdatedAt).IsRequired(false);
 

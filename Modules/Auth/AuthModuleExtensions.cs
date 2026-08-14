@@ -1,11 +1,15 @@
 using System.Text;
+using System.Security.Claims;
+using backend.Modules.Auth.Authorization;
 using backend.Modules.Auth.Services;
 using backend.Modules.Auth.DTOs;
+using backend.Modules.User.Domain;
 using backend.Modules.Auth.Validators;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 
 namespace backend.Modules.Auth;
 
@@ -37,11 +41,31 @@ public static class AuthModuleExtensions
 
                     ValidateLifetime = true
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                        if (!Guid.TryParse(userIdClaim, out var userId))
+                        {
+                            context.Fail("User identity is invalid.");
+                            return;
+                        }
+
+                        var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<AppUser>>();
+                        var user = await userManager.FindByIdAsync(userId.ToString());
+                        if (user is null || user.IsSuspended(DateTime.UtcNow))
+                            context.Fail("Account access is unavailable.");
+                    }
+                };
             });
 
         AddGoogleIfConfigured(authenticationBuilder, configuration);
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AppPolicies.AdminOnly, policy => policy.RequireRole(AppRoles.Admin));
+        });
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITokenService, TokenService>();

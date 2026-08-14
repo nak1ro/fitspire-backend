@@ -37,6 +37,10 @@ public static class StartupExtensions
         services.AddOptions<StartupOptions>()
             .Bind(configuration.GetSection(StartupOptions.SectionName))
             .ValidateOnStart();
+        services.AddOptions<AdministrationOptions>()
+            .Bind(configuration.GetSection(AdministrationOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<AdministrationOptions>, AdministrationOptionsValidator>();
 
         return services;
     }
