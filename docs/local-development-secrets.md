@@ -25,8 +25,10 @@ For Azure App Service, provide the same settings as environment variables using 
 - `JWT__SigningKey`
 - `Authentication__Google__ClientSecret` when Google sign-in is enabled
 - `Resend__ApiKey` when Resend email is enabled
-- `OpenAI__ApiKey` when AI coaching is enabled
+- `OpenAI__ApiKey` when AI Coach generation is enabled
 - `Startup__ApplyMigrationsOnStartup` to explicitly control startup migrations
 - `DataProtection__ServiceUri` and `DataProtection__ContainerName` in Production
 
 `appsettings.Production.json` disables mock email and clears local Azurite configuration. In Production, `DataProtection__ServiceUri` must be the HTTPS Blob service URI and `DataProtection__ContainerName` a dedicated private container. The application accepts no data-protection connection string or SAS setting; it uses the App Service managed identity.
+
+`OpenAI:Enabled` and `OpenAI:Model` are tracked non-secret defaults. The empty `OpenAI:ApiKey` placeholder means the API starts without a credential, while AI Coach generation returns `503` until this user secret or production App Service setting is supplied. `AiCoachInteraction` settings are non-secret code-owned operational limits and should not be set in browser configuration.

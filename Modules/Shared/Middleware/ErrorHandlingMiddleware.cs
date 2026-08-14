@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using backend.Modules.Shared.Domain;
 using backend.Modules.AiCoaching.Contracts;
+using backend.Modules.AiCoaching.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -46,6 +47,11 @@ public class ErrorHandlingMiddleware
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
+        if (exception is CoachQuestionQuotaExceededException quota)
+        {
+            var retryAfter = Math.Max(1, (int)Math.Ceiling((quota.ResetAtUtc - DateTime.UtcNow).TotalSeconds));
+            context.Response.Headers.RetryAfter = retryAfter.ToString();
+        }
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
@@ -59,6 +65,7 @@ public class ErrorHandlingMiddleware
         AiServiceUnavailableException => HttpStatusCode.ServiceUnavailable,
         AiProviderException { IsRetryable: true } => HttpStatusCode.ServiceUnavailable,
         AiProviderException => HttpStatusCode.ServiceUnavailable,
+        CoachQuestionQuotaExceededException => HttpStatusCode.TooManyRequests,
         ConflictException => HttpStatusCode.Conflict,
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => HttpStatusCode.Conflict,
         NotFoundException => HttpStatusCode.NotFound,
@@ -76,6 +83,7 @@ public class ErrorHandlingMiddleware
         AiServiceUnavailableException => "AI coaching unavailable",
         AiProviderException { IsRetryable: true } => "AI coaching temporarily unavailable",
         AiProviderException => "AI coaching unavailable",
+        CoachQuestionQuotaExceededException => "Coach question limit reached",
         ConflictException => "Conflict",
         DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => "Conflict",
         NotFoundException => "Resource not found",

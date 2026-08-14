@@ -64,6 +64,9 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<UserGoal> Goals { get; set; } = new List<UserGoal>();
     public ICollection<BodyCheckIn> BodyCheckIns { get; set; } = new List<BodyCheckIn>();
     public ICollection<WeeklyCoachReport> WeeklyCoachReports { get; set; } = new List<WeeklyCoachReport>();
+    public ICollection<CoachThread> CoachThreads { get; set; } = new List<CoachThread>();
+    public ICollection<CoachMessage> CoachMessages { get; set; } = new List<CoachMessage>();
+    public ICollection<DailyCoachBriefing> DailyCoachBriefings { get; set; } = new List<DailyCoachBriefing>();
 
     // Badges and Records
     public ICollection<UserBadge> Badges { get; set; } = new List<UserBadge>();

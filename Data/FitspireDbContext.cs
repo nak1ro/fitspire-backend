@@ -29,6 +29,9 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<MediaVariant> MediaVariants { get; set; }
     public DbSet<BodyCheckIn> BodyCheckIns { get; set; }
     public DbSet<WeeklyCoachReport> WeeklyCoachReports { get; set; }
+    public DbSet<CoachThread> CoachThreads { get; set; }
+    public DbSet<CoachMessage> CoachMessages { get; set; }
+    public DbSet<DailyCoachBriefing> DailyCoachBriefings { get; set; }
 
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }
