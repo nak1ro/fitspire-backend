@@ -27,16 +27,16 @@ public class PersonalRecordRecalculationService : IPersonalRecordRecalculationSe
             var key = new RecordKey(record.WorkoutType, record.Metric, record.ExerciseId);
             if (!candidates.Remove(key, out var candidate)) { _context.PersonalRecords.Remove(record); continue; }
             if (record.Value == candidate.Value && record.WorkoutId == candidate.WorkoutId) continue;
-            if (candidate.Value > record.Value) record.TryBeat(candidate.Value, candidate.WorkoutId);
-            else record.Replace(candidate.Value, candidate.WorkoutId);
-            await AddHistoryIfNewAsync(record, history, cancellationToken);
+            if (candidate.Value > record.Value) record.TryBeat(candidate.Value, candidate.WorkoutId, candidate.OccurredAt);
+            else record.Replace(candidate.Value, candidate.WorkoutId, candidate.OccurredAt);
+            await AddHistoryIfNewAsync(record, candidate.OccurredAt, history, cancellationToken);
         }
 
         foreach (var (key, candidate) in candidates)
         {
-            var record = PersonalRecord.Create(userId, key.WorkoutType, key.Metric, key.ExerciseId, candidate.Value, candidate.WorkoutId);
+            var record = PersonalRecord.Create(userId, key.WorkoutType, key.Metric, key.ExerciseId, candidate.Value, candidate.WorkoutId, candidate.OccurredAt);
             await _context.PersonalRecords.AddAsync(record, cancellationToken);
-            await AddHistoryIfNewAsync(record, history, cancellationToken);
+            await AddHistoryIfNewAsync(record, candidate.OccurredAt, history, cancellationToken);
         }
     }
 
@@ -84,11 +84,11 @@ public class PersonalRecordRecalculationService : IPersonalRecordRecalculationSe
         return values.ToDictionary(value => new RecordKey(value.WorkoutType, value.Metric, value.ExerciseId), value => value.Value);
     }
 
-    private async Task AddHistoryIfNewAsync(PersonalRecord record, IDictionary<RecordKey, double> history, CancellationToken cancellationToken)
+    private async Task AddHistoryIfNewAsync(PersonalRecord record, DateTime occurredAt, IDictionary<RecordKey, double> history, CancellationToken cancellationToken)
     {
         var key = new RecordKey(record.WorkoutType, record.Metric, record.ExerciseId);
         if (history.TryGetValue(key, out var highest) && record.Value <= highest) return;
-        await _context.PersonalRecordHistory.AddAsync(new PersonalRecordHistory { Id = Guid.NewGuid(), UserId = record.UserId, WorkoutType = record.WorkoutType, Metric = record.Metric, ExerciseId = record.ExerciseId, Value = record.Value, WorkoutId = record.WorkoutId, RecordedAt = DateTime.UtcNow }, cancellationToken);
+        await _context.PersonalRecordHistory.AddAsync(new PersonalRecordHistory { Id = Guid.NewGuid(), UserId = record.UserId, WorkoutType = record.WorkoutType, Metric = record.Metric, ExerciseId = record.ExerciseId, Value = record.Value, WorkoutId = record.WorkoutId, RecordedAt = occurredAt }, cancellationToken);
         history[key] = record.Value;
     }
 

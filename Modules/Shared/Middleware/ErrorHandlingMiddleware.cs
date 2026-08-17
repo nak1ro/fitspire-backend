@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Linq;
 using backend.Modules.Shared.Domain;
 using backend.Modules.AiCoaching.Contracts;
 using backend.Modules.AiCoaching.Services;
@@ -42,7 +43,8 @@ public class ErrorHandlingMiddleware
         {
             status = (int)statusCode,
             title = GetTitle(exception),
-            detail = exception.Message
+            detail = GetDetail(exception),
+            errors = GetErrors(exception)
         };
 
         context.Response.ContentType = "application/json";
@@ -72,6 +74,21 @@ public class ErrorHandlingMiddleware
         System.Security.Authentication.AuthenticationException => HttpStatusCode.Unauthorized,
         UnauthorizedAccessException => HttpStatusCode.Forbidden,
         _ => HttpStatusCode.InternalServerError
+    };
+
+    private static string GetDetail(Exception exception) => exception switch
+    {
+        ValidationException validationException =>
+            string.Join(" ", validationException.Errors.Select(error => error.ErrorMessage)),
+        _ => exception.Message
+    };
+
+    private static Dictionary<string, string[]>? GetErrors(Exception exception) => exception switch
+    {
+        ValidationException validationException => validationException.Errors
+            .GroupBy(error => error.PropertyName)
+            .ToDictionary(group => group.Key, group => group.Select(error => error.ErrorMessage).ToArray()),
+        _ => null
     };
 
     private static string GetTitle(Exception exception) => exception switch

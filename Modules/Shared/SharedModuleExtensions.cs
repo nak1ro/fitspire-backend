@@ -1,3 +1,4 @@
+using backend.Modules.Shared.Service;
 using Resend;
 
 namespace backend.Modules.Shared;
@@ -12,6 +13,7 @@ public static class SharedModuleExtensions
         services.AddScoped<ResendClient>();
         // UnitOfWork for all modules
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserLocalDateResolver, UserLocalDateResolver>();
         
         services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 

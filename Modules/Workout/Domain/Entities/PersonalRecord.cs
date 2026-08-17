@@ -13,6 +13,12 @@ public class PersonalRecord : AggregateRoot<Guid>
     public double Value { get; private set; }
     public Guid WorkoutId { get; private set; }
 
+    /// <summary>
+    /// The business date the record was set on — the occurrence date of the workout that
+    /// earned it, not the wall-clock time the recalculation happened to run.
+    /// </summary>
+    public DateTime AchievedAt { get; private set; }
+
     // Navigation
     public AppUser User { get; private set; } = null!;
     public UserWorkout UserWorkout { get; private set; } = null!;
@@ -21,7 +27,7 @@ public class PersonalRecord : AggregateRoot<Guid>
     // EF Core constructor
     private PersonalRecord() { }
 
-    private PersonalRecord(Guid id, Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId)
+    private PersonalRecord(Guid id, Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId, DateTime achievedAt)
     {
         Id = id;
         UserId = userId;
@@ -30,18 +36,19 @@ public class PersonalRecord : AggregateRoot<Guid>
         ExerciseId = exerciseId;
         Value = value;
         WorkoutId = workoutId;
+        AchievedAt = achievedAt;
         CreatedAt = DateTime.UtcNow;
     }
 
-    public static PersonalRecord Create(Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId)
+    public static PersonalRecord Create(Guid userId, string workoutType, string metric, Guid? exerciseId, double value, Guid workoutId, DateTime achievedAt)
     {
         if (value <= 0)
             throw new DomainException("Personal record value must be positive.");
 
-        return new PersonalRecord(Guid.NewGuid(), userId, workoutType, metric, exerciseId, value, workoutId);
+        return new PersonalRecord(Guid.NewGuid(), userId, workoutType, metric, exerciseId, value, workoutId, achievedAt);
     }
 
-    public bool TryBeat(double newValue, Guid workoutId)
+    public bool TryBeat(double newValue, Guid workoutId, DateTime achievedAt)
     {
         if (newValue <= Value)
             return false;
@@ -49,6 +56,7 @@ public class PersonalRecord : AggregateRoot<Guid>
         var previousValue = Value;
         Value = newValue;
         WorkoutId = workoutId;
+        AchievedAt = achievedAt;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new PersonalRecordBrokenEvent(Id, UserId, WorkoutType, Metric, previousValue, newValue));
@@ -56,13 +64,14 @@ public class PersonalRecord : AggregateRoot<Guid>
         return true;
     }
 
-    public void Replace(double value, Guid workoutId)
+    public void Replace(double value, Guid workoutId, DateTime achievedAt)
     {
         if (value <= 0)
             throw new DomainException("Personal record value must be positive.");
 
         Value = value;
         WorkoutId = workoutId;
+        AchievedAt = achievedAt;
         UpdatedAt = DateTime.UtcNow;
     }
 }

@@ -94,6 +94,10 @@ public class UserGoal : AggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// <paramref name="deadline"/> must already be resolved to UTC (via
+    /// <see cref="backend.Modules.Shared.Service.IUserLocalDateResolver"/>) before calling this.
+    /// </summary>
     public void UpdateTarget(double targetValue, bool isPublic, DateTime? deadline)
     {
         if (Status != GoalStatus.Active)
@@ -109,7 +113,7 @@ public class UserGoal : AggregateRoot<Guid>
                 throw new DomainException("Recurring goals do not use an overall deadline.");
             if (deadline.Value <= StartDate || deadline.Value <= DateTime.UtcNow)
                 throw new DomainException("Goal deadline must be after the start date and in the future.");
-            Deadline = deadline.Value.ToUniversalTime();
+            Deadline = deadline.Value;
         }
         UpdatedAt = DateTime.UtcNow;
     }

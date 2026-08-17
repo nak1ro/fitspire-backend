@@ -44,7 +44,7 @@ public class SocialRepository : ISocialRepository
             .Include(user => user.ProfilePictureMedia)
                 .ThenInclude(media => media!.Variants)
             .Where(user => !user.IsPrivate)
-            .Where(user => user.UserName!.Contains(query) || user.DisplayName.Contains(query))
+            .Where(user => EF.Functions.ILike(user.UserName!, $"%{query}%") || EF.Functions.ILike(user.DisplayName, $"%{query}%"))
             .OrderBy(user => user.UserName)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

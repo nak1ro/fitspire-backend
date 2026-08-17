@@ -16,6 +16,7 @@ public class PersonalRecordConfiguration : IEntityTypeConfiguration<PersonalReco
         builder.Property(pr => pr.Metric).IsRequired();
         builder.Property(pr => pr.Value).IsRequired();
         builder.Property(pr => pr.CreatedAt).HasDefaultValueSql("NOW()");
+        builder.Property(pr => pr.AchievedAt).IsRequired();
 
         builder.HasOne(pr => pr.User)
             .WithMany(u => u.PersonalRecords)

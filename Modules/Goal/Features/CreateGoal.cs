@@ -4,6 +4,7 @@ using backend.Modules.Goal.Infrastructure;
 using backend.Modules.Goal.Services;
 using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Shared.Service;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,15 +21,17 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
     private readonly FitspireDbContext _context;
     private readonly IGoalTemplatePolicy _templatePolicy;
     private readonly IGoalTransactionService _transactions;
+    private readonly IUserLocalDateResolver _localDateResolver;
 
     public CreateGoalHandler(IGoalRepository repository, IUnitOfWork unitOfWork, FitspireDbContext context,
-        IGoalTemplatePolicy templatePolicy, IGoalTransactionService transactions)
+        IGoalTemplatePolicy templatePolicy, IGoalTransactionService transactions, IUserLocalDateResolver localDateResolver)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _context = context;
         _templatePolicy = templatePolicy;
         _transactions = transactions;
+        _localDateResolver = localDateResolver;
     }
 
     public async Task<Guid> Handle(CreateGoalCommand request, CancellationToken cancellationToken)
@@ -40,8 +43,19 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, Guid>
     {
         var goalType = await _repository.GetGoalTypeByIdAsync(request.GoalTypeId, cancellationToken)
             ?? throw new NotFoundException($"Goal type {request.GoalTypeId} not found.");
-        var rules = _templatePolicy.Resolve(goalType, request.Schedule, request.Deadline, request.SelectedWorkoutType,
-            request.SelectedExerciseId, request.StartDate);
+
+        // Resolve the user's bare calendar-date input to UTC via their saved timezone preference —
+        // DateTime.ToUniversalTime() on an unspecified-kind value would silently use the server's
+        // own local timezone instead, which is what GoalTemplatePolicy used to do.
+        var deadlineUtc = request.Deadline.HasValue
+            ? await _localDateResolver.ResolveUtcAsync(request.UserId, request.Deadline.Value, cancellationToken)
+            : (DateTime?)null;
+        var startDateUtc = request.StartDate.HasValue
+            ? await _localDateResolver.ResolveUtcAsync(request.UserId, request.StartDate.Value, cancellationToken)
+            : (DateTime?)null;
+
+        var rules = _templatePolicy.Resolve(goalType, request.Schedule, deadlineUtc, request.SelectedWorkoutType,
+            request.SelectedExerciseId, startDateUtc);
         await EnsureMetricAndExerciseAsync(goalType, rules.SelectedExerciseId, cancellationToken);
 
         var definitionKey = GoalDefinitionKeyFactory.Create(goalType, request.Schedule.Trim().ToLowerInvariant(), rules.SelectedWorkoutType, rules.SelectedExerciseId);

@@ -32,7 +32,7 @@ public class WorkoutMappingProfile : Profile
         CreateMap<PersonalRecord, PersonalRecordResponse>()
             .ForCtorParam(nameof(PersonalRecordResponse.Unit), opt => opt.MapFrom(s => ResolvePersonalRecordUnit(s.Metric)))
             .ForCtorParam(nameof(PersonalRecordResponse.ExerciseName), opt => opt.MapFrom(s => s.Exercise != null ? s.Exercise.Name : null))
-            .ForCtorParam(nameof(PersonalRecordResponse.AchievedAt), opt => opt.MapFrom(s => s.UpdatedAt ?? s.CreatedAt));
+            .ForCtorParam(nameof(PersonalRecordResponse.AchievedAt), opt => opt.MapFrom(s => s.AchievedAt));
             
         // Running
         CreateMap<RunningUserWorkoutDetails, RunningWorkoutResponse>()

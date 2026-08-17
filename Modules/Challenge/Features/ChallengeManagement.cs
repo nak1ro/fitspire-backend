@@ -7,6 +7,7 @@ using backend.Modules.Notification.Domain.Constants;
 using backend.Modules.Notification.Domain.Enums;
 using backend.Modules.Notification.Services;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Shared.Service;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,12 +24,15 @@ public class CreateChallengeHandler : IRequestHandler<CreateChallengeCommand, Gu
     private readonly FitspireDbContext _context;
     private readonly IChallengeMetricService _metrics;
     private readonly IChallengeTransactionService _transactions;
+    private readonly IUserLocalDateResolver _localDateResolver;
 
-    public CreateChallengeHandler(FitspireDbContext context, IChallengeMetricService metrics, IChallengeTransactionService transactions)
+    public CreateChallengeHandler(FitspireDbContext context, IChallengeMetricService metrics, IChallengeTransactionService transactions,
+        IUserLocalDateResolver localDateResolver)
     {
         _context = context;
         _metrics = metrics;
         _transactions = transactions;
+        _localDateResolver = localDateResolver;
     }
 
     public Task<Guid> Handle(CreateChallengeCommand request, CancellationToken cancellationToken) =>
@@ -39,10 +43,16 @@ public class CreateChallengeHandler : IRequestHandler<CreateChallengeCommand, Gu
                 (item.Status == ChallengeStatuses.Upcoming || item.Status == ChallengeStatuses.Active), token);
             if (ownedCount >= 5) throw new DomainException("You can own at most five upcoming or active challenges.");
 
+            // Resolve the user's bare calendar-date input to UTC via their saved timezone preference —
+            // DateTime.ToUniversalTime() on an unspecified-kind value would silently use the server's
+            // own local timezone instead, which can even push a same-day start into "the past".
+            var startDateUtc = await _localDateResolver.ResolveUtcAsync(request.UserId, request.Request.StartDate, token);
+            var endDateUtc = await _localDateResolver.ResolveUtcAsync(request.UserId, request.Request.EndDate, token);
+
             var nowUtc = DateTime.UtcNow;
             var challenge = UserChallenge.Create(request.UserId, request.Request.Title, request.Request.Description,
                 request.Request.MetricCode, request.Request.WorkoutType, request.Request.Mode, request.Request.TargetValue,
-                request.Request.Visibility, request.Request.StartDate.ToUniversalTime(), request.Request.EndDate.ToUniversalTime(),
+                request.Request.Visibility, startDateUtc, endDateUtc,
                 request.Request.JoinClosing, request.Request.ParticipantLimit, nowUtc);
 
             await _context.Challenges.AddAsync(challenge, token);
@@ -58,14 +68,16 @@ public class UpdateChallengeHandler : IRequestHandler<UpdateChallengeCommand>
     private readonly IChallengeMetricService _metrics;
     private readonly IChallengeTransactionService _transactions;
     private readonly INotificationService _notifications;
+    private readonly IUserLocalDateResolver _localDateResolver;
 
     public UpdateChallengeHandler(FitspireDbContext context, IChallengeMetricService metrics,
-        IChallengeTransactionService transactions, INotificationService notifications)
+        IChallengeTransactionService transactions, INotificationService notifications, IUserLocalDateResolver localDateResolver)
     {
         _context = context;
         _metrics = metrics;
         _transactions = transactions;
         _notifications = notifications;
+        _localDateResolver = localDateResolver;
     }
 
     public Task Handle(UpdateChallengeCommand request, CancellationToken cancellationToken) =>
@@ -80,9 +92,11 @@ public class UpdateChallengeHandler : IRequestHandler<UpdateChallengeCommand>
             var wasInviteOnly = challenge.Visibility == ChallengeVisibilities.InviteOnly;
             var pendingInviteeIds = challenge.Invitations.Where(item => item.Status == ChallengeInvitationStatuses.Pending)
                 .Select(item => item.InvitedUserId).ToList();
+            var startDateUtc = await _localDateResolver.ResolveUtcAsync(request.UserId, request.Request.StartDate, token);
+            var endDateUtc = await _localDateResolver.ResolveUtcAsync(request.UserId, request.Request.EndDate, token);
             challenge.UpdateBeforeStart(request.Request.Title, request.Request.Description, request.Request.MetricCode,
                 request.Request.WorkoutType, request.Request.Mode, request.Request.TargetValue, request.Request.Visibility,
-                request.Request.StartDate.ToUniversalTime(), request.Request.EndDate.ToUniversalTime(), request.Request.JoinClosing,
+                startDateUtc, endDateUtc, request.Request.JoinClosing,
                 request.Request.ParticipantLimit, activeCount, DateTime.UtcNow);
 
             if (wasInviteOnly && challenge.Visibility != ChallengeVisibilities.InviteOnly)

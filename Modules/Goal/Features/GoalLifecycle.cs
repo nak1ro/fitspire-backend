@@ -8,6 +8,7 @@ using backend.Modules.Notification.Domain.Enums;
 using backend.Modules.Notification.Services;
 using backend.Modules.Shared;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Shared.Service;
 using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -73,15 +74,17 @@ public class UpdateGoalHandler : IRequestHandler<UpdateGoalCommand>
     private readonly INotificationService _notifications;
     private readonly IBadgeEvaluationService _badges;
     private readonly IGoalTransactionService _transactions;
+    private readonly IUserLocalDateResolver _localDateResolver;
 
     public UpdateGoalHandler(FitspireDbContext context, IUnitOfWork unitOfWork, INotificationService notifications,
-        IBadgeEvaluationService badges, IGoalTransactionService transactions)
+        IBadgeEvaluationService badges, IGoalTransactionService transactions, IUserLocalDateResolver localDateResolver)
     {
         _context = context;
         _unitOfWork = unitOfWork;
         _notifications = notifications;
         _badges = badges;
         _transactions = transactions;
+        _localDateResolver = localDateResolver;
     }
 
     public async Task Handle(UpdateGoalCommand request, CancellationToken cancellationToken)
@@ -98,8 +101,11 @@ public class UpdateGoalHandler : IRequestHandler<UpdateGoalCommand>
         var goal = await _context.Goals.Include(item => item.Periods).Include(item => item.GoalType)
             .FirstOrDefaultAsync(item => item.Id == request.GoalId && item.UserId == request.UserId, cancellationToken)
             ?? throw new NotFoundException("Goal not found.");
+        var deadlineUtc = request.Deadline.HasValue
+            ? await _localDateResolver.ResolveUtcAsync(request.UserId, request.Deadline.Value, cancellationToken)
+            : (DateTime?)null;
         var previousTarget = goal.TargetValue;
-        goal.UpdateTarget(request.TargetValue, request.IsPublic, request.Deadline);
+        goal.UpdateTarget(request.TargetValue, request.IsPublic, deadlineUtc);
         if (previousTarget != goal.TargetValue)
             await _context.GoalTargetChanges.AddAsync(new GoalTargetChange(goal.Id, previousTarget, goal.TargetValue), cancellationToken);
         var completedPeriodIds = new List<Guid>();

@@ -26,6 +26,13 @@ public class GoalTemplatePolicy : IGoalTemplatePolicy
         "gym", "running", "cycling", "swimming", "yoga"
     };
 
+    /// <summary>
+    /// <paramref name="deadline"/> and <paramref name="startDate"/> must already be resolved to UTC
+    /// (via <see cref="backend.Modules.Shared.Service.IUserLocalDateResolver"/>) before calling this —
+    /// this method no longer performs its own UTC conversion, since <c>DateTime.ToUniversalTime()</c>
+    /// on an unspecified-kind value silently converts using the server's local timezone rather than
+    /// the user's saved preference.
+    /// </summary>
     public GoalCreationRules Resolve(GoalType template, string schedule, DateTime? deadline, string? selectedWorkoutType,
         Guid? selectedExerciseId, DateTime? startDate)
     {
@@ -33,13 +40,13 @@ public class GoalTemplatePolicy : IGoalTemplatePolicy
             throw new DomainException("This goal template is not available.");
 
         var normalizedSchedule = NormalizeSchedule(schedule);
-        var resolvedStartDate = (startDate ?? DateTime.UtcNow).ToUniversalTime();
+        var resolvedStartDate = startDate ?? DateTime.UtcNow;
         ValidateSchedule(template, normalizedSchedule, deadline, resolvedStartDate);
         var workoutType = ResolveWorkoutType(template, selectedWorkoutType);
         ValidateExercise(template, selectedExerciseId);
         return new GoalCreationRules(normalizedSchedule != GoalSchedules.OneOff,
             normalizedSchedule == GoalSchedules.OneOff ? null : normalizedSchedule,
-            normalizedSchedule == GoalSchedules.OneOff ? deadline!.Value.ToUniversalTime() : null,
+            normalizedSchedule == GoalSchedules.OneOff ? deadline!.Value : null,
             workoutType, selectedExerciseId, resolvedStartDate);
     }
 
