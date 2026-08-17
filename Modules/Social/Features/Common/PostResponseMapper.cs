@@ -16,6 +16,7 @@ public record FeedItemResponse(
     string? Content,
     Guid? ReferenceEntityId,
     WorkoutSummaryResponse? WorkoutSummary,
+    GoalSummaryResponse? GoalSummary,
     IReadOnlyList<MediaResponse> Media,
     int LikesCount,
     bool IsLikedByCurrentUser,
@@ -47,6 +48,14 @@ public record WorkoutSummaryResponse(
     DateTime? CompletedAt
 );
 
+public record GoalSummaryResponse(
+    Guid Id,
+    string GoalTypeName,
+    double TargetValue,
+    string Unit,
+    DateTime CompletedAt
+);
+
 public static class PostResponseMapper
 {
     public static async Task<List<FeedItemResponse>> MapAsync(
@@ -69,6 +78,7 @@ public static class PostResponseMapper
             p.Content,
             p.ReferenceEntityId,
             GetWorkoutSummary(p, workoutSummaries),
+            GetGoalSummary(p),
             GetPostMedia(p, mediaResponses),
             p.Likes.Count,
             IsLikedByCurrentUser(p, currentUserId),
@@ -125,6 +135,20 @@ public static class PostResponseMapper
             return null;
 
         return summaries.GetValueOrDefault(post.ReferenceEntityId.Value);
+    }
+
+    private static GoalSummaryResponse? GetGoalSummary(Post post)
+    {
+        if (post.Type != PostType.GoalAchieved || post.GoalAchievedSnapshot is null)
+            return null;
+
+        var snapshot = post.GoalAchievedSnapshot;
+        return new GoalSummaryResponse(
+            snapshot.SourceGoalId,
+            snapshot.GoalTypeName,
+            snapshot.TargetValue,
+            snapshot.Unit,
+            snapshot.CompletedAt);
     }
 
     private static WorkoutSummaryResponse MapWorkoutSummary(UserWorkout workout)

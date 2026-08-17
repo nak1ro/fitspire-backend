@@ -26,6 +26,8 @@ public interface ISocialRepository
     // Posts
     Task<Post?> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default);
     Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default);
+    Task<List<Guid>> GetSharedWorkoutIdsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<List<Guid>> GetSharedGoalIdsAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetDiscoverFeedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserPostsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);

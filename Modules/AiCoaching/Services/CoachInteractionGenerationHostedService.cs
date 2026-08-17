@@ -24,11 +24,18 @@ public sealed class CoachInteractionGenerationHostedService : BackgroundService
         if (!_openAiOptions.Enabled)
             return;
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_options.WorkerPollSeconds));
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            await ProcessOneSafelyAsync(stoppingToken);
-            await timer.WaitForNextTickAsync(stoppingToken);
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_options.WorkerPollSeconds));
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await ProcessOneSafelyAsync(stoppingToken);
+                await timer.WaitForNextTickAsync(stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the host is shutting down (e.g. dotnet watch restart).
         }
     }
 

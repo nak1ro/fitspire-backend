@@ -62,6 +62,26 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
                 .HasFilter("\"SourceWorkoutId\" IS NOT NULL");
         });
 
+        builder.OwnsOne(p => p.GoalAchievedSnapshot, snapshot =>
+        {
+            snapshot.Property(value => value.SourceGoalId)
+                .HasColumnName("SourceGoalId");
+            snapshot.Property(value => value.GoalTypeName)
+                .HasColumnName("SharedGoalTypeName")
+                .HasMaxLength(64);
+            snapshot.Property(value => value.TargetValue)
+                .HasColumnName("SharedGoalTargetValue");
+            snapshot.Property(value => value.Unit)
+                .HasColumnName("SharedGoalUnit")
+                .HasMaxLength(32);
+            snapshot.Property(value => value.CompletedAt)
+                .HasColumnName("SharedGoalCompletedAt");
+
+            snapshot.HasIndex(value => value.SourceGoalId)
+                .IsUnique()
+                .HasFilter("\"SourceGoalId\" IS NOT NULL");
+        });
+
         builder.HasMany(p => p.SavedByUsers)
             .WithOne(sp => sp.Post)
             .HasForeignKey(sp => sp.PostId)

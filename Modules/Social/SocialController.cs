@@ -26,6 +26,7 @@ public class SocialController : ControllerBase
     private readonly IValidator<CommentRequest> _commentValidator;
     private readonly IValidator<UpdateCommentRequest> _updateCommentValidator;
     private readonly IValidator<ShareWorkoutRequest> _shareWorkoutValidator;
+    private readonly IValidator<ShareGoalRequest> _shareGoalValidator;
     private readonly IValidator<PublicBadgeFilter> _publicBadgeFilterValidator;
 
     public SocialController(
@@ -35,6 +36,7 @@ public class SocialController : ControllerBase
         IValidator<CommentRequest> commentValidator,
         IValidator<UpdateCommentRequest> updateCommentValidator,
         IValidator<ShareWorkoutRequest> shareWorkoutValidator,
+        IValidator<ShareGoalRequest> shareGoalValidator,
         IValidator<PublicBadgeFilter> publicBadgeFilterValidator)
     {
         _mediator = mediator;
@@ -43,6 +45,7 @@ public class SocialController : ControllerBase
         _commentValidator = commentValidator;
         _updateCommentValidator = updateCommentValidator;
         _shareWorkoutValidator = shareWorkoutValidator;
+        _shareGoalValidator = shareGoalValidator;
         _publicBadgeFilterValidator = publicBadgeFilterValidator;
     }
 
@@ -160,9 +163,31 @@ public class SocialController : ControllerBase
     public async Task<ActionResult<Guid>> ShareWorkout([FromBody] ShareWorkoutRequest request)
     {
         await _shareWorkoutValidator.ValidateAndThrowAsync(request);
-        var postId = await _mediator.Send(new ShareWorkoutCommand(User.GetRequiredUserId(), request.WorkoutId, request.Caption));
+        var postId = await _mediator.Send(new ShareWorkoutCommand(User.GetRequiredUserId(), request.WorkoutId, request.Caption, request.MediaAssetIds));
         return CreatedAtAction(nameof(GetPost), new { postId }, postId);
     }
+
+    /// <summary>
+    /// Get the IDs of workouts the current user has already shared, so a picker UI can exclude them.
+    /// </summary>
+    [HttpGet("workout-shares/mine")]
+    public async Task<ActionResult<List<Guid>>> GetMySharedWorkoutIds() =>
+        Ok(await _mediator.Send(new GetSharedWorkoutIdsQuery(User.GetRequiredUserId())));
+
+    [HttpPost("goal-shares")]
+    public async Task<ActionResult<Guid>> ShareGoal([FromBody] ShareGoalRequest request)
+    {
+        await _shareGoalValidator.ValidateAndThrowAsync(request);
+        var postId = await _mediator.Send(new ShareGoalCommand(User.GetRequiredUserId(), request.GoalId, request.Caption, request.MediaAssetIds));
+        return CreatedAtAction(nameof(GetPost), new { postId }, postId);
+    }
+
+    /// <summary>
+    /// Get the IDs of goals the current user has already shared, so a picker UI can exclude them.
+    /// </summary>
+    [HttpGet("goal-shares/mine")]
+    public async Task<ActionResult<List<Guid>>> GetMySharedGoalIds() =>
+        Ok(await _mediator.Send(new GetSharedGoalIdsQuery(User.GetRequiredUserId())));
 
     [HttpPost("posts/{postId:guid}/likes")]
     public async Task<ActionResult<LikeResponse>> AddPostLike(Guid postId)

@@ -182,6 +182,22 @@ public class SocialRepository : ISocialRepository
                 cancellationToken);
     }
 
+    public async Task<List<Guid>> GetSharedWorkoutIdsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Posts
+            .Where(p => p.UserId == userId && p.Type == PostType.WorkoutShare && p.ReferenceEntityId != null)
+            .Select(p => p.ReferenceEntityId!.Value)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Guid>> GetSharedGoalIdsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Posts
+            .Where(p => p.UserId == userId && p.Type == PostType.GoalAchieved && p.ReferenceEntityId != null)
+            .Select(p => p.ReferenceEntityId!.Value)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         // Get IDs of users this user follows

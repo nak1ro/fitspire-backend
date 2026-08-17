@@ -17,6 +17,7 @@ public static class SocialModuleExtensions
         services.AddScoped<IValidator<CreatePostRequest>, CreatePostRequestValidator>();
         services.AddScoped<IValidator<UpdatePostRequest>, UpdatePostRequestValidator>();
         services.AddScoped<IValidator<ShareWorkoutRequest>, ShareWorkoutRequestValidator>();
+        services.AddScoped<IValidator<ShareGoalRequest>, ShareGoalRequestValidator>();
         services.AddScoped<IValidator<CommentRequest>, CommentRequestValidator>();
         services.AddScoped<IValidator<UpdateCommentRequest>, UpdateCommentRequestValidator>();
 

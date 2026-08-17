@@ -11,21 +11,28 @@ public class GamificationLifecycleHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            try
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                using var scope = _scopeFactory.CreateScope();
-                var goals = scope.ServiceProvider.GetRequiredService<IGoalProgressService>();
-                var challenges = scope.ServiceProvider.GetRequiredService<IChallengeScoringService>();
-                await goals.ProcessDuePeriodsAsync(DateTime.UtcNow, stoppingToken);
-                await challenges.ProcessLifecycleAsync(DateTime.UtcNow, stoppingToken);
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var goals = scope.ServiceProvider.GetRequiredService<IGoalProgressService>();
+                    var challenges = scope.ServiceProvider.GetRequiredService<IChallengeScoringService>();
+                    await goals.ProcessDuePeriodsAsync(DateTime.UtcNow, stoppingToken);
+                    await challenges.ProcessLifecycleAsync(DateTime.UtcNow, stoppingToken);
+                }
+                catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogError(exception, "Gamification lifecycle processing failed and will retry on the next interval.");
+                }
             }
-            catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogError(exception, "Gamification lifecycle processing failed and will retry on the next interval.");
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the host is shutting down (e.g. dotnet watch restart).
         }
     }
 }

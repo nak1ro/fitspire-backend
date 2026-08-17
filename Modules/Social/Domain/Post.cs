@@ -25,6 +25,7 @@ public class Post : Entity<Guid>
     public AppUser User { get; private set; } = null!;
     public ICollection<Comment> Comments { get; private set; } = new List<Comment>();
     public WorkoutShareSnapshot? WorkoutShareSnapshot { get; private set; }
+    public GoalAchievedSnapshot? GoalAchievedSnapshot { get; private set; }
     public ICollection<PostLike> Likes { get; private set; } = new List<PostLike>();
     public ICollection<SavedPost> SavedByUsers { get; private set; } = new List<SavedPost>();
     public ICollection<PostMedia> Media { get; private set; } = new List<PostMedia>();
@@ -80,13 +81,33 @@ public class Post : Entity<Guid>
         };
     }
 
+    public static Post CreateGoalAchievedPost(
+        Guid userId,
+        GoalAchievedSnapshot snapshot,
+        string? caption = null,
+        IReadOnlyList<Guid>? mediaAssetIds = null)
+    {
+        var post = CreateGoalAchievedPost(userId, snapshot.SourceGoalId, caption);
+        post.GoalAchievedSnapshot = snapshot;
+
+        if (mediaAssetIds is { Count: > 0 })
+            post.ApplyMediaSet(mediaAssetIds);
+
+        return post;
+    }
+
     public static Post CreateWorkoutSharePost(
         Guid userId,
         WorkoutShareSnapshot snapshot,
-        string? caption = null)
+        string? caption = null,
+        IReadOnlyList<Guid>? mediaAssetIds = null)
     {
         var post = CreateWorkoutSharePost(userId, snapshot.SourceWorkoutId, caption);
         post.WorkoutShareSnapshot = snapshot;
+
+        if (mediaAssetIds is { Count: > 0 })
+            post.ApplyMediaSet(mediaAssetIds);
+
         return post;
     }
 

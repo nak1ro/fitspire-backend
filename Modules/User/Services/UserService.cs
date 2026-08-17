@@ -98,6 +98,7 @@ public class UserService : IUserService
     public async Task<UserPreferencesDto> UpdatePreferencesAsync(Guid userId, UpdateUserPreferencesDto dto)
     {
         var user = await GetUserOrThrowAsync(userId);
+        var isNewPreferences = user.AppUserPreference is null;
         var preferences = user.AppUserPreference ?? new AppUserPreference
         {
             Id = Guid.NewGuid(),
@@ -117,10 +118,16 @@ public class UserService : IUserService
             preferences.TimeZoneId = dto.TimeZoneId;
 
         preferences.UpdatedAt = DateTime.UtcNow;
-        user.AppUserPreference = preferences;
-        var result = await _userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+
+        // Reference-navigation fixup on SaveChanges doesn't reliably mark a brand-new
+        // dependent as Added for this non-shared-key one-to-one — attach it explicitly.
+        if (isNewPreferences)
+        {
+            user.AppUserPreference = preferences;
+            _context.Add(preferences);
+        }
+
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<UserPreferencesDto>(preferences);
     }

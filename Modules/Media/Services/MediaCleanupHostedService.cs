@@ -22,11 +22,18 @@ public class MediaCleanupHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RunCleanupAsync(stoppingToken);
-        using var timer = new PeriodicTimer(_interval);
-
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
+        {
             await RunCleanupAsync(stoppingToken);
+            using var timer = new PeriodicTimer(_interval);
+
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+                await RunCleanupAsync(stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the host is shutting down (e.g. dotnet watch restart).
+        }
     }
 
     private async Task RunCleanupAsync(CancellationToken cancellationToken)
