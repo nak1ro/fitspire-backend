@@ -56,7 +56,7 @@ public class LikeCommentHandler : IRequestHandler<LikeCommentCommand, LikeRespon
         if (comment.UserId != request.UserId)
         {
             var actor = await _repository.GetUserDisplayNameAsync(request.UserId, cancellationToken);
-            await _notifications.CreateAsync(comment.UserId, NotificationType.CommentLike, $"{actor} liked your comment.", request.UserId, request.CommentId, NotificationReferenceTypes.Comment, cancellationToken);
+            await _notifications.CreateAsync(comment.UserId, NotificationType.CommentLike, $"{actor} liked your comment.", request.UserId, request.PostId, NotificationReferenceTypes.Post, cancellationToken);
         }
         try
         {

@@ -51,7 +51,7 @@ public class CommentOnPostHandler : IRequestHandler<CommentOnPostCommand, Guid>
             : Comment.CreateReply(replyTarget, request.UserId, request.Content);
 
         await _socialRepository.AddCommentAsync(comment, cancellationToken);
-        await CreateCommentNotificationsAsync(post.UserId, replyTarget?.UserId, comment.Id, request, cancellationToken);
+        await CreateCommentNotificationsAsync(post.UserId, replyTarget?.UserId, request, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return comment.Id;
@@ -69,7 +69,6 @@ public class CommentOnPostHandler : IRequestHandler<CommentOnPostCommand, Guid>
     private async Task CreateCommentNotificationsAsync(
         Guid postOwnerId,
         Guid? replyTargetUserId,
-        Guid commentId,
         CommentOnPostCommand request,
         CancellationToken cancellationToken)
     {
@@ -93,8 +92,8 @@ public class CommentOnPostHandler : IRequestHandler<CommentOnPostCommand, Guid>
                 NotificationType.CommentReply,
                 $"{actorName} replied to your comment.",
                 request.UserId,
-                commentId,
-                NotificationReferenceTypes.Comment,
+                request.PostId,
+                NotificationReferenceTypes.Post,
                 cancellationToken);
         }
     }

@@ -4,7 +4,6 @@ public static class NotificationReferenceTypes
 {
     public const string User = "user";
     public const string Post = "post";
-    public const string Comment = "comment";
     public const string Goal = "goal";
     public const string Challenge = "challenge";
     public const string Badge = "badge";
