@@ -80,6 +80,8 @@ public sealed class CoachInteractionGenerationService : ICoachInteractionGenerat
         }
         catch (AiProviderException exception)
         {
+            _logger.LogWarning(exception, "Coach message {MessageId} generation failed with provider failure kind {Kind}.",
+                lease.Id, exception.Kind);
             await FailMessageAsync(lease, MapFailureKind(exception.Kind), exception.Message, cancellationToken);
         }
         catch (Exception exception)
@@ -119,6 +121,8 @@ public sealed class CoachInteractionGenerationService : ICoachInteractionGenerat
         }
         catch (AiProviderException exception)
         {
+            _logger.LogWarning(exception, "Daily coach briefing {BriefingId} generation failed with provider failure kind {Kind}.",
+                lease.Id, exception.Kind);
             await FailDailyBriefingAsync(lease, MapFailureKind(exception.Kind), exception.Message, cancellationToken);
         }
         catch (Exception exception)

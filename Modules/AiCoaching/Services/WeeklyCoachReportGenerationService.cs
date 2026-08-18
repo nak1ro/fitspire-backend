@@ -58,6 +58,8 @@ public sealed class WeeklyCoachReportGenerationService : IWeeklyCoachReportGener
         }
         catch (AiProviderException exception)
         {
+            _logger.LogWarning(exception, "Weekly coach report {ReportId} generation failed with provider failure kind {Kind}.",
+                lease.ReportId, exception.Kind);
             await FailAsync(lease, MapFailureKind(exception.Kind), exception.Message, cancellationToken);
         }
         catch (Exception exception)
