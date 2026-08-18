@@ -4,8 +4,8 @@ namespace backend.Modules.AiCoaching.Services;
 
 public static class CoachContextSnapshotVersions
 {
-    public const string Conversation = "coach-conversation-context-v1";
-    public const string DailyBriefing = "coach-daily-briefing-context-v1";
+    public const string Conversation = "coach-conversation-context-v2";
+    public const string DailyBriefing = "coach-daily-briefing-context-v2";
 }
 
 public enum CoachSnapshotCoverageState
@@ -67,6 +67,7 @@ public sealed record CoachWorkoutContextSnapshot(
     double GymVolumeKg,
     int PersonalRecordCount,
     IReadOnlyList<CoachWorkoutTypeCount> Types,
+    IReadOnlyList<CoachWorkoutDaySnapshot> RecentDailyBreakdown,
     CoachWorkoutTotals? PreviousWindow);
 
 public sealed record CoachWorkoutTotals(
@@ -78,6 +79,12 @@ public sealed record CoachWorkoutTotals(
     double GymVolumeKg);
 
 public sealed record CoachWorkoutTypeCount(string WorkoutType, int Count);
+
+public sealed record CoachWorkoutDaySnapshot(DateOnly Date, int WorkoutCount,
+    IReadOnlyList<CoachWorkoutTypeSnapshot> Types);
+
+public sealed record CoachWorkoutTypeSnapshot(string WorkoutType, int WorkoutCount, double DurationMinutes,
+    double CaloriesKcal, double DistanceKm, double GymVolumeKg);
 
 public sealed record CoachGoalContextSnapshot(
     string Label,

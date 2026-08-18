@@ -94,7 +94,8 @@ public sealed class CoachContextSnapshotBuilder : ICoachContextSnapshotBuilder
         var totals = CreateWorkoutTotals(current, window.TimeZone);
         return new CoachWorkoutContextSnapshot(CoverageFor(totals.WorkoutCount), totals.WorkoutCount, totals.ActiveDays,
             totals.DurationMinutes, totals.CaloriesKcal, totals.DistanceKm, totals.GymVolumeKg, records,
-            CreateWorkoutTypes(current), previous is null ? null : CreateWorkoutTotals(previous, window.TimeZone));
+            CreateWorkoutTypes(current), CreateRecentDailyBreakdown(current, window.TimeZone, window.EndDate),
+            previous is null ? null : CreateWorkoutTotals(previous, window.TimeZone));
     }
 
     private async Task<IReadOnlyList<CoachGoalContextSnapshot>> BuildGoalsAsync(Guid userId,
@@ -103,7 +104,7 @@ public sealed class CoachContextSnapshotBuilder : ICoachContextSnapshotBuilder
         var goals = await _context.Goals.AsNoTracking().Include(goal => goal.GoalType).Where(goal => goal.UserId == userId &&
                 (goal.Status == GoalStatus.Active || goal.Status == GoalStatus.Completed))
             .OrderBy(goal => goal.Status).ThenBy(goal => goal.GoalType.Name).ThenBy(goal => goal.Id).Take(10).ToListAsync(cancellationToken);
-        return goals.Select((goal, index) => new CoachGoalContextSnapshot($"Goal {index + 1}", goal.Unit,
+        return goals.Select(goal => new CoachGoalContextSnapshot(goal.GoalType.Name, goal.Unit,
             goal.Status.ToString(), Round(goal.TargetValue), Round(goal.CurrentValue), ToPercent(goal.CurrentValue, goal.TargetValue),
             goal.DefinitionKey)).ToList();
     }
@@ -115,7 +116,7 @@ public sealed class CoachContextSnapshotBuilder : ICoachContextSnapshotBuilder
                 item.UserId == userId && item.Status == ChallengeParticipantStatuses.Active &&
                 item.UserChallenge.StartDate < window.EndExclusiveUtc && item.UserChallenge.EndDate >= window.StartUtc)
             .OrderBy(item => item.UserChallenge.StartDate).ThenBy(item => item.ChallengeId).Take(10).ToListAsync(cancellationToken);
-        return participants.Select((participant, index) => new CoachChallengeContextSnapshot($"Challenge {index + 1}",
+        return participants.Select(participant => new CoachChallengeContextSnapshot(participant.UserChallenge.Title,
             participant.UserChallenge.MetricCode, participant.UserChallenge.WorkoutType, participant.UserChallenge.Mode,
             participant.UserChallenge.Status, participant.UserChallenge.TargetValue, Round(participant.Score))).ToList();
     }
@@ -164,6 +165,31 @@ public sealed class CoachContextSnapshotBuilder : ICoachContextSnapshotBuilder
     private static IReadOnlyList<CoachWorkoutTypeCount> CreateWorkoutTypes(IReadOnlyCollection<ActivityContribution> items) =>
         items.Where(item => item.MetricCode == MetricCatalogue.WorkoutCount).GroupBy(item => item.WorkoutType.Trim().ToLowerInvariant())
             .OrderBy(group => group.Key).Select(group => new CoachWorkoutTypeCount(group.Key, group.Count())).ToList();
+
+    private static IReadOnlyList<CoachWorkoutDaySnapshot> CreateRecentDailyBreakdown(IReadOnlyCollection<ActivityContribution> items,
+        TimeZoneInfo timeZone, DateOnly endDate)
+    {
+        var contributionsByDate = items.GroupBy(item => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(item.OccurredAt, DateTimeKind.Utc), timeZone))).ToDictionary(group => group.Key, group => group.ToList());
+        return Enumerable.Range(0, 7).Select(offset => endDate.AddDays(offset - 6)).Select(date =>
+        {
+            var dayItems = contributionsByDate.GetValueOrDefault(date) ?? [];
+            var types = dayItems.GroupBy(item => item.WorkoutType.Trim().ToLowerInvariant()).OrderBy(group => group.Key)
+                .Select(group => CreateWorkoutTypeSnapshot(group.Key, group)).ToList();
+            var workoutCount = dayItems.Count(item => item.MetricCode == MetricCatalogue.WorkoutCount);
+            return new CoachWorkoutDaySnapshot(date, workoutCount, types);
+        }).ToList();
+    }
+
+    private static CoachWorkoutTypeSnapshot CreateWorkoutTypeSnapshot(string workoutType, IEnumerable<ActivityContribution> items)
+    {
+        var values = items.ToList();
+        var distanceKm = SumMetric(values, MetricCatalogue.RunningDistanceKm) + SumMetric(values, MetricCatalogue.CyclingDistanceKm) +
+            SumMetric(values, MetricCatalogue.SwimmingDistanceMeters) / 1_000d;
+        return new CoachWorkoutTypeSnapshot(workoutType, values.Count(item => item.MetricCode == MetricCatalogue.WorkoutCount),
+            SumMetric(values, MetricCatalogue.DurationMinutes), SumMetric(values, MetricCatalogue.CaloriesKcal), Round(distanceKm),
+            SumMetric(values, MetricCatalogue.GymVolumeKg));
+    }
 
     private static CoachMeasurementTrend CreateTrend(IEnumerable<BodyCheckIn> entries, Func<BodyCheckIn, double?> selector)
     {
@@ -217,6 +243,23 @@ public sealed class CoachContextSnapshotBuilder : ICoachContextSnapshotBuilder
         evidence.Add(Metric("workouts.distance-km", "Workout distance in kilometres", workouts.DistanceKm));
         evidence.Add(Metric("workouts.gym-volume-kg", "Gym volume in kilograms", workouts.GymVolumeKg));
         evidence.Add(Metric("workouts.personal-records", "Personal records", workouts.PersonalRecordCount));
+        foreach (var day in workouts.RecentDailyBreakdown)
+            AddDailyWorkoutEvidence(evidence, day);
+    }
+
+    private static void AddDailyWorkoutEvidence(ICollection<CoachEvidence> evidence, CoachWorkoutDaySnapshot day)
+    {
+        var prefix = $"workouts.{day.Date:yyyy-MM-dd}";
+        evidence.Add(Metric($"{prefix}.count", $"Completed workouts on {day.Date:yyyy-MM-dd}", day.WorkoutCount));
+        foreach (var type in day.Types)
+        {
+            var typePrefix = $"{prefix}.{type.WorkoutType}";
+            evidence.Add(Metric($"{typePrefix}.count", $"{type.WorkoutType} workouts on {day.Date:yyyy-MM-dd}", type.WorkoutCount));
+            if (type.DistanceKm > 0) evidence.Add(Metric($"{typePrefix}.distance-km", $"{type.WorkoutType} distance on {day.Date:yyyy-MM-dd} in kilometres", type.DistanceKm));
+            if (type.DurationMinutes > 0) evidence.Add(Metric($"{typePrefix}.duration-minutes", $"{type.WorkoutType} duration on {day.Date:yyyy-MM-dd} in minutes", type.DurationMinutes));
+            if (type.CaloriesKcal > 0) evidence.Add(Metric($"{typePrefix}.calories-kcal", $"{type.WorkoutType} calories on {day.Date:yyyy-MM-dd}", type.CaloriesKcal));
+            if (type.GymVolumeKg > 0) evidence.Add(Metric($"{typePrefix}.gym-volume-kg", $"Gym volume on {day.Date:yyyy-MM-dd} in kilograms", type.GymVolumeKg));
+        }
     }
 
     private static void AddGoalEvidence(ICollection<CoachEvidence> evidence, IReadOnlyList<CoachGoalContextSnapshot>? goals)

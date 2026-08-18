@@ -11,12 +11,12 @@ public sealed class CoachIntentClassifier : ICoachIntentClassifier
 {
     private static readonly IReadOnlyDictionary<CoachIntent, string[]> Keywords = new Dictionary<CoachIntent, string[]>
     {
-        [CoachIntent.Workout] = ["workout", "training", "train", "lift", "lifting", "run", "running", "gym", "exercise", "volume", "distance", "pace"],
+        [CoachIntent.Workout] = ["workout", "training", "train", "lift", "lifting", "run", "running", "gym", "exercise", "volume", "distance", "pace", "swim", "swimming", "cycle", "cycling", "ride", "riding", "yoga", "walk", "walking", "cardio"],
         [CoachIntent.Recovery] = ["recovery", "recover", "rest", "fatigue", "tired", "sore", "sleep", "deload", "overtrain"],
         [CoachIntent.Goal] = ["goal", "target", "progress", "on track", "milestone", "streak"],
         [CoachIntent.Challenge] = ["challenge", "leaderboard", "rank", "ranking"],
         [CoachIntent.BodyProgress] = ["weight", "body fat", "waist", "measurement", "body progress", "physique"],
-        [CoachIntent.Nutrition] = ["nutrition", "calorie", "calories", "macro", "protein", "carb", "fat", "meal", "diet"],
+        [CoachIntent.Nutrition] = ["nutrition", "calorie", "calories", "macro", "protein", "carb", "fat", "meal", "diet", "recipe", "cook", "cooking", "breakfast", "lunch", "dinner", "snack"],
         [CoachIntent.Wellbeing] = ["mood", "energy", "wellbeing", "well-being", "motivation", "stress"]
     };
 

@@ -65,7 +65,7 @@ public sealed class CoachInteractionGenerationService : ICoachInteractionGenerat
             if (source is null)
                 return true;
             var result = await GenerateAsync(CoachInteractionPromptCatalogue.ConversationInstructions, source.Snapshot.SnapshotJson,
-                CoachInteractionStructuredOutputSchema.ConversationName, CoachInteractionStructuredOutputSchema.CreateConversation(),
+                CoachInteractionStructuredOutputSchema.ConversationName, CoachInteractionStructuredOutputSchema.CreateConversation(source.Snapshot.EvidenceKeys),
                 lease.UserId, CoachInteractionPromptCatalogue.ConversationVersion, cancellationToken);
             var answerJson = _outputValidator.ValidateAndNormalizeAnswer(result.OutputJson, source.Snapshot.EvidenceKeys);
             await CompleteMessageAsync(lease, answerJson, result, cancellationToken);
@@ -106,7 +106,7 @@ public sealed class CoachInteractionGenerationService : ICoachInteractionGenerat
             if (source is null)
                 return true;
             var result = await GenerateAsync(CoachInteractionPromptCatalogue.DailyBriefingInstructions, source.Snapshot.SnapshotJson,
-                CoachInteractionStructuredOutputSchema.DailyBriefingName, CoachInteractionStructuredOutputSchema.CreateDailyBriefing(),
+                CoachInteractionStructuredOutputSchema.DailyBriefingName, CoachInteractionStructuredOutputSchema.CreateDailyBriefing(source.Snapshot.EvidenceKeys),
                 lease.UserId, CoachInteractionPromptCatalogue.DailyBriefingVersion, cancellationToken);
             var contentJson = _outputValidator.ValidateAndNormalizeDailyBriefing(result.OutputJson, source.Snapshot.EvidenceKeys);
             await CompleteDailyBriefingAsync(lease, contentJson, result, cancellationToken);

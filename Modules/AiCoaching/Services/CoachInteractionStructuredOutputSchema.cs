@@ -1,13 +1,14 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace backend.Modules.AiCoaching.Services;
 
 public static class CoachInteractionStructuredOutputSchema
 {
     public const string ConversationName = "coach_conversation_answer";
-    public const string ConversationVersion = "coach-conversation-output-v1";
+    public const string ConversationVersion = "coach-conversation-output-v2";
     public const string DailyBriefingName = "coach_daily_briefing";
-    public const string DailyBriefingVersion = "coach-daily-briefing-output-v1";
+    public const string DailyBriefingVersion = "coach-daily-briefing-output-v2";
 
     private const string ConversationSchemaJson = """
         {
@@ -93,15 +94,33 @@ public static class CoachInteractionStructuredOutputSchema
         }
         """;
 
-    public static JsonElement CreateConversation()
-    {
-        using var document = JsonDocument.Parse(ConversationSchemaJson);
-        return document.RootElement.Clone();
-    }
+    public static JsonElement CreateConversation(IReadOnlySet<string> evidenceKeys) =>
+        Create(ConversationSchemaJson, evidenceKeys);
 
-    public static JsonElement CreateDailyBriefing()
+    public static JsonElement CreateDailyBriefing(IReadOnlySet<string> evidenceKeys) =>
+        Create(DailyBriefingSchemaJson, evidenceKeys);
+
+    private static JsonElement Create(string schemaJson, IReadOnlySet<string> evidenceKeys)
     {
-        using var document = JsonDocument.Parse(DailyBriefingSchemaJson);
-        return document.RootElement.Clone();
+        var schema = JsonNode.Parse(schemaJson)?.AsObject()
+            ?? throw new InvalidOperationException("Coach output schema is invalid.");
+        var evidenceKeysSchema = schema["$defs"]?["evidenceKeys"]?.AsObject()
+            ?? throw new InvalidOperationException("Coach output schema has no evidence-key definition.");
+        var sortedKeys = evidenceKeys.OrderBy(key => key, StringComparer.Ordinal).ToList();
+
+        if (sortedKeys.Count == 0)
+        {
+            evidenceKeysSchema["maxItems"] = 0;
+        }
+        else
+        {
+            evidenceKeysSchema["items"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["enum"] = new JsonArray(sortedKeys.Select(key => JsonValue.Create(key)).ToArray())
+            };
+        }
+
+        return JsonSerializer.SerializeToElement(schema);
     }
 }
