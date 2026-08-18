@@ -42,7 +42,9 @@ public class GetSocialProfileHandler : IRequestHandler<GetSocialProfileQuery, So
             user.IsPrivate,
             followersCount,
             followingCount,
-            relationship);
+            relationship,
+            user.FavoriteSport,
+            user.FitnessLevel);
     }
 
     private async Task<string> GetRelationshipAsync(Guid viewerUserId, Guid targetUserId, CancellationToken cancellationToken)

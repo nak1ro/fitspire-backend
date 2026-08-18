@@ -12,6 +12,7 @@ public class PersonalRecord : AggregateRoot<Guid>
     public Guid? ExerciseId { get; private set; }
     public double Value { get; private set; }
     public Guid WorkoutId { get; private set; }
+    public bool IsFeatured { get; private set; }
 
     /// <summary>
     /// The business date the record was set on — the occurrence date of the workout that
@@ -72,6 +73,18 @@ public class PersonalRecord : AggregateRoot<Guid>
         Value = value;
         WorkoutId = workoutId;
         AchievedAt = achievedAt;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetFeatured()
+    {
+        IsFeatured = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearFeatured()
+    {
+        IsFeatured = false;
         UpdatedAt = DateTime.UtcNow;
     }
 }

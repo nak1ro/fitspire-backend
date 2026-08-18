@@ -118,6 +118,13 @@ public class SocialController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<PublicBadgeResponse>>> GetFeaturedUserBadges(Guid targetUserId) =>
         Ok(await _mediator.Send(new Features.Profiles.GetFeaturedPublicBadgesQuery(User.GetRequiredUserId(), targetUserId)));
 
+    [HttpGet("users/{targetUserId:guid}/personal-records/featured")]
+    public async Task<ActionResult<Features.Profiles.PublicPersonalRecordResponse>> GetFeaturedUserPersonalRecord(Guid targetUserId)
+    {
+        var record = await _mediator.Send(new Features.Profiles.GetFeaturedPersonalRecordQuery(User.GetRequiredUserId(), targetUserId));
+        return record is null ? NoContent() : Ok(record);
+    }
+
     [HttpGet("users/{targetUserId:guid}/challenge-results")]
     public async Task<ActionResult<List<Contracts.Profiles.PublicChallengeResultResponse>>> GetUserChallengeResults(Guid targetUserId) =>
         Ok(await _mediator.Send(new Features.Profiles.GetPublicChallengeResultsQuery(User.GetRequiredUserId(), targetUserId)));

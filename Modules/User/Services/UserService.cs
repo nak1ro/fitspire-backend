@@ -52,6 +52,12 @@ public class UserService : IUserService
             user.Bio = dto.Bio;
         if (dto.IsPrivate.HasValue)
             user.IsPrivate = dto.IsPrivate.Value;
+        if (dto.FavoriteSport.HasValue)
+            user.FavoriteSport = dto.FavoriteSport.Value;
+        if (dto.FitnessLevel.HasValue)
+            user.FitnessLevel = dto.FitnessLevel.Value;
+        if (dto.HeightCm.HasValue)
+            user.HeightCm = dto.HeightCm.Value;
 
         user.UpdatedAt = DateTime.UtcNow;
         var result = await _userManager.UpdateAsync(user);

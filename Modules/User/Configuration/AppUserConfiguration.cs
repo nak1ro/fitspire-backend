@@ -15,6 +15,8 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 
         builder.Property(u => u.ProfilePictureMediaId);
         builder.Property(u => u.IsPrivate).HasDefaultValue(false);
+        builder.Property(u => u.FavoriteSport).HasConversion<string>().HasMaxLength(20);
+        builder.Property(u => u.FitnessLevel).HasConversion<string>().HasMaxLength(20);
         builder.Property(u => u.SuspensionReason).HasMaxLength(ModerationLimits.MaximumSuspensionReasonLength);
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");

@@ -1,4 +1,5 @@
 using backend.Modules.Media.Contracts;
+using backend.Modules.User.Domain.Enums;
 
 namespace backend.Modules.Social.Contracts.Profiles;
 
@@ -19,4 +20,6 @@ public record SocialProfileResponse(
     bool IsPrivate,
     int FollowersCount,
     int FollowingCount,
-    string Relationship);
+    string Relationship,
+    FitnessSport? FavoriteSport,
+    FitnessLevel? FitnessLevel);

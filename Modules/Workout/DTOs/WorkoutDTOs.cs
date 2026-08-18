@@ -180,8 +180,11 @@ public record PersonalRecordResponse(
     Guid WorkoutId,
     Guid? ExerciseId,
     string? ExerciseName,
-    DateTime AchievedAt
+    DateTime AchievedAt,
+    bool IsFeatured
 );
+
+public record SetFeaturedPersonalRecordRequest(Guid? PersonalRecordId);
 
 public record WorkoutHistoryItemResponse(
     Guid Id, string WorkoutType, DateTime Date, double? DurationMinutes, int? CaloriesBurned,

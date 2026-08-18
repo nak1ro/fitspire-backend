@@ -430,6 +430,14 @@ public class WorkoutController : ControllerBase
         return Ok(records);
     }
 
+    [HttpPut("personal-records/featured")]
+    public async Task<IActionResult> SetFeaturedPersonalRecord(SetFeaturedPersonalRecordRequest request)
+    {
+        var userId = User.GetRequiredUserId();
+        await _mediator.Send(new SetFeaturedPersonalRecordCommand(userId, request.PersonalRecordId));
+        return NoContent();
+    }
+
     [HttpGet("routines/{routineId:guid}")]
     public async Task<ActionResult<WorkoutRoutineResponse>> GetRoutine(Guid routineId)
     {

@@ -17,6 +17,7 @@ public class PersonalRecordConfiguration : IEntityTypeConfiguration<PersonalReco
         builder.Property(pr => pr.Value).IsRequired();
         builder.Property(pr => pr.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(pr => pr.AchievedAt).IsRequired();
+        builder.Property(pr => pr.IsFeatured).HasDefaultValue(false);
 
         builder.HasOne(pr => pr.User)
             .WithMany(u => u.PersonalRecords)
@@ -40,5 +41,10 @@ public class PersonalRecordConfiguration : IEntityTypeConfiguration<PersonalReco
         builder.HasIndex(pr => new { pr.UserId, pr.WorkoutType, pr.Metric, pr.ExerciseId })
             .IsUnique()
             .HasFilter("\"ExerciseId\" IS NOT NULL");
+
+        builder.HasIndex(pr => pr.UserId)
+            .IsUnique()
+            .HasFilter("\"IsFeatured\" = true")
+            .HasDatabaseName("IX_PersonalRecord_UserId_Featured");
     }
 }

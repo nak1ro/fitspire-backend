@@ -10,6 +10,7 @@ using backend.Modules.Notification.Domain;
 using backend.Modules.Nutrition.Domain;
 using backend.Modules.Shared.Domain;
 using backend.Modules.Social.Domain;
+using backend.Modules.User.Domain.Enums;
 using backend.Modules.Workout.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -22,6 +23,9 @@ public class AppUser : IdentityUser<Guid>
     public Guid? ProfilePictureMediaId { get; private set; }
     public MediaAsset? ProfilePictureMedia { get; private set; }
     public bool IsPrivate { get; set; } = false;
+    public FitnessSport? FavoriteSport { get; set; }
+    public FitnessLevel? FitnessLevel { get; set; }
+    public double? HeightCm { get; set; }
     public DateTime? SuspendedAtUtc { get; private set; }
     public DateTime? SuspendedUntilUtc { get; private set; }
     public string? SuspensionReason { get; private set; }
