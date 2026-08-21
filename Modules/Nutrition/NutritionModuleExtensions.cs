@@ -15,6 +15,7 @@ public static class NutritionModuleExtensions
         services.AddScoped<INutritionTargetService, NutritionTargetService>();
         services.AddScoped<IFavouriteFoodService, FavouriteFoodService>();
         services.AddScoped<IRecentFoodService, RecentFoodService>();
+        services.AddScoped<ICommonFoodService, CommonFoodService>();
         services.AddScoped<INutritionReadService, NutritionReadService>();
         services.AddScoped<IValidator<MealItemRequest>, MealItemRequestValidator>();
         services.AddScoped<IValidator<AddMealItemRequest>, AddMealItemRequestValidator>();
@@ -25,6 +26,7 @@ public static class NutritionModuleExtensions
         services.AddScoped<IValidator<FavouriteFoodRequest>, FavouriteFoodRequestValidator>();
         services.AddScoped<IValidator<FavouriteFoodFilter>, FavouriteFoodFilterValidator>();
         services.AddScoped<IValidator<RecentFoodsFilter>, RecentFoodsFilterValidator>();
+        services.AddScoped<IValidator<CommonFoodFilter>, CommonFoodFilterValidator>();
         services.AddScoped<IValidator<MealHistoryFilter>, MealHistoryFilterValidator>();
         services.AddScoped<IValidator<NutritionSummaryFilter>, NutritionSummaryFilterValidator>();
         return services;

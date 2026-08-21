@@ -57,6 +57,10 @@ public record FavouriteFoodResponse(Guid Id, string Name, decimal Quantity, Quan
 
 public record FavouriteFoodFilter(string? Query = null, int Page = 1, int PageSize = 20);
 public record FavouriteFoodPageResponse(IReadOnlyList<FavouriteFoodResponse> Items, int Page, int PageSize, int TotalCount);
+
+public record CommonFoodFilter(string? Query = null, string? Category = null);
+public record CommonFoodResponse(Guid Id, string Name, string Category, decimal Quantity, QuantityUnit QuantityUnit,
+    string? CustomUnitName, decimal? CaloriesKcal, decimal? ProteinGrams, decimal? CarbsGrams, decimal? FatGrams);
 public record RecentFoodsFilter(int Limit = 10);
 public record RecentFoodResponse(string Name, decimal Quantity, QuantityUnit QuantityUnit, string? CustomUnitName,
     decimal? CaloriesKcal, decimal? ProteinGrams, decimal? CarbsGrams, decimal? FatGrams, DateOnly LastUsedDate,

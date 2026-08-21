@@ -58,6 +58,7 @@ public class FitspireDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<MealItem> MealItems { get; set; }
     public DbSet<NutritionTarget> NutritionTargets { get; set; }
     public DbSet<FavouriteFood> FavouriteFoods { get; set; }
+    public DbSet<CommonFood> CommonFoods { get; set; }
 
     public DbSet<UserGoal> Goals { get; set; }
     public DbSet<GoalType> GoalTypes { get; set; }

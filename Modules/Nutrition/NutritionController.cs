@@ -18,16 +18,18 @@ public class NutritionController : ControllerBase
     private readonly IValidator<NutritionSummaryFilter> _summaryValidator;
     private readonly IValidator<FavouriteFoodFilter> _favouriteValidator;
     private readonly IValidator<RecentFoodsFilter> _recentValidator;
+    private readonly IValidator<CommonFoodFilter> _commonFoodValidator;
 
     public NutritionController(IMediator mediator, IValidator<MealHistoryFilter> historyValidator,
         IValidator<NutritionSummaryFilter> summaryValidator, IValidator<FavouriteFoodFilter> favouriteValidator,
-        IValidator<RecentFoodsFilter> recentValidator)
+        IValidator<RecentFoodsFilter> recentValidator, IValidator<CommonFoodFilter> commonFoodValidator)
     {
         _mediator = mediator;
         _historyValidator = historyValidator;
         _summaryValidator = summaryValidator;
         _favouriteValidator = favouriteValidator;
         _recentValidator = recentValidator;
+        _commonFoodValidator = commonFoodValidator;
     }
 
     [HttpPost("meals")]
@@ -149,6 +151,14 @@ public class NutritionController : ControllerBase
     {
         await _recentValidator.ValidateAndThrowAsync(filter, cancellationToken);
         return Ok(await _mediator.Send(new GetRecentFoodsQuery(User.GetRequiredUserId(), filter), cancellationToken));
+    }
+
+    [HttpGet("common-foods")]
+    public async Task<ActionResult<IReadOnlyList<CommonFoodResponse>>> GetCommonFoods([FromQuery] CommonFoodFilter filter,
+        CancellationToken cancellationToken)
+    {
+        await _commonFoodValidator.ValidateAndThrowAsync(filter, cancellationToken);
+        return Ok(await _mediator.Send(new GetCommonFoodsQuery(filter), cancellationToken));
     }
 
     [HttpGet("daily/{date}")]

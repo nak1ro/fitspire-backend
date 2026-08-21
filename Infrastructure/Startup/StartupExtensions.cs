@@ -2,6 +2,7 @@ using Azure.Identity;
 using backend.Data;
 using backend.Modules.Badge.Data;
 using backend.Modules.Goal.Data;
+using backend.Modules.Nutrition.Data;
 using backend.Modules.Progress.Data;
 using backend.Modules.Workout.Data.Seeding;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +96,7 @@ public static class StartupExtensions
         await MetricDefinitionSeeder.SeedAsync(context, cancellationToken);
         await BadgeSeeder.SeedAsync(context, cancellationToken);
         await new GoalTypeSeeder(context).SeedAsync(cancellationToken);
+        await CommonFoodSeeder.SeedAsync(context, cancellationToken);
         logger.LogInformation("Application seeders completed.");
     }
 }

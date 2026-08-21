@@ -11,5 +11,6 @@ public class NutritionMappingProfile : Profile
         CreateMap<MealItem, MealItemResponse>();
         CreateMap<NutritionTarget, NutritionTargetResponse>();
         CreateMap<FavouriteFood, FavouriteFoodResponse>();
+        CreateMap<CommonFood, CommonFoodResponse>();
     }
 }

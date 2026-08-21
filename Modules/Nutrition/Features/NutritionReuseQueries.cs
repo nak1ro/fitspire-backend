@@ -7,6 +7,7 @@ namespace backend.Modules.Nutrition.Features;
 public record GetNutritionTargetQuery(Guid UserId) : IRequest<NutritionTargetResponse?>;
 public record GetFavouriteFoodsQuery(Guid UserId, FavouriteFoodFilter Filter) : IRequest<FavouriteFoodPageResponse>;
 public record GetRecentFoodsQuery(Guid UserId, RecentFoodsFilter Filter) : IRequest<IReadOnlyList<RecentFoodResponse>>;
+public record GetCommonFoodsQuery(CommonFoodFilter Filter) : IRequest<IReadOnlyList<CommonFoodResponse>>;
 
 public class GetNutritionTargetHandler : IRequestHandler<GetNutritionTargetQuery, NutritionTargetResponse?>
 {
@@ -30,4 +31,12 @@ public class GetRecentFoodsHandler : IRequestHandler<GetRecentFoodsQuery, IReadO
     public GetRecentFoodsHandler(IRecentFoodService service) => _service = service;
     public Task<IReadOnlyList<RecentFoodResponse>> Handle(GetRecentFoodsQuery query, CancellationToken cancellationToken) =>
         _service.GetAsync(query.UserId, query.Filter, cancellationToken);
+}
+
+public class GetCommonFoodsHandler : IRequestHandler<GetCommonFoodsQuery, IReadOnlyList<CommonFoodResponse>>
+{
+    private readonly ICommonFoodService _service;
+    public GetCommonFoodsHandler(ICommonFoodService service) => _service = service;
+    public Task<IReadOnlyList<CommonFoodResponse>> Handle(GetCommonFoodsQuery query, CancellationToken cancellationToken) =>
+        _service.GetAsync(query.Filter, cancellationToken);
 }

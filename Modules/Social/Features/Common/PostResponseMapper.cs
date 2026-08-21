@@ -33,6 +33,8 @@ public record CommentPreviewResponse(
     string? UserAvatarUrl,
     MediaResponse? UserAvatar,
     string Content,
+    int LikesCount,
+    bool IsLikedByCurrentUser,
     DateTime CreatedAt
 );
 
@@ -84,7 +86,7 @@ public static class PostResponseMapper
             IsLikedByCurrentUser(p, currentUserId),
             IsSavedByCurrentUser(p, currentUserId),
             p.Comments.Count(comment => !comment.IsModerationRemoved),
-            GetRecentComments(p, mediaResponses),
+            GetRecentComments(p, mediaResponses, currentUserId),
             p.CreatedAt
         )).ToList();
     }
@@ -178,7 +180,8 @@ public static class PostResponseMapper
 
     private static IReadOnlyList<CommentPreviewResponse> GetRecentComments(
         Post post,
-        IReadOnlyDictionary<Guid, MediaResponse> responses)
+        IReadOnlyDictionary<Guid, MediaResponse> responses,
+        Guid currentUserId)
     {
         return post.Comments
             .Where(comment => !comment.IsModerationRemoved)
@@ -191,6 +194,8 @@ public static class PostResponseMapper
                 GetAvatarUrl(c.User?.ProfilePictureMedia, responses),
                 GetMediaResponse(c.User?.ProfilePictureMedia, responses),
                 c.Content,
+                c.Likes.Count,
+                c.Likes.Any(like => like.UserId == currentUserId),
                 c.CreatedAt))
             .ToList();
     }

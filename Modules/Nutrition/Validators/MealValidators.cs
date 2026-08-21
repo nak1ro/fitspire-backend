@@ -94,6 +94,15 @@ public class RecentFoodsFilterValidator : AbstractValidator<RecentFoodsFilter>
     public RecentFoodsFilterValidator() => RuleFor(filter => filter.Limit).InclusiveBetween(1, 50);
 }
 
+public class CommonFoodFilterValidator : AbstractValidator<CommonFoodFilter>
+{
+    public CommonFoodFilterValidator()
+    {
+        RuleFor(filter => filter.Query).MaximumLength(NutritionLimits.MaximumFoodNameLength).When(filter => filter.Query is not null);
+        RuleFor(filter => filter.Category).MaximumLength(50).When(filter => filter.Category is not null);
+    }
+}
+
 public class MealHistoryFilterValidator : AbstractValidator<MealHistoryFilter>
 {
     public MealHistoryFilterValidator()

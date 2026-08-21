@@ -70,6 +70,7 @@ public class GetSavedPostsHandler : IRequestHandler<GetSavedPostsQuery, List<Fee
             .Include(post => post.User).ThenInclude(user => user.ProfilePictureMedia).ThenInclude(media => media!.Variants)
             .Include(post => post.Media).ThenInclude(media => media.MediaAsset).ThenInclude(asset => asset.Variants)
             .Include(post => post.Likes).Include(post => post.SavedByUsers).Include(post => post.Comments).ThenInclude(comment => comment.User)
+            .Include(post => post.Comments).ThenInclude(comment => comment.Likes)
             .Where(post => orderedPostIds.Contains(post.Id) && post.ModerationRemovedAtUtc == null).ToListAsync(cancellationToken);
 
         var orderedPosts = orderedPostIds.Where(id => posts.Any(post => post.Id == id))
