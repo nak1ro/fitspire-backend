@@ -97,6 +97,20 @@ public class SocialController : ControllerBase
     public async Task<ActionResult<List<Contracts.Profiles.PublicGoalResponse>>> GetUserGoals(Guid targetUserId) =>
         Ok(await _mediator.Send(new Features.Profiles.GetPublicGoalsQuery(User.GetRequiredUserId(), targetUserId)));
 
+    /// <summary>
+    /// Get full detail for one of a user's goals — used when a feed post's goal badge is clicked.
+    /// </summary>
+    [HttpGet("users/{targetUserId:guid}/goals/{goalId:guid}")]
+    public async Task<ActionResult<Contracts.Profiles.PublicGoalResponse>> GetUserGoalDetail(Guid targetUserId, Guid goalId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicGoalDetailQuery(User.GetRequiredUserId(), targetUserId, goalId)));
+
+    /// <summary>
+    /// Get full detail for one of a user's workouts — used when a feed post's workout badge is clicked.
+    /// </summary>
+    [HttpGet("users/{targetUserId:guid}/workouts/{workoutId:guid}")]
+    public async Task<ActionResult<object>> GetUserWorkoutDetail(Guid targetUserId, Guid workoutId) =>
+        Ok(await _mediator.Send(new Features.Profiles.GetPublicWorkoutDetailQuery(User.GetRequiredUserId(), targetUserId, workoutId)));
+
     [HttpGet("users/{targetUserId:guid}/goal-periods")]
     public async Task<ActionResult<GoalPageResponse<Contracts.Profiles.PublicGoalPeriodResponse>>> GetUserGoalPeriods(
         Guid targetUserId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)

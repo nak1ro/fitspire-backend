@@ -12,6 +12,7 @@ using System.Linq.Expressions;
 namespace backend.Modules.Social.Features.Profiles;
 
 public record GetPublicGoalsQuery(Guid ViewerId, Guid OwnerId) : IRequest<List<PublicGoalResponse>>;
+public record GetPublicGoalDetailQuery(Guid ViewerId, Guid OwnerId, Guid GoalId) : IRequest<PublicGoalResponse>;
 public record GetPublicGoalPeriodsQuery(Guid ViewerId, Guid OwnerId, int Page, int PageSize) : IRequest<GoalPageResponse<PublicGoalPeriodResponse>>;
 public record GetPublicBadgesQuery(Guid ViewerId, Guid OwnerId, PublicBadgeFilter Filter) : IRequest<BadgePageResponse<PublicBadgeResponse>>;
 public record GetFeaturedPublicBadgesQuery(Guid ViewerId, Guid OwnerId) : IRequest<IReadOnlyList<PublicBadgeResponse>>;
@@ -28,6 +29,30 @@ public class GetPublicGoalsHandler : IRequestHandler<GetPublicGoalsQuery, List<P
         if (request.ViewerId != request.OwnerId)
             query = query.Where(goal => goal.IsPublic && (goal.Status == GoalStatus.Active || goal.Status == GoalStatus.Completed));
         return await query.OrderByDescending(goal => goal.CreatedAt).Select(goal => new PublicGoalResponse(goal.Id, goal.GoalType.Name, goal.TargetValue, goal.CurrentValue, goal.Unit, goal.Status.ToString(), goal.IsRecurring, goal.CreatedAt)).ToListAsync(cancellationToken);
+    }
+}
+public class GetPublicGoalDetailHandler : IRequestHandler<GetPublicGoalDetailQuery, PublicGoalResponse>
+{
+    private readonly FitspireDbContext _context; private readonly ISocialAccessService _access;
+    public GetPublicGoalDetailHandler(FitspireDbContext context, ISocialAccessService access) { _context = context; _access = access; }
+    public async Task<PublicGoalResponse> Handle(GetPublicGoalDetailQuery request, CancellationToken cancellationToken)
+    {
+        // Access failures and "not visible to this viewer" cases all collapse to the same
+        // NotFoundException — a stale/no-longer-visible reference from a feed post should
+        // degrade quietly rather than reveal why it's unreachable.
+        if (!await _access.CanViewProtectedContentAsync(request.ViewerId, request.OwnerId, cancellationToken))
+            throw new NotFoundException("Goal not found.");
+
+        var goal = await _context.Goals.Include(goal => goal.GoalType)
+            .FirstOrDefaultAsync(goal => goal.Id == request.GoalId && goal.UserId == request.OwnerId, cancellationToken)
+            ?? throw new NotFoundException("Goal not found.");
+
+        if (request.ViewerId != request.OwnerId &&
+            (!goal.IsPublic || (goal.Status != GoalStatus.Active && goal.Status != GoalStatus.Completed)))
+            throw new NotFoundException("Goal not found.");
+
+        return new PublicGoalResponse(goal.Id, goal.GoalType.Name, goal.TargetValue, goal.CurrentValue, goal.Unit,
+            goal.Status.ToString(), goal.IsRecurring, goal.CreatedAt);
     }
 }
 public class GetPublicBadgesHandler : IRequestHandler<GetPublicBadgesQuery, BadgePageResponse<PublicBadgeResponse>>

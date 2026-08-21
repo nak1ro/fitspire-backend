@@ -225,15 +225,7 @@ public class WorkoutController : ControllerBase
 
     private object MapWorkoutDetails(UserWorkout workout)
     {
-        return workout switch
-        {
-            GymUserWorkoutDetails gymWorkout => _mapper.Map<GymWorkoutResponse>(gymWorkout),
-            RunningUserWorkoutDetails runningWorkout => _mapper.Map<RunningWorkoutResponse>(runningWorkout),
-            CyclingUserWorkoutDetails cyclingWorkout => _mapper.Map<CyclingWorkoutResponse>(cyclingWorkout),
-            SwimmingUserWorkoutDetails swimmingWorkout => _mapper.Map<SwimmingWorkoutResponse>(swimmingWorkout),
-            YogaUserWorkoutDetails yogaWorkout => _mapper.Map<YogaWorkoutResponse>(yogaWorkout),
-            _ => _mapper.Map<WorkoutResponse>(workout)
-        };
+        return Features.Common.WorkoutResponseMapper.Map(workout, _mapper);
     }
 
     [HttpPost("{id:guid}/finish")]
