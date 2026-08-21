@@ -186,6 +186,17 @@ namespace backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateIndex(
+                name: "IX_PostLike_PostId",
+                table: "PostLike",
+                column: "PostId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PostLike_UserId_PostId",
+                table: "PostLike",
+                columns: new[] { "UserId", "PostId" },
+                unique: true);
+
             migrationBuilder.Sql("""
                 INSERT INTO "PostLike" ("Id", "UserId", "PostId", "CreatedAt", "UpdatedAt")
                 SELECT "Id", "UserId", "TargetId", "CreatedAt", "UpdatedAt"
@@ -241,17 +252,6 @@ namespace backend.Migrations
                 name: "IX_CommentLike_UserId_CommentId",
                 table: "CommentLike",
                 columns: new[] { "UserId", "CommentId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PostLike_PostId",
-                table: "PostLike",
-                column: "PostId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PostLike_UserId_PostId",
-                table: "PostLike",
-                columns: new[] { "UserId", "PostId" },
                 unique: true);
 
             migrationBuilder.AddForeignKey(
@@ -398,6 +398,17 @@ namespace backend.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateIndex(
+                name: "IX_Like_TargetId",
+                table: "Like",
+                column: "TargetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Like_UserId_TargetId_TargetType",
+                table: "Like",
+                columns: new[] { "UserId", "TargetId", "TargetType" },
+                unique: true);
+
             migrationBuilder.Sql("""
                 INSERT INTO "Like" ("Id", "UserId", "TargetId", "TargetType", "CreatedAt", "UpdatedAt")
                 SELECT "Id", "UserId", "PostId", 'Post', "CreatedAt", "UpdatedAt"
@@ -423,17 +434,6 @@ namespace backend.Migrations
                 name: "IX_Comment_PostId",
                 table: "Comment",
                 column: "PostId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Like_TargetId",
-                table: "Like",
-                column: "TargetId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Like_UserId_TargetId_TargetType",
-                table: "Like",
-                columns: new[] { "UserId", "TargetId", "TargetType" },
-                unique: true);
         }
     }
 }
