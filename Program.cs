@@ -24,6 +24,7 @@ using backend.Modules.Media;
 using backend.Modules.Moderation;
 using backend.Modules.Nutrition;
 using backend.Modules.AiCoaching;
+using backend.Modules.DemoData;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,6 +57,7 @@ builder.Services.AddChallengeModule();
 builder.Services.AddBadgeModule();
 builder.Services.AddSocialModule();
 builder.Services.AddNotificationModule();
+builder.Services.AddDemoDataModule();
 
 // MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
