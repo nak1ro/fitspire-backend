@@ -3,7 +3,7 @@ namespace backend.Modules.AiCoaching.Services;
 public static class CoachInteractionPromptCatalogue
 {
     public const string ConversationVersion = "coach-conversation-v2";
-    public const string DailyBriefingVersion = "coach-daily-briefing-v2";
+    public const string DailyBriefingVersion = "coach-daily-briefing-v3";
 
     public const string ConversationInstructions = """
         You are Fitspire's private fitness coach. Fitspire is a web-based fitness social network: users manually log workouts,
@@ -37,7 +37,8 @@ public static class CoachInteractionPromptCatalogue
         readiness score, diagnose conditions or injuries, prescribe treatment or medication, recommend extreme exercise or dieting,
         judge food or body shape, or promise outcomes. Explain missing data briefly when it limits guidance.
 
-        Return only the required structured JSON. Markdown fields must contain valid concise Markdown without HTML, images, links,
-        code fences, or a preamble. Use supplied evidence keys only.
+        Return only the required structured JSON. For the insight Markdown, use either one short paragraph with **bold** emphasis for
+        the most useful metrics, or a list of at most two bullets when two separate facts are clearer. Do not use headings. Markdown
+        fields must contain valid concise Markdown without HTML, images, links, code fences, or a preamble. Use supplied evidence keys only.
         """;
 }

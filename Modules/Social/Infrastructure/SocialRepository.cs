@@ -51,6 +51,67 @@ public class SocialRepository : ISocialRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<List<AppUser>> SearchDiscoverableUsersAsync(
+        Guid viewerUserId,
+        string query,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var prefixPattern = $"{query}%";
+        var containsPattern = $"%{query}%";
+
+        return DiscoverableUsers(viewerUserId)
+            .Where(user => EF.Functions.ILike(user.UserName!, containsPattern) ||
+                           EF.Functions.ILike(user.DisplayName, containsPattern))
+            .OrderByDescending(user => EF.Functions.ILike(user.UserName!, prefixPattern))
+            .ThenByDescending(user => EF.Functions.ILike(user.DisplayName, prefixPattern))
+            .ThenBy(user => user.UserName)
+            .Take(limit)
+            .Include(user => user.ProfilePictureMedia)
+                .ThenInclude(media => media!.Variants)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<AppUser>> GetRecommendedUsersAsync(
+        Guid viewerUserId,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var favoriteSport = await _context.Users
+            .Where(user => user.Id == viewerUserId)
+            .Select(user => user.FavoriteSport)
+            .SingleAsync(cancellationToken);
+        var recentActivityCutoff = DateTime.UtcNow.AddDays(-30);
+
+        return await DiscoverableUsers(viewerUserId)
+            .OrderByDescending(user => favoriteSport.HasValue && user.FavoriteSport == favoriteSport)
+            .ThenByDescending(user => user.Posts
+                .Where(post => post.ModerationRemovedAtUtc == null)
+                .Select(post => (DateTime?)post.CreatedAt)
+                .Max())
+            .ThenBy(user => user.Id)
+            .Where(user => user.Posts.Any(post =>
+                post.ModerationRemovedAtUtc == null && post.CreatedAt >= recentActivityCutoff))
+            .Take(limit)
+            .Include(user => user.ProfilePictureMedia)
+                .ThenInclude(media => media!.Variants)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+    }
+
+    private IQueryable<AppUser> DiscoverableUsers(Guid viewerUserId)
+    {
+        return _context.Users.AsNoTracking()
+            .Where(user => !user.IsPrivate && user.Id != viewerUserId)
+            .Where(user => !_context.Followers.Any(follow =>
+                follow.FollowerId == viewerUserId && follow.FollowedId == user.Id))
+            .Where(user => !_context.FollowRequests.Any(request =>
+                request.RequesterId == viewerUserId &&
+                request.AddresseeId == user.Id &&
+                request.Status == FollowRequestStatus.Pending));
+    }
+
     public Task<int> GetFollowersCountAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return _context.Followers.CountAsync(follow => follow.FollowedId == userId, cancellationToken);
@@ -196,6 +257,26 @@ public class SocialRepository : ISocialRepository
             .Where(p => p.UserId == userId && p.Type == PostType.GoalAchieved && p.ReferenceEntityId != null)
             .Select(p => p.ReferenceEntityId!.Value)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Post?> GetPersonalRecordSharePostAsync(Guid personalRecordId, DateTime achievedAt, CancellationToken cancellationToken = default)
+    {
+        return await _context.Posts
+            .FirstOrDefaultAsync(
+                p => p.Type == PostType.PersonalRecordAchieved
+                    && p.PersonalRecordAchievedSnapshot!.SourcePersonalRecordId == personalRecordId
+                    && p.PersonalRecordAchievedSnapshot!.AchievedAt == achievedAt,
+                cancellationToken);
+    }
+
+    public async Task<List<(Guid PersonalRecordId, DateTime AchievedAt)>> GetSharedPersonalRecordPairsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var rows = await _context.Posts
+            .Where(p => p.UserId == userId && p.Type == PostType.PersonalRecordAchieved && p.PersonalRecordAchievedSnapshot != null)
+            .Select(p => new { p.PersonalRecordAchievedSnapshot!.SourcePersonalRecordId, p.PersonalRecordAchievedSnapshot!.AchievedAt })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(r => (r.SourcePersonalRecordId, r.AchievedAt)).ToList();
     }
 
     public async Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)

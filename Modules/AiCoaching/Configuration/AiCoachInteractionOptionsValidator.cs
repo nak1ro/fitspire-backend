@@ -20,6 +20,10 @@ public sealed class AiCoachInteractionOptionsValidator : IValidateOptions<AiCoac
         ValidateRange(options.WorkerPollSeconds, 1, 60, "AiCoachInteraction:WorkerPollSeconds", errors);
         ValidateRange(options.ProcessingLeaseSeconds, 60, 600,
             "AiCoachInteraction:ProcessingLeaseSeconds", errors);
+        ValidateRange(options.DailyBriefingLocalHour, 0, 23,
+            "AiCoachInteraction:DailyBriefingLocalHour", errors);
+        ValidateRange(options.DailyBriefingSchedulePollSeconds, 30, 3600,
+            "AiCoachInteraction:DailyBriefingSchedulePollSeconds", errors);
 
         return errors.Count == 0
             ? ValidateOptionsResult.Success

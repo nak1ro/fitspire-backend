@@ -82,6 +82,25 @@ public class ShareGoalRequestValidator : AbstractValidator<ShareGoalRequest>
     }
 }
 
+public class SharePersonalRecordRequestValidator : AbstractValidator<SharePersonalRecordRequest>
+{
+    public SharePersonalRecordRequestValidator()
+    {
+        RuleFor(x => x.PersonalRecordId)
+            .NotEmpty();
+
+        RuleFor(x => x.Caption)
+            .MaximumLength(2000)
+            .When(x => x.Caption is not null);
+
+        RuleFor(x => x.MediaAssetIds)
+            .Must(ids => ids is null || ids.Count <= 10)
+            .WithMessage("A post can contain at most ten images.")
+            .Must(ids => ids is null || ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
+            .WithMessage("Post media IDs must be unique and non-empty.");
+    }
+}
+
 public class CommentRequestValidator : AbstractValidator<CommentRequest>
 {
     public CommentRequestValidator()

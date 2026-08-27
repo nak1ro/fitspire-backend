@@ -49,6 +49,7 @@ public static class AiCoachingModuleExtensions
         services.AddScoped<IValidator<CoachMessageHistoryFilter>, CoachMessageHistoryFilterValidator>();
         services.AddHostedService<WeeklyCoachReportGenerationHostedService>();
         services.AddHostedService<CoachInteractionGenerationHostedService>();
+        services.AddHostedService<DailyCoachBriefingScheduleHostedService>();
 
         return services;
     }

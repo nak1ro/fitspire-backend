@@ -4,6 +4,7 @@ using backend.Modules.AiCoaching.Configuration;
 using backend.Modules.AiCoaching.Contracts;
 using backend.Modules.AiCoaching.Domain;
 using backend.Modules.Shared.Domain;
+using backend.Modules.Workout.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -17,6 +18,8 @@ public interface ICoachInteractionQueueService
     Task<CoachQueuedDailyBriefing> QueueDailyBriefingAsync(Guid userId, CancellationToken cancellationToken);
     Task RetryMessageAsync(Guid userId, Guid threadId, Guid messageId, CancellationToken cancellationToken);
     Task RetryDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
+    Task RegenerateDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
+    Task ScheduleDueDailyBriefingsAsync(DateTime utcNow, CancellationToken cancellationToken);
 }
 
 public sealed class CoachInteractionQueueService : ICoachInteractionQueueService
@@ -79,6 +82,71 @@ public sealed class CoachInteractionQueueService : ICoachInteractionQueueService
             throw new DomainException("Only today's daily coach briefing can be retried.");
         briefing.Retry(DateTime.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RegenerateDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken)
+    {
+        EnsureAiAvailable();
+        var now = DateTime.UtcNow;
+        var timeZoneId = await _timeZoneService.GetAsync(userId, cancellationToken);
+        var localDate = CoachLocalDate.Resolve(timeZoneId, now);
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var briefing = await _context.DailyCoachBriefings.FirstOrDefaultAsync(candidate =>
+            candidate.Id == briefingId && candidate.UserId == userId, cancellationToken)
+            ?? throw new NotFoundException("Daily coach briefing was not found.");
+        if (briefing.LocalDate != localDate)
+            throw new DomainException("Only today's daily coach briefing can be regenerated.");
+
+        briefing.Regenerate(now);
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task ScheduleDueDailyBriefingsAsync(DateTime utcNow, CancellationToken cancellationToken)
+    {
+        EnsureAiAvailable();
+        var users = await _context.Users.AsNoTracking().Include(user => user.AppUserPreference).ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            var timeZoneId = string.IsNullOrWhiteSpace(user.AppUserPreference?.TimeZoneId) ? "Central European Standard Time" : user.AppUserPreference.TimeZoneId;
+            var localDate = CoachLocalDate.Resolve(timeZoneId, utcNow);
+            var localHour = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)).Hour;
+            if (localHour < _options.DailyBriefingLocalHour)
+                continue;
+            await ScheduleUserDailyBriefingAsync(user.Id, localDate, timeZoneId, utcNow, cancellationToken);
+        }
+    }
+
+    private async Task ScheduleUserDailyBriefingAsync(Guid userId, DateOnly localDate, string timeZoneId, DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var briefing = await _context.DailyCoachBriefings.FirstOrDefaultAsync(candidate => candidate.UserId == userId &&
+            candidate.LocalDate == localDate, cancellationToken);
+        if (briefing is null)
+        {
+            await QueueDailyWithRetryAsync(userId, localDate, timeZoneId, utcNow, cancellationToken);
+            return;
+        }
+        if (briefing.CompletedAt is not { } completedAt || !await HasMeaningfulActivityAfterAsync(userId, completedAt, cancellationToken))
+            return;
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var current = await _context.DailyCoachBriefings.FirstOrDefaultAsync(candidate => candidate.Id == briefing.Id,
+            cancellationToken);
+        if (current?.TryRefreshAfterActivity(utcNow) == true)
+            await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task<bool> HasMeaningfulActivityAfterAsync(Guid userId, DateTime afterUtc, CancellationToken cancellationToken)
+    {
+        var completedWorkout = await _context.UserWorkouts.AnyAsync(workout => workout.UserId == userId &&
+            workout.Status == WorkoutStatus.Completed && workout.CompletedAt > afterUtc, cancellationToken);
+        if (completedWorkout) return true;
+        var mealChange = await _context.Meals.AnyAsync(meal => meal.UserId == userId && meal.DeletedAt == null &&
+            (meal.CreatedAt > afterUtc || meal.UpdatedAt > afterUtc), cancellationToken);
+        return mealChange || await _context.Goals.AnyAsync(goal => goal.UserId == userId &&
+            (goal.CreatedAt > afterUtc || goal.UpdatedAt > afterUtc), cancellationToken);
     }
 
     private async Task<CoachQueuedExchange> QueueQuestionWithRetryAsync(Guid userId, Guid threadId, Guid clientRequestId,

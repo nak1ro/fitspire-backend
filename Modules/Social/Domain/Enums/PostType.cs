@@ -4,5 +4,6 @@ public enum PostType
 {
     Text,
     WorkoutShare,
-    GoalAchieved
+    GoalAchieved,
+    PersonalRecordAchieved
 }

@@ -31,6 +31,15 @@ public class SocialProfilesController : ControllerBase
         return Ok(users);
     }
 
+    [HttpGet("discover")]
+    public async Task<ActionResult<List<DiscoverableSocialUserResponse>>> Discover(
+        [FromQuery] string? query,
+        [FromQuery] int limit = 5)
+    {
+        var users = await _mediator.Send(new DiscoverSocialUsersQuery(User.GetRequiredUserId(), query, limit));
+        return Ok(users);
+    }
+
     [HttpGet("{userId:guid}")]
     public async Task<ActionResult<SocialProfileResponse>> GetProfile(Guid userId)
     {

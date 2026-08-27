@@ -22,6 +22,7 @@ public interface ICoachInteractionService
     Task<DailyCoachBriefingResponse> GetTodayDailyBriefingAsync(Guid userId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> GetDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> RetryDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
+    Task<DailyCoachBriefingResponse> RegenerateDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
 }
 
 public sealed class CoachInteractionService : ICoachInteractionService
@@ -140,6 +141,13 @@ public sealed class CoachInteractionService : ICoachInteractionService
         CancellationToken cancellationToken)
     {
         await _queueService.RetryDailyBriefingAsync(userId, briefingId, cancellationToken);
+        return await GetDailyBriefingAsync(userId, briefingId, cancellationToken);
+    }
+
+    public async Task<DailyCoachBriefingResponse> RegenerateDailyBriefingAsync(Guid userId, Guid briefingId,
+        CancellationToken cancellationToken)
+    {
+        await _queueService.RegenerateDailyBriefingAsync(userId, briefingId, cancellationToken);
         return await GetDailyBriefingAsync(userId, briefingId, cancellationToken);
     }
 

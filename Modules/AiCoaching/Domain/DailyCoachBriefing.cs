@@ -29,6 +29,7 @@ public sealed class DailyCoachBriefing : AggregateRoot<Guid>
     public DateTime? ProcessingLeaseExpiresAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
     public DateTime? FailedAt { get; private set; }
+    public int RefreshCount { get; private set; }
     public Guid ConcurrencyToken { get; private set; }
 
     public AppUser User { get; private set; } = null!;
@@ -153,6 +154,31 @@ public sealed class DailyCoachBriefing : AggregateRoot<Guid>
         FailedAt = null;
         ClearFailure();
         Touch(utcNow);
+    }
+
+    public bool TryRefreshAfterActivity(DateTime utcNow)
+    {
+        AiCoachDomainRules.EnsureUtc(utcNow, nameof(utcNow));
+        if (Status != CoachGenerationStatus.Completed || RefreshCount >= 1)
+            return false;
+
+        Status = CoachGenerationStatus.Pending;
+        GenerationAttemptId = Guid.NewGuid();
+        RequestedAt = utcNow;
+        ProcessingStartedAt = null;
+        ProcessingLeaseExpiresAt = null;
+        CompletedAt = null;
+        ContentJson = null;
+        ClearFailure();
+        RefreshCount++;
+        Touch(utcNow);
+        return true;
+    }
+
+    public void Regenerate(DateTime utcNow)
+    {
+        if (!TryRefreshAfterActivity(utcNow))
+            throw new DomainException("Today's daily briefing cannot be regenerated again.");
     }
 
     private void EnsureCurrentProcessingAttempt(Guid attemptId)

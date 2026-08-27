@@ -24,6 +24,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("NOW()");
+        builder.HasIndex(p => new { p.UserId, p.CreatedAt });
 
         builder.HasOne(p => p.User)
             .WithMany(u => u.Posts)
@@ -80,6 +81,38 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             snapshot.HasIndex(value => value.SourceGoalId)
                 .IsUnique()
                 .HasFilter("\"SourceGoalId\" IS NOT NULL");
+        });
+
+        builder.OwnsOne(p => p.PersonalRecordAchievedSnapshot, snapshot =>
+        {
+            snapshot.Property(value => value.SourcePersonalRecordId)
+                .HasColumnName("SourcePersonalRecordId");
+            snapshot.Property(value => value.WorkoutType)
+                .HasColumnName("SharedPersonalRecordWorkoutType")
+                .HasMaxLength(64);
+            snapshot.Property(value => value.Metric)
+                .HasColumnName("SharedPersonalRecordMetric")
+                .HasMaxLength(64);
+            snapshot.Property(value => value.ExerciseId)
+                .HasColumnName("SharedPersonalRecordExerciseId");
+            snapshot.Property(value => value.ExerciseName)
+                .HasColumnName("SharedPersonalRecordExerciseName")
+                .HasMaxLength(128);
+            snapshot.Property(value => value.Value)
+                .HasColumnName("SharedPersonalRecordValue");
+            snapshot.Property(value => value.Unit)
+                .HasColumnName("SharedPersonalRecordUnit")
+                .HasMaxLength(32);
+            snapshot.Property(value => value.AchievedAt)
+                .HasColumnName("SharedPersonalRecordAchievedAt");
+
+            // Composite, unlike Workout/Goal — a PersonalRecord row is mutable (same Id,
+            // Value/AchievedAt overwritten each time it's broken again), so uniqueness is
+            // scoped to a specific achievement moment, not the record itself, letting a
+            // future break become shareable again.
+            snapshot.HasIndex(value => new { value.SourcePersonalRecordId, value.AchievedAt })
+                .IsUnique()
+                .HasFilter("\"SourcePersonalRecordId\" IS NOT NULL");
         });
 
         builder.HasMany(p => p.SavedByUsers)

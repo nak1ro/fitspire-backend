@@ -10,6 +10,14 @@ public record SocialUserSummaryResponse(
     string? ProfilePictureUrl,
     MediaResponse? ProfilePicture);
 
+public record DiscoverableSocialUserResponse(
+    Guid Id,
+    string UserName,
+    string DisplayName,
+    string? ProfilePictureUrl,
+    MediaResponse? ProfilePicture,
+    string? Reason);
+
 public record SocialProfileResponse(
     Guid Id,
     string UserName,

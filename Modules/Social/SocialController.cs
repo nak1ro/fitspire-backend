@@ -27,6 +27,7 @@ public class SocialController : ControllerBase
     private readonly IValidator<UpdateCommentRequest> _updateCommentValidator;
     private readonly IValidator<ShareWorkoutRequest> _shareWorkoutValidator;
     private readonly IValidator<ShareGoalRequest> _shareGoalValidator;
+    private readonly IValidator<SharePersonalRecordRequest> _sharePersonalRecordValidator;
     private readonly IValidator<PublicBadgeFilter> _publicBadgeFilterValidator;
 
     public SocialController(
@@ -37,6 +38,7 @@ public class SocialController : ControllerBase
         IValidator<UpdateCommentRequest> updateCommentValidator,
         IValidator<ShareWorkoutRequest> shareWorkoutValidator,
         IValidator<ShareGoalRequest> shareGoalValidator,
+        IValidator<SharePersonalRecordRequest> sharePersonalRecordValidator,
         IValidator<PublicBadgeFilter> publicBadgeFilterValidator)
     {
         _mediator = mediator;
@@ -46,6 +48,7 @@ public class SocialController : ControllerBase
         _updateCommentValidator = updateCommentValidator;
         _shareWorkoutValidator = shareWorkoutValidator;
         _shareGoalValidator = shareGoalValidator;
+        _sharePersonalRecordValidator = sharePersonalRecordValidator;
         _publicBadgeFilterValidator = publicBadgeFilterValidator;
     }
 
@@ -209,6 +212,22 @@ public class SocialController : ControllerBase
     [HttpGet("goal-shares/mine")]
     public async Task<ActionResult<List<Guid>>> GetMySharedGoalIds() =>
         Ok(await _mediator.Send(new GetSharedGoalIdsQuery(User.GetRequiredUserId())));
+
+    [HttpPost("personal-record-shares")]
+    public async Task<ActionResult<Guid>> SharePersonalRecord([FromBody] SharePersonalRecordRequest request)
+    {
+        await _sharePersonalRecordValidator.ValidateAndThrowAsync(request);
+        var postId = await _mediator.Send(new SharePersonalRecordCommand(User.GetRequiredUserId(), request.PersonalRecordId, request.Caption, request.MediaAssetIds));
+        return CreatedAtAction(nameof(GetPost), new { postId }, postId);
+    }
+
+    /// <summary>
+    /// Get the IDs of personal records the current user has already shared at their current
+    /// value, so a picker UI can exclude them (a record broken again later reappears here).
+    /// </summary>
+    [HttpGet("personal-record-shares/mine")]
+    public async Task<ActionResult<List<Guid>>> GetMySharedPersonalRecordIds() =>
+        Ok(await _mediator.Send(new GetSharedPersonalRecordIdsQuery(User.GetRequiredUserId())));
 
     [HttpPost("posts/{postId:guid}/likes")]
     public async Task<ActionResult<LikeResponse>> AddPostLike(Guid postId)

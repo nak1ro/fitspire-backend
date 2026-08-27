@@ -20,6 +20,7 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.Property(u => u.SuspensionReason).HasMaxLength(ModerationLimits.MaximumSuspensionReasonLength);
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
+        builder.HasIndex(u => new { u.IsPrivate, u.FavoriteSport });
 
         builder.HasOne(u => u.AppUserPreference)
             .WithOne(p => p.AppUser)

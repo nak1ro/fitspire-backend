@@ -6,7 +6,7 @@ using backend.Modules.User.Domain;
 namespace backend.Modules.Social.Domain;
 
 /// <summary>
-/// Represents a social feed post. Can be text, a workout share, or a goal achievement.
+/// Represents a social feed post. Can be text, a workout share, a goal achievement, or a personal record.
 /// </summary>
 public class Post : Entity<Guid>
 {
@@ -26,6 +26,7 @@ public class Post : Entity<Guid>
     public ICollection<Comment> Comments { get; private set; } = new List<Comment>();
     public WorkoutShareSnapshot? WorkoutShareSnapshot { get; private set; }
     public GoalAchievedSnapshot? GoalAchievedSnapshot { get; private set; }
+    public PersonalRecordAchievedSnapshot? PersonalRecordAchievedSnapshot { get; private set; }
     public ICollection<PostLike> Likes { get; private set; } = new List<PostLike>();
     public ICollection<SavedPost> SavedByUsers { get; private set; } = new List<SavedPost>();
     public ICollection<PostMedia> Media { get; private set; } = new List<PostMedia>();
@@ -104,6 +105,35 @@ public class Post : Entity<Guid>
     {
         var post = CreateWorkoutSharePost(userId, snapshot.SourceWorkoutId, caption);
         post.WorkoutShareSnapshot = snapshot;
+
+        if (mediaAssetIds is { Count: > 0 })
+            post.ApplyMediaSet(mediaAssetIds);
+
+        return post;
+    }
+
+    /// <summary>
+    /// Create a personal-record-achieved post. Unlike Workout/Goal, the source record is
+    /// mutable (its Value/AchievedAt overwrite in place each time it's broken again), so
+    /// re-sharing after a new break is intentional and expected — see PostConfiguration's
+    /// composite unique index on (SourcePersonalRecordId, AchievedAt).
+    /// </summary>
+    public static Post CreatePersonalRecordAchievedPost(
+        Guid userId,
+        PersonalRecordAchievedSnapshot snapshot,
+        string? caption = null,
+        IReadOnlyList<Guid>? mediaAssetIds = null)
+    {
+        var post = new Post
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Type = PostType.PersonalRecordAchieved,
+            Content = caption,
+            ReferenceEntityId = snapshot.SourcePersonalRecordId,
+            CreatedAt = DateTime.UtcNow,
+            PersonalRecordAchievedSnapshot = snapshot
+        };
 
         if (mediaAssetIds is { Count: > 0 })
             post.ApplyMediaSet(mediaAssetIds);

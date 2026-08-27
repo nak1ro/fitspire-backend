@@ -10,6 +10,8 @@ public interface ISocialRepository
     Task<string> GetUserDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<AppUser?> GetSocialUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<List<AppUser>> SearchSocialUsersAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<List<AppUser>> SearchDiscoverableUsersAsync(Guid viewerUserId, string query, int limit, CancellationToken cancellationToken = default);
+    Task<List<AppUser>> GetRecommendedUsersAsync(Guid viewerUserId, int limit, CancellationToken cancellationToken = default);
     Task<int> GetFollowersCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<int> GetFollowingCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<bool> IsFollowingAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default);
@@ -28,6 +30,8 @@ public interface ISocialRepository
     Task<Post?> GetPostByReferenceAsync(PostType type, Guid referenceEntityId, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetSharedWorkoutIdsAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetSharedGoalIdsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Post?> GetPersonalRecordSharePostAsync(Guid personalRecordId, DateTime achievedAt, CancellationToken cancellationToken = default);
+    Task<List<(Guid PersonalRecordId, DateTime AchievedAt)>> GetSharedPersonalRecordPairsAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserFeedAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetDiscoverFeedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Post>> GetUserPostsAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);

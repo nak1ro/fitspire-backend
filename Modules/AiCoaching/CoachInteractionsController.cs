@@ -109,4 +109,8 @@ public sealed class CoachInteractionsController : ControllerBase
     [HttpPost("daily-briefings/{briefingId:guid}/retry")]
     public async Task<ActionResult<DailyCoachBriefingResponse>> RetryDailyBriefing(Guid briefingId, CancellationToken cancellationToken) =>
         Accepted(await _service.RetryDailyBriefingAsync(User.GetRequiredUserId(), briefingId, cancellationToken));
+
+    [HttpPost("daily-briefings/{briefingId:guid}/regenerate")]
+    public async Task<ActionResult<DailyCoachBriefingResponse>> RegenerateDailyBriefing(Guid briefingId, CancellationToken cancellationToken) =>
+        Accepted(await _service.RegenerateDailyBriefingAsync(User.GetRequiredUserId(), briefingId, cancellationToken));
 }

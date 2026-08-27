@@ -24,6 +24,7 @@ public sealed class DailyCoachBriefingConfiguration : IEntityTypeConfiguration<D
         builder.Property(briefing => briefing.Model).HasMaxLength(100);
         builder.Property(briefing => briefing.LastFailureKind).HasConversion<string>().HasMaxLength(40);
         builder.Property(briefing => briefing.LastFailureMessage).HasMaxLength(300);
+        builder.Property(briefing => briefing.RefreshCount).HasDefaultValue(0);
         builder.Property(briefing => briefing.CreatedAt).HasDefaultValueSql("NOW()");
         builder.Property(briefing => briefing.ConcurrencyToken).IsConcurrencyToken();
 

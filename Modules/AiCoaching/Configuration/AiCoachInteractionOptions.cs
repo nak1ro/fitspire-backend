@@ -11,4 +11,6 @@ public sealed class AiCoachInteractionOptions
     public int DailySnapshotLookbackDays { get; init; } = 7;
     public int WorkerPollSeconds { get; init; } = 10;
     public int ProcessingLeaseSeconds { get; init; } = 180;
+    public int DailyBriefingLocalHour { get; init; } = 18;
+    public int DailyBriefingSchedulePollSeconds { get; init; } = 300;
 }
