@@ -3,6 +3,7 @@ using backend.Data;
 using backend.Modules.Media.Domain;
 using backend.Modules.Media.Contracts;
 using backend.Modules.User.Domain;
+using backend.Modules.User.Domain.Constants;
 using backend.Modules.User.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public class UserService : IUserService
     {
         var user = await GetUserOrThrowAsync(userId);
 
+        var updatedUserName = dto.UserName is null ? null : UserNameRules.Normalize(dto.UserName);
         if (dto.DisplayName != null)
             user.DisplayName = dto.DisplayName;
         if (dto.Bio != null)
@@ -60,7 +62,9 @@ public class UserService : IUserService
             user.HeightCm = dto.HeightCm.Value;
 
         user.UpdatedAt = DateTime.UtcNow;
-        var result = await _userManager.UpdateAsync(user);
+        var result = updatedUserName is null
+            ? await _userManager.UpdateAsync(user)
+            : await _userManager.SetUserNameAsync(user, updatedUserName);
         if (!result.Succeeded)
             throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
 

@@ -2,6 +2,7 @@ using backend.Modules.Auth.DTOs;
 using backend.Modules.Auth.Authorization;
 using FluentValidation;
 using backend.Modules.User.Domain;
+using backend.Modules.User.Domain.Constants;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,7 @@ public class AuthService : IAuthService
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto dto)
     {
+        dto.UserName = UserNameRules.Normalize(dto.UserName);
         await _registerValidator.ValidateAndThrowAsync(dto);
 
         // Check for existing username/email

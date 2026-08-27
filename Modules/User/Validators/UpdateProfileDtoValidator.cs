@@ -1,4 +1,5 @@
 using backend.Modules.User.DTOs;
+using backend.Modules.User.Domain.Constants;
 using FluentValidation;
 
 namespace backend.Modules.User.Validators;
@@ -7,6 +8,13 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateProfileDto>
 {
     public UpdateProfileDtoValidator()
     {
+        RuleFor(x => x.UserName)
+            .NotEmpty().WithMessage("Username is required.")
+            .Length(UserNameRules.MinimumLength, UserNameRules.MaximumLength)
+            .WithMessage($"Username must be between {UserNameRules.MinimumLength} and {UserNameRules.MaximumLength} characters.")
+            .Matches(UserNameRules.Pattern).WithMessage("Username can contain only letters, numbers, and underscores.")
+            .When(x => x.UserName is not null);
+
         RuleFor(x => x.DisplayName)
             .NotEmpty().WithMessage("Display name is required.")
             .MaximumLength(30).WithMessage("Display name must be at most 30 characters.")
@@ -23,7 +31,7 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateProfileDto>
             .When(x => x.HeightCm.HasValue);
 
         RuleFor(x => x)
-            .Must(x => x.DisplayName is not null || x.Bio is not null || x.IsPrivate.HasValue ||
+            .Must(x => x.UserName is not null || x.DisplayName is not null || x.Bio is not null || x.IsPrivate.HasValue ||
                        x.FavoriteSport.HasValue || x.FitnessLevel.HasValue || x.HeightCm.HasValue)
             .WithMessage("At least one profile field must be provided.");
     }
