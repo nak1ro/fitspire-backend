@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(FitspireDbContext))]
-    [Migration("20260901180231_AddCommonFoodCatalogue")]
-    partial class AddCommonFoodCatalogue
+    [Migration("20260903042557_InitialSchema")]
+    partial class InitialSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -413,6 +413,11 @@ namespace backend.Migrations
                     b.Property<string>("ProviderResponseId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("RefreshCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("RequestedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2260,7 +2265,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("Post", (string)null);
                 });
@@ -2466,6 +2471,8 @@ namespace backend.Migrations
 
                     b.HasIndex("ProfilePictureMediaId")
                         .IsUnique();
+
+                    b.HasIndex("IsPrivate", "FavoriteSport");
 
                     b.ToTable("User", (string)null);
                 });
@@ -3495,6 +3502,62 @@ namespace backend.Migrations
                                 .HasForeignKey("PostId");
                         });
 
+                    b.OwnsOne("backend.Modules.Social.Domain.PersonalRecordAchievedSnapshot", "PersonalRecordAchievedSnapshot", b1 =>
+                        {
+                            b1.Property<Guid>("PostId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTime>("AchievedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("SharedPersonalRecordAchievedAt");
+
+                            b1.Property<Guid?>("ExerciseId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("SharedPersonalRecordExerciseId");
+
+                            b1.Property<string>("ExerciseName")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("SharedPersonalRecordExerciseName");
+
+                            b1.Property<string>("Metric")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("SharedPersonalRecordMetric");
+
+                            b1.Property<Guid>("SourcePersonalRecordId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("SourcePersonalRecordId");
+
+                            b1.Property<string>("Unit")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("SharedPersonalRecordUnit");
+
+                            b1.Property<double>("Value")
+                                .HasColumnType("double precision")
+                                .HasColumnName("SharedPersonalRecordValue");
+
+                            b1.Property<string>("WorkoutType")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("SharedPersonalRecordWorkoutType");
+
+                            b1.HasKey("PostId");
+
+                            b1.HasIndex("SourcePersonalRecordId", "AchievedAt")
+                                .IsUnique()
+                                .HasFilter("\"SourcePersonalRecordId\" IS NOT NULL");
+
+                            b1.ToTable("Post");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PostId");
+                        });
+
                     b.OwnsOne("backend.Modules.Social.Domain.WorkoutShareSnapshot", "WorkoutShareSnapshot", b1 =>
                         {
                             b1.Property<Guid>("PostId")
@@ -3551,6 +3614,8 @@ namespace backend.Migrations
                         });
 
                     b.Navigation("GoalAchievedSnapshot");
+
+                    b.Navigation("PersonalRecordAchievedSnapshot");
 
                     b.Navigation("User");
 

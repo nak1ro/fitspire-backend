@@ -19,7 +19,7 @@ public interface ICoachInteractionService
     Task<CoachMessageResponse> GetMessageAsync(Guid userId, Guid threadId, Guid messageId, CancellationToken cancellationToken);
     Task<CoachMessageResponse> RetryMessageAsync(Guid userId, Guid threadId, Guid messageId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> QueueDailyBriefingAsync(Guid userId, CancellationToken cancellationToken);
-    Task<DailyCoachBriefingResponse> GetTodayDailyBriefingAsync(Guid userId, CancellationToken cancellationToken);
+    Task<DailyCoachBriefingResponse?> GetTodayDailyBriefingAsync(Guid userId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> GetDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> RetryDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
     Task<DailyCoachBriefingResponse> RegenerateDailyBriefingAsync(Guid userId, Guid briefingId, CancellationToken cancellationToken);
@@ -120,13 +120,13 @@ public sealed class CoachInteractionService : ICoachInteractionService
         return await GetDailyBriefingAsync(userId, queued.BriefingId, cancellationToken);
     }
 
-    public async Task<DailyCoachBriefingResponse> GetTodayDailyBriefingAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<DailyCoachBriefingResponse?> GetTodayDailyBriefingAsync(Guid userId, CancellationToken cancellationToken)
     {
         var timeZoneId = await _timeZoneService.GetAsync(userId, cancellationToken);
         var localDate = CoachLocalDate.Resolve(timeZoneId, DateTime.UtcNow);
         var briefing = await _context.DailyCoachBriefings.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.UserId == userId &&
-            candidate.LocalDate == localDate, cancellationToken) ?? throw new NotFoundException("Today's daily coach briefing was not found.");
-        return _responseFactory.CreateDailyBriefing(briefing);
+            candidate.LocalDate == localDate, cancellationToken);
+        return briefing is null ? null : _responseFactory.CreateDailyBriefing(briefing);
     }
 
     public async Task<DailyCoachBriefingResponse> GetDailyBriefingAsync(Guid userId, Guid briefingId,

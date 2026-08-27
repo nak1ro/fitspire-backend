@@ -99,8 +99,11 @@ public sealed class CoachInteractionsController : ControllerBase
     }
 
     [HttpGet("daily-briefings/today")]
-    public async Task<ActionResult<DailyCoachBriefingResponse>> GetTodayDailyBriefing(CancellationToken cancellationToken) =>
-        Ok(await _service.GetTodayDailyBriefingAsync(User.GetRequiredUserId(), cancellationToken));
+    public async Task<ActionResult<DailyCoachBriefingResponse>> GetTodayDailyBriefing(CancellationToken cancellationToken)
+    {
+        var briefing = await _service.GetTodayDailyBriefingAsync(User.GetRequiredUserId(), cancellationToken);
+        return briefing is null ? NoContent() : Ok(briefing);
+    }
 
     [HttpGet("daily-briefings/{briefingId:guid}")]
     public async Task<ActionResult<DailyCoachBriefingResponse>> GetDailyBriefing(Guid briefingId, CancellationToken cancellationToken) =>
